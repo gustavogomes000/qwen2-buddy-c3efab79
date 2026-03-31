@@ -94,29 +94,46 @@ export default function PainelLocalizacao() {
 
     return Object.entries(map).map(([uid, locs], i) => {
       const user = usuarios.find(u => u.id === uid);
+      const sortedLocations = locs.sort((a, b) => new Date(a.criado_em).getTime() - new Date(b.criado_em).getTime());
       return {
         usuario_id: uid,
         nome: user?.nome || 'Desconhecido',
         tipo: user?.tipo || '—',
-        locations: locs.sort((a, b) => new Date(a.criado_em).getTime() - new Date(b.criado_em).getTime()),
-        lastLocation: locs[0],
+        locations: sortedLocations,
+        lastLocation: sortedLocations[sortedLocations.length - 1],
         color: COLORS[i % COLORS.length],
       } as UserLocationGroup;
     }).sort((a, b) => new Date(b.lastLocation.criado_em).getTime() - new Date(a.lastLocation.criado_em).getTime());
   }, [locations, usuarios]);
 
-  // Downsample locations for map performance (max ~200 points per user)
   const displayGroups = useMemo(() => {
     const filtered = selectedUserId
       ? userGroups.filter(g => g.usuario_id === selectedUserId)
       : userGroups;
 
-    return filtered.map(g => {
-      const locs = g.locations;
-      if (locs.length <= 200) return g;
-      const step = Math.ceil(locs.length / 200);
-      const sampled = locs.filter((_, i) => i === 0 || i === locs.length - 1 || i % step === 0);
-      return { ...g, locations: sampled };
+    return filtered.flatMap(g => {
+      const normalizedLocations = g.locations
+        .filter(l => Number.isFinite(Number(l.latitude)) && Number.isFinite(Number(l.longitude)) && Math.abs(Number(l.latitude)) <= 90 && Math.abs(Number(l.longitude)) <= 180)
+        .map(l => ({
+          ...l,
+          latitude: Number(l.latitude),
+          longitude: Number(l.longitude),
+        }));
+
+      if (normalizedLocations.length === 0) return [];
+
+      const sampledLocations = normalizedLocations.length <= 200
+        ? normalizedLocations
+        : normalizedLocations.filter((_, i) => {
+            const step = Math.ceil(normalizedLocations.length / 200);
+            return i === 0 || i === normalizedLocations.length - 1 || i % step === 0;
+          });
+
+      return [{
+        ...g,
+        locations: sampledLocations,
+        lastLocation: normalizedLocations[normalizedLocations.length - 1],
+      }];
     });
   }, [userGroups, selectedUserId]);
 
