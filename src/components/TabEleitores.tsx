@@ -239,7 +239,7 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
     const e = selected;
     const p = e.pessoas;
     return (
-      <div className="space-y-4 pb-24">
+      <div key="detail" className="space-y-4 pb-24">
         <button onClick={() => { setSelected(null); setMode('list'); }} className="flex items-center gap-1 text-sm text-muted-foreground active:scale-95">
           <ArrowLeft size={16} /> Voltar
         </button>
