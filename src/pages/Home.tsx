@@ -33,7 +33,6 @@ export default function Home() {
     cadastros: isAdmin ? 'Todos os Cadastros' : 'Meus Cadastros',
     rede: 'Rede por Suplente',
     hierarquia: 'Hierarquia da Rede',
-    pagamentos: 'Pagamentos',
     rastreamento: 'Rastreamento',
     perfil: 'Perfil',
   };
