@@ -231,7 +231,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
 
   const filtered = data.filter(l => {
     if (statusFilter !== 'Todas' && l.status !== statusFilter) return false;
-    if (agenteFilter && l.cadastrado_por !== agenteFilter) return false;
+    
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       const nome = l.pessoas?.nome?.toLowerCase() || '';
