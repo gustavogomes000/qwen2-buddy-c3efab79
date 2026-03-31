@@ -4,6 +4,7 @@ import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
 const MODULOS = [
+  { id: 'master', label: '🔑 Acesso Master', desc: 'Acesso total a todos os módulos' },
   { id: 'cadastrar_liderancas', label: '👥 Cadastrar Lideranças', desc: 'Pode cadastrar novas lideranças na rede' },
   { id: 'cadastrar_fiscais', label: '🛡️ Cadastrar Fiscais', desc: 'Pode cadastrar fiscais eleitorais' },
   { id: 'cadastrar_eleitores', label: '🎯 Cadastrar Eleitores', desc: 'Pode cadastrar possíveis eleitores' },

@@ -33,6 +33,7 @@ const tipoColors: Record<string, string> = {
 };
 
 const MODULOS_OPTIONS = [
+  { id: 'master', label: '🔑 Master' },
   { id: 'cadastrar_liderancas', label: '👥 Lideranças' },
   { id: 'cadastrar_fiscais', label: '🛡️ Fiscais' },
   { id: 'cadastrar_eleitores', label: '🎯 Eleitores' },
@@ -48,12 +49,9 @@ interface SuplenteOption {
 
 interface LiderancaOption {
   id: string;
-  pessoa_id: string;
-  status: string | null;
-  tipo_lideranca: string | null;
+  nome: string;
   regiao_atuacao: string | null;
-  suplente_id: string | null;
-  pessoas: { id: string; nome: string; telefone: string | null; whatsapp: string | null } | null;
+  whatsapp: string | null;
 }
 
 interface UsuarioItem {
@@ -143,7 +141,7 @@ export default function TabPerfil() {
   const filteredLiderancas = useMemo(() => {
     if (!externalSearch) return liderancas;
     const q = externalSearch.toLowerCase();
-    return liderancas.filter(l => (l.pessoas?.nome || '').toLowerCase().includes(q));
+    return liderancas.filter(l => (l.nome || '').toLowerCase().includes(q));
   }, [liderancas, externalSearch]);
 
   // Filtered users list
@@ -186,7 +184,7 @@ export default function TabPerfil() {
       if (createMode === 'suplente') {
         nomeUsuario = suplentes.find(s => s.id === selectedExternalId)?.nome || '';
       } else {
-        nomeUsuario = liderancas.find(l => l.id === selectedExternalId)?.pessoas?.nome || '';
+        nomeUsuario = liderancas.find(l => l.id === selectedExternalId)?.nome || '';
       }
     }
     if (!senhaNova.trim() || senhaNova.length < 4) {
@@ -421,11 +419,11 @@ export default function TabPerfil() {
                   <div className="bg-primary/5 border border-primary/20 rounded-xl p-2.5 flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                       <span className="text-xs font-bold text-primary">
-                        {(selectedSuplente?.nome || selectedLideranca?.pessoas?.nome || '?').charAt(0).toUpperCase()}
+                        {(selectedSuplente?.nome || selectedLideranca?.nome || '?').charAt(0).toUpperCase()}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-primary truncate">{selectedSuplente?.nome || selectedLideranca?.pessoas?.nome}</p>
+                      <p className="text-xs font-semibold text-primary truncate">{selectedSuplente?.nome || selectedLideranca?.nome}</p>
                       <p className="text-[10px] text-muted-foreground truncate">
                         {selectedSuplente?.regiao_atuacao || selectedLideranca?.regiao_atuacao || ''}
                       </p>
@@ -453,9 +451,9 @@ export default function TabPerfil() {
                         onClick={() => { setSelectedExternalId(l.id); setExternalSearch(''); }}
                         className="w-full text-left px-3 py-2 rounded-lg border border-border bg-card hover:bg-muted/30 active:scale-[0.98] transition-all"
                       >
-                        <p className="text-xs font-semibold text-foreground">{l.pessoas?.nome || '—'}</p>
+                        <p className="text-xs font-semibold text-foreground">{l.nome || '—'}</p>
                         <p className="text-[10px] text-muted-foreground">
-                          {l.tipo_lideranca || ''}{l.regiao_atuacao ? ` · ${l.regiao_atuacao}` : ''}
+                          {l.regiao_atuacao || ''}
                         </p>
                       </button>
                     ))}

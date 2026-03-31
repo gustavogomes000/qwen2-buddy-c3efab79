@@ -25,8 +25,8 @@ Deno.serve(async (req) => {
 
     const { data, error } = await externalSupabase
       .from('liderancas')
-      .select('id, pessoa_id, status, tipo_lideranca, regiao_atuacao, suplente_id, pessoas(id, nome, telefone, whatsapp)')
-      .order('criado_em', { ascending: false });
+      .select('id, nome, cpf, regiao, whatsapp, rede_social, ligacao_politica, created_at')
+      .order('nome');
 
     if (error) {
       console.error('Erro ao buscar lideranças externas:', error);
@@ -36,14 +36,24 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Map to a consistent format for the frontend
+    const result = (data || []).map((l: any) => ({
+      id: l.id,
+      nome: l.nome,
+      regiao_atuacao: l.regiao || null,
+      whatsapp: l.whatsapp || null,
+      rede_social: l.rede_social || null,
+      ligacao_politica: l.ligacao_politica || null,
+    }));
+
     return new Response(
-      JSON.stringify(data || []),
+      JSON.stringify(result),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error('Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
