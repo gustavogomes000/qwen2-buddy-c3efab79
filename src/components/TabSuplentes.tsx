@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Search, ChevronRight, ArrowLeft, Phone, MessageCircle, Loader2, Users, ChevronDown, UserPlus, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import { Search, ChevronRight, ArrowLeft, Phone, MessageCircle, Loader2, Users, ChevronDown, UserPlus, Eye, EyeOff, CheckCircle2, Pencil, Trash2, KeyRound, Save } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -21,6 +21,7 @@ interface HierarchyUser {
   nome: string;
   tipo: string;
   suplente_id: string | null;
+  auth_user_id: string | null;
 }
 
 interface TreeNode {
@@ -58,11 +59,19 @@ export default function TabSuplentes({ refreshKey }: Props) {
   const [superiorId, setSuperiorId] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Edit user state
+  const [editingUser, setEditingUser] = useState<{ hierarquiaUser: HierarchyUser; suplente: SuplenteRow } | null>(null);
+  const [editNome, setEditNome] = useState('');
+  const [editSenha, setEditSenha] = useState('');
+  const [showEditSenha, setShowEditSenha] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   const fetchAll = useCallback(async () => {
     setLoading(true);
     const [supRes, usrRes] = await Promise.all([
       supabase.functions.invoke('buscar-suplentes'),
-      supabase.from('hierarquia_usuarios').select('id, nome, tipo, suplente_id').eq('ativo', true).order('nome'),
+      supabase.from('hierarquia_usuarios').select('id, nome, tipo, suplente_id, auth_user_id').eq('ativo', true).order('nome'),
     ]);
     if (!supRes.error && supRes.data) setSuplentes(supRes.data);
     setUsuarios((usrRes.data || []) as HierarchyUser[]);
@@ -74,6 +83,10 @@ export default function TabSuplentes({ refreshKey }: Props) {
   const suplentesComUsuario = useMemo(() => {
     return new Set(usuarios.filter(u => u.suplente_id).map(u => u.suplente_id));
   }, [usuarios]);
+
+  const getUserForSuplente = (suplenteId: string) => {
+    return usuarios.find(u => u.suplente_id === suplenteId);
+  };
 
   const possiveisSuperior = useMemo(() => {
     return usuarios.filter(u => ['super_admin', 'coordenador', 'suplente'].includes(u.tipo));
@@ -216,6 +229,77 @@ export default function TabSuplentes({ refreshKey }: Props) {
     }
   };
 
+  // Edit user functions
+  const openEditUser = (sup: SuplenteRow) => {
+    const user = getUserForSuplente(sup.id);
+    if (!user) return;
+    setEditingUser({ hierarquiaUser: user, suplente: sup });
+    setEditNome(user.nome);
+    setEditSenha('');
+    setShowEditSenha(false);
+    setConfirmDelete(false);
+  };
+
+  const handleEditUser = async () => {
+    if (!editingUser) return;
+    const { hierarquiaUser } = editingUser;
+    if (!editNome.trim()) { toast({ title: 'Nome não pode ser vazio', variant: 'destructive' }); return; }
+    if (editSenha && editSenha.length < 4) { toast({ title: 'Senha deve ter ao menos 4 caracteres', variant: 'destructive' }); return; }
+
+    setEditSaving(true);
+    try {
+      const payload: any = {
+        acao: 'atualizar',
+        hierarquia_id: hierarquiaUser.id,
+        auth_user_id: hierarquiaUser.auth_user_id,
+      };
+      if (editNome.trim() !== hierarquiaUser.nome) payload.novo_nome = editNome.trim();
+      if (editSenha.trim()) payload.nova_senha = editSenha.trim();
+
+      if (!payload.novo_nome && !payload.nova_senha) {
+        toast({ title: 'Nenhuma alteração' }); setEditSaving(false); return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('gerenciar-usuario', { body: payload });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+
+      toast({ title: '✅ Usuário atualizado!' });
+      setEditingUser(null);
+      fetchAll();
+    } catch (err: any) {
+      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!editingUser) return;
+    const { hierarquiaUser } = editingUser;
+
+    setEditSaving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('gerenciar-usuario', {
+        body: {
+          acao: 'deletar',
+          hierarquia_id: hierarquiaUser.id,
+          auth_user_id: hierarquiaUser.auth_user_id,
+        },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+
+      toast({ title: '✅ Usuário removido!' });
+      setEditingUser(null);
+      fetchAll();
+    } catch (err: any) {
+      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   const typeConfig = {
     lideranca: { bg: 'bg-blue-500/10', text: 'text-blue-600', label: 'Lid', border: 'border-blue-500/30' },
     fiscal: { bg: 'bg-purple-500/10', text: 'text-purple-600', label: 'Fisc', border: 'border-purple-500/30' },
@@ -268,6 +352,98 @@ export default function TabSuplentes({ refreshKey }: Props) {
   };
 
   const inputCls = "w-full h-11 px-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30";
+
+  // EDIT USER VIEW
+  if (editingUser) {
+    const { hierarquiaUser, suplente } = editingUser;
+    return (
+      <div className="space-y-4 pb-24">
+        <button onClick={() => setEditingUser(null)} className="flex items-center gap-1 text-sm text-muted-foreground active:scale-95">
+          <ArrowLeft size={16} /> Voltar
+        </button>
+
+        <div className="section-card">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center">
+              <Pencil size={24} className="text-emerald-500" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-foreground">Editar Usuário</h2>
+              <p className="text-xs text-muted-foreground">Suplente: {suplente.nome}</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Nome de acesso</label>
+              <input type="text" value={editNome} onChange={e => setEditNome(e.target.value)} className={inputCls} />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <KeyRound size={12} /> Nova senha (deixe vazio para manter)
+              </label>
+              <div className="relative">
+                <input
+                  type={showEditSenha ? 'text' : 'password'}
+                  value={editSenha}
+                  onChange={e => setEditSenha(e.target.value)}
+                  className={inputCls}
+                  placeholder="Nova senha (opcional)"
+                />
+                <button onClick={() => setShowEditSenha(!showEditSenha)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  {showEditSenha ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={handleEditUser}
+              disabled={editSaving}
+              className="w-full h-12 gradient-primary text-white text-sm font-semibold rounded-xl shadow-lg active:scale-[0.97] transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
+            >
+              {editSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+              {editSaving ? 'Salvando...' : 'Salvar Alterações'}
+            </button>
+          </div>
+        </div>
+
+        {/* Delete section */}
+        <div className="section-card border-destructive/30">
+          <h3 className="text-sm font-semibold text-destructive mb-2">Zona de perigo</h3>
+          {!confirmDelete ? (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="w-full h-10 border border-destructive/30 text-destructive text-sm font-semibold rounded-xl flex items-center justify-center gap-2 active:scale-[0.97]"
+            >
+              <Trash2 size={16} /> Remover Acesso
+            </button>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">Tem certeza? Esta ação remove o acesso do usuário ao sistema.</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="flex-1 h-10 bg-muted text-sm font-semibold rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDeleteUser}
+                  disabled={editSaving}
+                  className="flex-1 h-10 bg-destructive text-destructive-foreground text-sm font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {editSaving ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                  Confirmar
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   // CREATE ACCESS VIEW
   if (creatingAccess) {
@@ -353,9 +529,12 @@ export default function TabSuplentes({ refreshKey }: Props) {
               </p>
             </div>
             {temAcesso ? (
-              <span className="flex items-center gap-1 text-[10px] text-emerald-500 font-semibold bg-emerald-500/10 px-2 py-1 rounded-full">
-                <CheckCircle2 size={12} /> Ativo
-              </span>
+              <button
+                onClick={() => openEditUser(selected)}
+                className="flex items-center gap-1 text-[10px] text-emerald-500 font-semibold bg-emerald-500/10 px-2 py-1 rounded-full active:scale-95"
+              >
+                <Pencil size={12} /> Editar
+              </button>
             ) : (
               <button
                 onClick={() => openCreateAccess(selected)}
@@ -398,7 +577,7 @@ export default function TabSuplentes({ refreshKey }: Props) {
         ) : (
           <div className="section-card !p-2">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-2 py-1">
-              Árvore: Lideranças → Fiscais → Eleitores
+              Lideranças → Fiscais → Eleitores
             </p>
             {tree.map(node => renderTreeNode(node, 0))}
           </div>
@@ -464,7 +643,12 @@ export default function TabSuplentes({ refreshKey }: Props) {
                   </div>
                 </button>
                 {temAcesso ? (
-                  <span className="text-[10px] text-emerald-500 font-medium shrink-0">Ativo</span>
+                  <button
+                    onClick={() => openEditUser(s)}
+                    className="flex items-center gap-1 px-2 py-1.5 bg-emerald-500/10 text-emerald-600 text-[10px] font-semibold rounded-lg active:scale-95 shrink-0"
+                  >
+                    <Pencil size={12} /> Editar
+                  </button>
                 ) : (
                   <button
                     onClick={() => openCreateAccess(s)}
