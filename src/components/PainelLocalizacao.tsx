@@ -222,7 +222,7 @@ export default function PainelLocalizacao() {
               const first = group.locations[0];
 
               return (
-                <div key={group.usuario_id}>
+                <span key={group.usuario_id}>
                   {/* Route polyline */}
                   {path.length > 1 && (
                     <Polyline
