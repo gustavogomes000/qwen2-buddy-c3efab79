@@ -5,7 +5,6 @@ import TabLiderancas from '@/components/TabLiderancas';
 import TabFiscais from '@/components/TabFiscais';
 import TabEleitores from '@/components/TabEleitores';
 import TabCadastros from '@/components/TabCadastros';
-import TabUsuarios from '@/components/TabUsuarios';
 import TabPerfil from '@/components/TabPerfil';
 import PainelLocalizacao from '@/components/PainelLocalizacao';
 
@@ -30,8 +29,7 @@ export default function Home() {
     eleitores: 'Cadastro de Eleitores',
     cadastros: isAdmin ? 'Todos os Cadastros' : 'Meus Cadastros',
     rastreamento: 'Rastreamento',
-    usuarios: 'Gerenciar Usuários',
-    perfil: 'Perfil',
+    perfil: 'Perfil & Usuários',
   };
 
   return (
@@ -52,7 +50,6 @@ export default function Home() {
           {activeTab === 'eleitores' && <TabEleitores refreshKey={refreshKey} onSaved={handleSaved} />}
           {activeTab === 'cadastros' && <TabCadastros refreshKey={refreshKey} onSaved={handleSaved} />}
           {activeTab === 'rastreamento' && <PainelLocalizacao />}
-          {activeTab === 'usuarios' && <TabUsuarios />}
           {activeTab === 'perfil' && <TabPerfil />}
         </div>
       </div>

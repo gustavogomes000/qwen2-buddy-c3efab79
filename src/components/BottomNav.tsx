@@ -52,8 +52,6 @@ export default function BottomNav({ active, onChange }: Props) {
     if (tab.id === 'cadastros') return true;
     // Rastreamento - super_admin only
     if (tab.id === 'rastreamento') return isSuperAdmin;
-    // Usuarios - admin/coordenador only
-    if (tab.id === 'usuarios') return isAdminOrCoord;
     // Module-based tabs
     if (tab.module) {
       if (isAdminOrCoord) return true;
