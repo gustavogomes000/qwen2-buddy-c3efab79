@@ -198,7 +198,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
     const f = selected;
     const p = f.pessoas;
     return (
-      <div className="space-y-4 pb-24">
+      <div key="detail" className="space-y-4 pb-24">
         <button onClick={() => { setSelected(null); setMode('list'); }} className="flex items-center gap-1 text-sm text-muted-foreground active:scale-95">
           <ArrowLeft size={16} /> Voltar
         </button>
@@ -252,7 +252,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
   // FORM VIEW
   if (mode === 'form' && !viewOnly) {
     return (
-      <div className="space-y-4 pb-24">
+      <div key="form" className="space-y-4 pb-24">
         <button onClick={() => setMode('list')} className="flex items-center gap-1 text-sm text-muted-foreground active:scale-95">
           <ArrowLeft size={16} /> Voltar à lista
         </button>
