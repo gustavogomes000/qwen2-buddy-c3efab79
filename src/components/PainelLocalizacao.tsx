@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { CAPTURE_INTERVALS, getCaptureIntervalMinutes, setCaptureIntervalMinutes, type CaptureIntervalMinutes } from '@/services/locationTracker';
 import { MapPin, Clock, Battery, Wifi, ChevronDown, ChevronUp, RefreshCw, Loader2, Navigation, Map, List, Route } from 'lucide-react';
 import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -70,20 +71,68 @@ export default function PainelLocalizacao() {
   const [refreshing, setRefreshing] = useState(false);
   const [view, setView] = useState<'map' | 'list'>('map');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [captureInterval, setCaptureInterval] = useState<CaptureIntervalMinutes>(() => getCaptureIntervalMinutes());
 
   const fetchData = async () => {
-    setRefreshing(true);
-    const [locRes, usrRes] = await Promise.all([
-      (supabase as any).from('localizacoes_usuarios').select('*').order('criado_em', { ascending: false }).limit(1000),
-      supabase.from('hierarquia_usuarios').select('id, nome, tipo').eq('ativo', true),
-    ]);
-    setLocations((locRes.data || []) as unknown as LocationRecord[]);
-    setUsuarios(usrRes.data || []);
-    setLoading(false);
-    setRefreshing(false);
+    try {
+      setRefreshing(true);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLocations([]);
+        setUsuarios([]);
+        return;
+      }
+
+      const { data: currentUser } = await supabase
+        .from('hierarquia_usuarios')
+        .select('id, tipo')
+        .eq('auth_user_id', user.id)
+        .eq('ativo', true)
+        .single();
+
+      if (!currentUser) {
+        setLocations([]);
+        setUsuarios([]);
+        return;
+      }
+
+      const isAdmin = currentUser.tipo === 'super_admin' || currentUser.tipo === 'coordenador';
+      const locationQuery = supabase
+        .from('localizacoes_usuarios')
+        .select('*')
+        .order('criado_em', { ascending: false })
+        .limit(1000);
+
+      if (!isAdmin) {
+        locationQuery.eq('usuario_id', currentUser.id);
+      }
+
+      const userQuery = supabase
+        .from('hierarquia_usuarios')
+        .select('id, nome, tipo')
+        .eq('ativo', true);
+
+      if (!isAdmin) {
+        userQuery.eq('id', currentUser.id);
+      }
+
+      const [locRes, usrRes] = await Promise.all([locationQuery, userQuery]);
+
+      setLocations((locRes.data || []) as unknown as LocationRecord[]);
+      setUsuarios(usrRes.data || []);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  const handleCaptureIntervalChange = async (minutes: CaptureIntervalMinutes) => {
+    setCaptureInterval(minutes);
+    await setCaptureIntervalMinutes(minutes);
+  };
 
   const userGroups = useMemo(() => {
     const map: Record<string, LocationRecord[]> = {};
@@ -156,6 +205,18 @@ export default function PainelLocalizacao() {
     return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   };
 
+  const formatDateTime = (iso: string) => {
+    return new Date(iso).toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      timeZone: 'America/Sao_Paulo',
+    });
+  };
+
   const fonteIcon = (fonte: string | null) => {
     if (fonte === 'gps') return <Navigation size={10} className="text-primary" />;
     if (fonte === 'ip' || fonte === 'ip_background') return <Wifi size={10} className="text-muted-foreground" />;
@@ -198,6 +259,28 @@ export default function PainelLocalizacao() {
             className="p-2 rounded-xl bg-muted hover:bg-muted/80 active:scale-95 transition-all">
             <RefreshCw size={16} className={`text-foreground ${refreshing ? 'animate-spin' : ''}`} />
           </button>
+        </div>
+      </div>
+
+      <div className="section-card flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold text-foreground">Intervalo de captura</p>
+          <p className="text-[10px] text-muted-foreground">Escolha em quantos minutos o app tenta salvar nova posição.</p>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {CAPTURE_INTERVALS.map((minutes) => (
+            <button
+              key={minutes}
+              onClick={() => handleCaptureIntervalChange(minutes)}
+              className={`rounded-full border px-3 py-1 text-[10px] font-semibold transition-all active:scale-95 ${
+                captureInterval === minutes
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-border bg-card text-muted-foreground'
+              }`}
+            >
+              {minutes} min
+            </button>
+          ))}
         </div>
       </div>
 
@@ -276,7 +359,7 @@ export default function PainelLocalizacao() {
                       <Popup>
                         <div className="text-xs">
                           <strong>{group.nome}</strong><br />
-                          {new Date(loc.criado_em).toLocaleString('pt-BR')}<br />
+                          {formatDateTime(loc.criado_em)}<br />
                           Fonte: {fonteLabel(loc.fonte)}<br />
                           {loc.precisao && <>Precisão: ±{Math.round(loc.precisao)}m<br /></>}
                           {loc.bateria_nivel !== null && <>Bateria: {loc.bateria_nivel}%</>}
@@ -290,7 +373,7 @@ export default function PainelLocalizacao() {
                       <Popup>
                         <div className="text-xs">
                           <strong>{group.nome}</strong> — Início<br />
-                          {new Date(first.criado_em).toLocaleString('pt-BR')}
+                          {formatDateTime(first.criado_em)}
                         </div>
                       </Popup>
                     </Marker>
@@ -304,7 +387,7 @@ export default function PainelLocalizacao() {
                       <div className="text-xs space-y-0.5">
                         <strong>{group.nome}</strong> <span style={{ color: '#999' }}>({group.tipo})</span><br />
                         📍 Última posição<br />
-                        {new Date(last.criado_em).toLocaleString('pt-BR')}<br />
+                        {formatDateTime(last.criado_em)}<br />
                         Fonte: {fonteLabel(last.fonte)}<br />
                         {last.precisao && <>Precisão: ±{Math.round(last.precisao)}m<br /></>}
                         {last.bateria_nivel !== null && <>🔋 {last.bateria_nivel}%<br /></>}
