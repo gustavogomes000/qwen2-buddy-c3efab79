@@ -106,14 +106,18 @@ export default function TabPerfil() {
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    const [usrRes, supRes, lidRes] = await Promise.all([
-      supabase.from('hierarquia_usuarios').select('id, nome, tipo, criado_em, suplente_id, auth_user_id').eq('ativo', true).order('nome'),
-      supabase.functions.invoke('buscar-suplentes'),
-      supabase.functions.invoke('buscar-liderancas-externo'),
-    ]);
-    setUsuarios((usrRes.data || []) as UsuarioItem[]);
-    if (!supRes.error && supRes.data) setSuplentes(supRes.data);
-    if (!lidRes.error && lidRes.data) setLiderancas(lidRes.data);
+    try {
+      const [usrRes, supRes, lidRes] = await Promise.all([
+        supabase.from('hierarquia_usuarios').select('id, nome, tipo, criado_em, suplente_id, auth_user_id').eq('ativo', true).order('nome'),
+        supabase.functions.invoke('buscar-suplentes').catch(() => ({ data: null, error: true })),
+        supabase.functions.invoke('buscar-liderancas-externo').catch(() => ({ data: null, error: true })),
+      ]);
+      setUsuarios((usrRes.data || []) as UsuarioItem[]);
+      if (!supRes.error && supRes.data) setSuplentes(Array.isArray(supRes.data) ? supRes.data : []);
+      if (!lidRes.error && lidRes.data) setLiderancas(Array.isArray(lidRes.data) ? lidRes.data : []);
+    } catch (err) {
+      console.error('Erro ao carregar dados:', err);
+    }
     setLoading(false);
   }, []);
 
