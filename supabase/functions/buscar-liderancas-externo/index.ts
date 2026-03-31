@@ -23,41 +23,24 @@ Deno.serve(async (req) => {
 
     const externalSupabase = createClient(externalUrl, externalKey);
 
-    // Fetch liderancas and pessoas separately (no FK relationship in external DB)
-    const [lidRes, pesRes] = await Promise.all([
-      externalSupabase
-        .from('liderancas')
-        .select('id, pessoa_id, status, tipo_lideranca, regiao_atuacao, suplente_id')
-        .order('criado_em', { ascending: false }),
-      externalSupabase
-        .from('pessoas')
-        .select('id, nome, telefone, whatsapp'),
-    ]);
+    // First try to get a single row to discover columns
+    const { data: sample, error: sampleErr } = await externalSupabase
+      .from('liderancas')
+      .select('*')
+      .limit(1);
 
-    if (lidRes.error) {
-      console.error('Erro ao buscar lideranças:', lidRes.error);
+    if (sampleErr) {
+      console.error('Erro ao buscar lideranças:', sampleErr);
       return new Response(
-        JSON.stringify({ error: lidRes.error.message }),
+        JSON.stringify({ error: sampleErr.message, columns: null }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Build a map of pessoas by id
-    const pessoasMap = new Map<string, { id: string; nome: string; telefone: string | null; whatsapp: string | null }>();
-    if (pesRes.data) {
-      for (const p of pesRes.data) {
-        pessoasMap.set(p.id, p);
-      }
-    }
-
-    // Join in code
-    const result = (lidRes.data || []).map((l: any) => ({
-      ...l,
-      pessoas: pessoasMap.get(l.pessoa_id) || null,
-    }));
-
+    const columns = sample && sample.length > 0 ? Object.keys(sample[0]) : [];
+    
     return new Response(
-      JSON.stringify(result),
+      JSON.stringify({ columns, sample: sample?.[0] || null }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
