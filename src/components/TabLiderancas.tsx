@@ -475,13 +475,6 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
       </div>
 
 
-      {isAdmin && (
-        <select value={agenteFilter} onChange={e => setAgenteFilter(e.target.value)}
-          className="w-full h-10 px-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none">
-          <option value="">Todos os agentes</option>
-          {agentes.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
-        </select>
-      )}
 
       {isAdmin && (
         <div className="grid grid-cols-3 gap-2">
