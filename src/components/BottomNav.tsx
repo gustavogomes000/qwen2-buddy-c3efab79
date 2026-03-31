@@ -1,4 +1,4 @@
-import { PlusCircle, List, UserCircle, BarChart3, Shield, Users, Network, MapPin, DollarSign, GitBranch } from 'lucide-react';
+import { PlusCircle, List, UserCircle, BarChart3, Shield, Users, Network, MapPin, GitBranch } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
