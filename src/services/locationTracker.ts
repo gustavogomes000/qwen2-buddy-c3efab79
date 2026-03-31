@@ -57,6 +57,8 @@ let cachedUsuarioId: string | null = null;
 let cachedUsuarioIdExpiry = 0;
 let backgroundLocationHandler: ((event: Event) => void) | null = null;
 let visibilityHandler: (() => void) | null = null;
+let lastGeolocationFallbackAt = 0;
+const GEOLOCATION_FALLBACK_COOLDOWN_MS = 20_000;
 
 function isBrowserEnvironment() {
   return typeof window !== 'undefined' && typeof navigator !== 'undefined';
@@ -197,18 +199,21 @@ async function getUsuarioId(forceRefresh = false): Promise<string | null> {
 
     const { data, error } = await supabase
       .from('hierarquia_usuarios')
-      .select('id')
+      .select('id, criado_em')
       .eq('auth_user_id', user.id)
       .neq('ativo', false)
-      .maybeSingle();
+      .order('criado_em', { ascending: false })
+      .limit(1);
 
-    if (error || !data?.id) {
+    const selected = data?.[0]?.id ?? null;
+
+    if (error || !selected) {
       resetCachedUsuarioId();
       console.warn('[locationTracker] usuário sem vínculo ativo para rastreio', error?.message ?? user.id);
       return null;
     }
 
-    cachedUsuarioId = data.id;
+    cachedUsuarioId = selected;
     cachedUsuarioIdExpiry = now + USER_ID_CACHE_TTL_MS;
     return cachedUsuarioId;
   } catch (error) {
@@ -367,8 +372,12 @@ function captureGPS(forcePersist = false) {
         forcePersist,
       );
     },
-    () => {
-      void captureByIP(forcePersist, 'ip');
+    (error) => {
+      const now = Date.now();
+      if (error.code === error.PERMISSION_DENIED || now - lastGeolocationFallbackAt >= GEOLOCATION_FALLBACK_COOLDOWN_MS) {
+        lastGeolocationFallbackAt = now;
+        void captureByIP(forcePersist, 'ip');
+      }
     },
     {
       enableHighAccuracy: true,
@@ -513,6 +522,8 @@ export function startLocationTracking() {
   }
 
   restartCaptureLoop();
+
+  console.info('[locationTracker] rastreio iniciado');
 }
 
 export function stopLocationTracking() {
@@ -534,4 +545,7 @@ export function stopLocationTracking() {
   unregisterVisibilityListener();
   resetCachedUsuarioId();
   resetRuntimeState();
+  lastGeolocationFallbackAt = 0;
+
+  console.info('[locationTracker] rastreio parado');
 }
