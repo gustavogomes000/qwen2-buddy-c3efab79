@@ -353,7 +353,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
         <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Buscar fiscal..." className="w-full h-11 pl-9 pr-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30" />
       </div>
       <p className="text-xs text-muted-foreground">{filtered.length} fiscal{filtered.length !== 1 ? 'is' : ''}</p>
-      {isAdmin && (
+      {tipoUsuario === 'super_admin' && (
         <button onClick={() => exportAllCadastros('fiscal')}
           className="w-full h-9 flex items-center justify-center gap-2 bg-card border border-border rounded-xl text-xs font-medium text-foreground active:scale-[0.97] transition-all">
           <Download size={14} /> Exportar Fiscais (CSV)
