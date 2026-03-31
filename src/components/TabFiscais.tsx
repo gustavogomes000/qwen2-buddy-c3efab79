@@ -4,6 +4,7 @@ import { exportAllCadastros } from '@/lib/exportXlsx';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCPF, cleanCPF, validateCPF } from '@/lib/cpf';
+import { checkCpfDuplicateByUser } from '@/lib/cpfDuplicateCheck';
 import { toast } from '@/hooks/use-toast';
 import StatusBadge from '@/components/StatusBadge';
 
@@ -50,6 +51,7 @@ export default function TabFiscais({ refreshKey, onSaved }: Props) {
   const [pessoaExistenteId, setPessoaExistenteId] = useState<string | null>(null);
   const [cpfStatus, setCpfStatus] = useState<'idle' | 'validando' | 'confirmado'>('idle');
   const [cpfNomePessoa, setCpfNomePessoa] = useState('');
+  const [cpfDuplicado, setCpfDuplicado] = useState<{ isDuplicate: boolean; tipos: string[] }>({ isDuplicate: false, tipos: [] });
   const [validandoCPF, setValidandoCPF] = useState(false);
   const [form, setForm] = useState({ ...emptyForm });
   const [liderancas, setLiderancas] = useState<{ id: string; nome: string }[]>([]);
@@ -89,23 +91,35 @@ export default function TabFiscais({ refreshKey, onSaved }: Props) {
         setPessoaExistenteId(pessoa.id);
         setCpfStatus('confirmado');
         setCpfNomePessoa(pessoa.nome);
-        toast({ title: '✅ Pessoa encontrada!', description: `Dados de ${pessoa.nome} preenchidos` });
-      } else { setCpfStatus('idle'); }
+        if (usuario?.id) {
+          const dup = await checkCpfDuplicateByUser(cpfClean, usuario.id);
+          setCpfDuplicado(dup);
+          if (dup.isDuplicate) {
+            toast({ title: '⚠️ CPF já cadastrado por você', description: `Cadastrado como: ${dup.tipos.join(', ')}`, variant: 'destructive' });
+          } else {
+            toast({ title: '✅ Pessoa encontrada!', description: `Dados de ${pessoa.nome} preenchidos` });
+          }
+        } else {
+          toast({ title: '✅ Pessoa encontrada!', description: `Dados de ${pessoa.nome} preenchidos` });
+        }
+      } else { setCpfStatus('idle'); setCpfDuplicado({ isDuplicate: false, tipos: [] }); }
     } catch (err) { console.error(err); }
     finally { setValidandoCPF(false); }
-  }, [validandoCPF]);
+  }, [validandoCPF, usuario?.id]);
 
   const handleCPFChange = (value: string) => {
     const cleaned = cleanCPF(value);
     update('cpf', cleaned);
     setCpfStatus('idle');
     setPessoaExistenteId(null);
+    setCpfDuplicado({ isDuplicate: false, tipos: [] });
     if (cpfTimeoutRef.current) clearTimeout(cpfTimeoutRef.current);
     if (cleaned.length === 11) cpfTimeoutRef.current = setTimeout(() => validarCPF(cleaned), 500);
   };
 
   const handleSave = async () => {
     if (!form.nome.trim()) { toast({ title: 'Preencha o nome', variant: 'destructive' }); return; }
+    if (cpfDuplicado.isDuplicate) { toast({ title: '❌ CPF já cadastrado por você', description: `Você já cadastrou este CPF como: ${cpfDuplicado.tipos.join(', ')}`, variant: 'destructive' }); return; }
     setSaving(true);
     try {
       let pessoaId: string;
@@ -217,7 +231,13 @@ export default function TabFiscais({ refreshKey, onSaved }: Props) {
               CPF {cpfStatus === 'validando' && <Loader2 size={12} className="animate-spin" />}{cpfStatus === 'confirmado' && <CheckCircle2 size={12} className="text-emerald-500" />}
             </label>
             <input type="text" inputMode="numeric" value={formatCPF(form.cpf)} onChange={e => handleCPFChange(e.target.value)} placeholder="000.000.000-00" className={`${inputCls} ${cpfBorderCls}`} maxLength={14} />
-            {cpfStatus === 'confirmado' && cpfNomePessoa && <p className="text-xs text-emerald-600 font-medium">✅ {cpfNomePessoa}</p>}
+            {cpfStatus === 'confirmado' && cpfNomePessoa && !cpfDuplicado.isDuplicate && <p className="text-xs text-emerald-600 font-medium">✅ {cpfNomePessoa}</p>}
+            {cpfDuplicado.isDuplicate && (
+              <div className="p-2 rounded-lg bg-destructive/10 border border-destructive/30">
+                <p className="text-xs font-semibold text-destructive">⚠️ Você já cadastrou este CPF como: {cpfDuplicado.tipos.join(', ')}</p>
+                <p className="text-[10px] text-destructive/80 mt-0.5">Não é possível cadastrar o mesmo CPF duas vezes pelo mesmo usuário.</p>
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1"><label className="text-xs font-medium text-muted-foreground">Telefone</label><input type="tel" value={form.telefone} onChange={e => update('telefone', e.target.value)} className={inputCls} /></div>
