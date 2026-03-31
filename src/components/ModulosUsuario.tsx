@@ -25,7 +25,7 @@ export default function ModulosUsuario({ usuarioId, onClose }: Props) {
   }, [usuarioId]);
 
   const fetchModulos = async () => {
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from('usuario_modulos')
       .select('modulo')
       .eq('usuario_id', usuarioId);
