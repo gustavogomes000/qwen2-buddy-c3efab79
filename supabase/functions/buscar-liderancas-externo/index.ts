@@ -23,24 +23,31 @@ Deno.serve(async (req) => {
 
     const externalSupabase = createClient(externalUrl, externalKey);
 
-    // First try to get a single row to discover columns
-    const { data: sample, error: sampleErr } = await externalSupabase
+    const { data, error } = await externalSupabase
       .from('liderancas')
-      .select('*')
-      .limit(1);
+      .select('id, nome, cpf, regiao, whatsapp, rede_social, ligacao_politica, created_at')
+      .order('nome');
 
-    if (sampleErr) {
-      console.error('Erro ao buscar lideranças:', sampleErr);
+    if (error) {
+      console.error('Erro ao buscar lideranças externas:', error);
       return new Response(
-        JSON.stringify({ error: sampleErr.message, columns: null }),
+        JSON.stringify({ error: error.message }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const columns = sample && sample.length > 0 ? Object.keys(sample[0]) : [];
-    
+    // Map to a consistent format for the frontend
+    const result = (data || []).map((l: any) => ({
+      id: l.id,
+      nome: l.nome,
+      regiao_atuacao: l.regiao || null,
+      whatsapp: l.whatsapp || null,
+      rede_social: l.rede_social || null,
+      ligacao_politica: l.ligacao_politica || null,
+    }));
+
     return new Response(
-      JSON.stringify({ columns, sample: sample?.[0] || null }),
+      JSON.stringify(result),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
