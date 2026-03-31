@@ -93,9 +93,16 @@ function formatDateTime(iso: string) {
 function formatRelative(iso: string) {
   const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
   if (diff < 1) return 'Agora';
-  if (diff < 60) return `${diff}min`;
-  if (diff < 1440) return `${Math.floor(diff / 60)}h`;
+  if (diff < 60) return `${diff}min atrás`;
+  if (diff < 1440) return `${Math.floor(diff / 60)}h atrás`;
   return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+}
+
+function getOnlineStatus(iso: string): { label: string; color: string; dotClass: string } {
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (diff < 15) return { label: 'Online', color: 'text-emerald-600', dotClass: 'bg-emerald-500 animate-pulse' };
+  if (diff < 60) return { label: 'Recente', color: 'text-amber-600', dotClass: 'bg-amber-500' };
+  return { label: 'Offline', color: 'text-muted-foreground', dotClass: 'bg-muted-foreground/40' };
 }
 
 function mapsLink(lat: number, lng: number) {
@@ -337,40 +344,48 @@ export default function PainelLocalizacao() {
             return (
               <div key={group.usuario_id} className="section-card !p-0 overflow-hidden">
                 {/* User header */}
-                <button onClick={() => setExpandedUser(isExpanded ? null : group.usuario_id)}
-                  className="w-full flex items-center gap-3 p-3 text-left active:bg-muted/50 transition-all">
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: group.color + '20' }}>
-                    <span className="text-sm font-bold" style={{ color: group.color }}>{group.nome.charAt(0).toUpperCase()}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold text-foreground truncate">{group.nome}</p>
-                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{group.tipo}</span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <Clock size={10} className="text-muted-foreground" />
-                      <span className="text-[10px] text-muted-foreground">{formatRelative(last.criado_em)}</span>
-                      {fonteIcon(last.fonte)}
-                      {last.bateria_nivel !== null && (
-                        <>
-                          <Battery size={10} className={last.bateria_nivel > 20 ? 'text-emerald-400' : 'text-red-400'} />
-                          <span className="text-[10px] text-muted-foreground">{last.bateria_nivel}%</span>
-                        </>
-                      )}
-                    </div>
-                    {lastAddr && (
-                      <p className="text-[9px] text-muted-foreground mt-0.5 truncate">{lastAddr}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <a href={mapsLink(last.latitude, last.longitude)} target="_blank" rel="noreferrer"
-                      onClick={e => e.stopPropagation()}
-                      className="p-1.5 rounded-lg bg-primary/10 text-primary active:scale-95">
-                      <MapPin size={14} />
-                    </a>
-                    {isExpanded ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
-                  </div>
-                </button>
+                {(() => {
+                  const status = getOnlineStatus(last.criado_em);
+                  return (
+                    <button onClick={() => setExpandedUser(isExpanded ? null : group.usuario_id)}
+                      className="w-full flex items-center gap-3 p-3 text-left active:bg-muted/50 transition-all">
+                      <div className="relative">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: group.color + '20' }}>
+                          <span className="text-sm font-bold" style={{ color: group.color }}>{group.nome.charAt(0).toUpperCase()}</span>
+                        </div>
+                        {/* Online indicator dot */}
+                        <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-card ${status.dotClass}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-foreground truncate">{group.nome}</p>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{group.tipo}</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className={`text-[10px] font-semibold ${status.color}`}>{status.label}</span>
+                          <span className="text-[10px] text-muted-foreground">· {formatRelative(last.criado_em)}</span>
+                          {last.bateria_nivel !== null && (
+                            <>
+                              <Battery size={10} className={last.bateria_nivel > 20 ? 'text-emerald-400' : 'text-red-400'} />
+                              <span className="text-[10px] text-muted-foreground">{last.bateria_nivel}%</span>
+                            </>
+                          )}
+                        </div>
+                        {lastAddr && (
+                          <p className="text-[9px] text-muted-foreground mt-0.5 truncate">📍 {lastAddr}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <a href={mapsLink(last.latitude, last.longitude)} target="_blank" rel="noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          className="p-1.5 rounded-lg bg-primary/10 text-primary active:scale-95">
+                          <MapPin size={14} />
+                        </a>
+                        {isExpanded ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+                      </div>
+                    </button>
+                  );
+                })()}
 
                 {/* Expanded location list */}
                 {isExpanded && (
