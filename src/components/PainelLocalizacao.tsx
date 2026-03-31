@@ -1,58 +1,41 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { MapContainer, TileLayer, Polyline, CircleMarker, Popup, useMap } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
 import { supabase } from '@/integrations/supabase/client';
-import { CAPTURE_INTERVALS, getCaptureIntervalMinutes, getLiveTrackingEventName, setCaptureIntervalMinutes, type CaptureIntervalMinutes, type LiveTrackingPoint } from '@/services/locationTracker';
-import { MapPin, Clock, Battery, Wifi, ChevronDown, ChevronUp, RefreshCw, Loader2, Navigation, Map, List, Route } from 'lucide-react';
+import {
+  CAPTURE_INTERVALS,
+  getCaptureIntervalMinutes,
+  getLiveTrackingEventName,
+  setCaptureIntervalMinutes,
+  type CaptureIntervalMinutes,
+  type LiveTrackingPoint,
+} from '@/services/locationTracker';
+import {
+  MapPin,
+  Clock,
+  Battery,
+  Wifi,
+  ChevronDown,
+  ChevronUp,
+  RefreshCw,
+  Loader2,
+  Navigation,
+  Map,
+  List,
+  Route,
+  AlertTriangle,
+} from 'lucide-react';
 
-// Lazy-load Leaflet and react-leaflet to prevent top-level crashes
-let leafletLib: any = null;
-let reactLeafletModule: any = null;
-let leafletReady = false;
-
-async function ensureLeaflet() {
-  if (leafletReady) return;
-  try {
-    const [lMod, rlMod] = await Promise.all([
-      import('leaflet'),
-      import('react-leaflet'),
-    ]);
-    await import('leaflet/dist/leaflet.css');
-    leafletLib = lMod.default ?? lMod;
-    reactLeafletModule = rlMod;
-    delete (leafletLib.Icon.Default.prototype as any)._getIconUrl;
-    leafletLib.Icon.Default.mergeOptions({
-      iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-      iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-    });
-    leafletReady = true;
-  } catch (err) {
-    console.error('[PainelLocalizacao] Failed to load leaflet', err);
-  }
-}
-
-const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
-
-function createUserIcon(initial: string, color: string) {
-  if (!leafletLib) return undefined as any;
-  const L = leafletLib;
-  return L.divIcon({
-    className: '',
-    html: `<div style="background:${color};color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3)">${initial}</div>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
-  });
-}
-
-function createDotIcon(color: string) {
-  if (!leafletLib) return undefined as any;
-  const L = leafletLib;
-  return L.divIcon({
-    className: '',
-    html: `<div style="background:${color};width:8px;height:8px;border-radius:50%;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.3)"></div>`,
-    iconSize: [8, 8],
-    iconAnchor: [4, 4],
-  });
-}
+const COLORS = [
+  'hsl(var(--chart-1))',
+  'hsl(var(--chart-2))',
+  'hsl(var(--chart-3))',
+  'hsl(var(--chart-4))',
+  'hsl(var(--chart-5))',
+  'hsl(var(--primary))',
+  'hsl(var(--accent))',
+  'hsl(var(--secondary-foreground))',
+];
 
 interface LocationRecord {
   id: string;
@@ -76,11 +59,14 @@ interface UserLocationGroup {
   color: string;
 }
 
-function FitBounds({ bounds }: { bounds: any | null }) {
-  const map = reactLeafletModule!.useMap();
+function FitBounds({ points }: { points: Array<[number, number]> }) {
+  const map = useMap();
+
   useEffect(() => {
-    if (bounds) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
-  }, [bounds, map]);
+    if (!points.length) return;
+    map.fitBounds(points, { padding: [30, 30], maxZoom: 15 });
+  }, [points, map]);
+
   return null;
 }
 
@@ -107,27 +93,55 @@ function getDateFilterISO(filter: DateFilter): string | null {
 
 const LIVE_POINT_ID_PREFIX = 'live-';
 
-function buildLiveLocationRecord(point: LiveTrackingPoint): LocationRecord | null {
-  if (!point.usuario_id) return null;
+function isValidCoordinate(lat: number, lng: number) {
+  return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+}
+
+function normalizeLocationRecord(raw: unknown): LocationRecord | null {
+  if (!raw || typeof raw !== 'object') return null;
+
+  const source = raw as Record<string, unknown>;
+  const latitude = Number(source.latitude);
+  const longitude = Number(source.longitude);
+  if (!isValidCoordinate(latitude, longitude)) return null;
+
+  const usuarioId = typeof source.usuario_id === 'string' ? source.usuario_id : '';
+  if (!usuarioId) return null;
+
+  const createdAtValue = typeof source.criado_em === 'string' ? source.criado_em : new Date().toISOString();
+  const createdAt = Number.isNaN(new Date(createdAtValue).getTime()) ? new Date().toISOString() : createdAtValue;
+
   return {
-    id: `${LIVE_POINT_ID_PREFIX}${point.usuario_id}`,
-    usuario_id: point.usuario_id,
-    latitude: point.latitude,
-    longitude: point.longitude,
-    precisao: point.precisao,
-    fonte: point.fonte,
-    bateria_nivel: point.bateria_nivel,
-    em_movimento: point.em_movimento,
-    criado_em: point.criado_em,
-    pending: point.pending,
+    id: typeof source.id === 'string' ? source.id : `${LIVE_POINT_ID_PREFIX}${usuarioId}-${createdAt}`,
+    usuario_id: usuarioId,
+    latitude,
+    longitude,
+    precisao: source.precisao == null ? null : Number(source.precisao),
+    fonte: source.fonte == null ? null : String(source.fonte),
+    bateria_nivel: source.bateria_nivel == null ? null : Number(source.bateria_nivel),
+    em_movimento: Boolean(source.em_movimento),
+    criado_em: createdAt,
+    pending: Boolean(source.pending),
   };
+}
+
+function buildLiveLocationRecord(detail: unknown): LocationRecord | null {
+  if (!detail || typeof detail !== 'object') return null;
+
+  const point = detail as Partial<LiveTrackingPoint>;
+  if (!point.usuario_id) return null;
+
+  return normalizeLocationRecord({
+    ...point,
+    id: `${LIVE_POINT_ID_PREFIX}${point.usuario_id}`,
+  });
 }
 
 export default function PainelLocalizacao() {
   const [locations, setLocations] = useState<LocationRecord[]>([]);
   const [usuarios, setUsuarios] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [mapReady, setMapReady] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [view, setView] = useState<'map' | 'list'>('map');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -135,13 +149,10 @@ export default function PainelLocalizacao() {
   const [dateFilter, setDateFilter] = useState<DateFilter>('24h');
   const hasFetched = useRef(false);
 
-  // Lazy-load leaflet on mount
-  useEffect(() => {
-    ensureLeaflet().then(() => setMapReady(true));
-  }, []);
-
   const fetchData = useCallback(async (filter?: DateFilter) => {
     setLoading(true);
+    setErrorMessage(null);
+
     try {
       const activeFilter = filter ?? dateFilter;
       const { data: { user } } = await supabase.auth.getUser();
@@ -172,8 +183,21 @@ export default function PainelLocalizacao() {
       if (!isAdmin) userQuery.eq('id', currentUser.id);
 
       const [locRes, usrRes] = await Promise.all([locationQuery, userQuery]);
-      setLocations((locRes.data || []) as unknown as LocationRecord[]);
+
+      if (locRes.error) throw locRes.error;
+      if (usrRes.error) throw usrRes.error;
+
+      const normalized = (locRes.data || [])
+        .map((item) => normalizeLocationRecord(item))
+        .filter((item): item is LocationRecord => item !== null)
+        .sort((a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime())
+        .slice(0, 300);
+
+      setLocations(normalized);
       setUsuarios(usrRes.data || []);
+    } catch (error) {
+      console.error('[PainelLocalizacao] erro ao carregar dados', error);
+      setErrorMessage('Não foi possível carregar o rastreamento agora.');
     } finally {
       setLoading(false);
     }
@@ -190,14 +214,15 @@ export default function PainelLocalizacao() {
     const eventName = getLiveTrackingEventName();
 
     const handleLiveTracking = (event: Event) => {
-      const point = buildLiveLocationRecord((event as CustomEvent<LiveTrackingPoint>).detail);
+      if (!(event instanceof CustomEvent)) return;
+      const point = buildLiveLocationRecord(event.detail);
       if (!point) return;
 
       setLocations((prev) => {
-        const withoutSameUser = prev.filter((item) => item.usuario_id !== point.usuario_id || !item.pending);
-        return [point, ...withoutSameUser].sort(
-          (a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime()
-        ).slice(0, 300);
+        const withoutPending = prev.filter((item) => item.usuario_id !== point.usuario_id || !item.pending);
+        return [point, ...withoutPending]
+          .sort((a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime())
+          .slice(0, 300);
       });
     };
 
@@ -224,7 +249,7 @@ export default function PainelLocalizacao() {
 
     return Object.entries(map).map(([uid, locs], i) => {
       const user = usuarios.find(u => u.id === uid);
-      const sorted = locs.sort((a, b) => new Date(a.criado_em).getTime() - new Date(b.criado_em).getTime());
+      const sorted = [...locs].sort((a, b) => new Date(a.criado_em).getTime() - new Date(b.criado_em).getTime());
       return {
         usuario_id: uid,
         nome: user?.nome || 'Desconhecido',
@@ -238,26 +263,27 @@ export default function PainelLocalizacao() {
 
   const displayGroups = useMemo(() => {
     const filtered = selectedUserId ? userGroups.filter(g => g.usuario_id === selectedUserId) : userGroups;
+
     return filtered.flatMap(g => {
-      const valid = g.locations.filter(l =>
-        Number.isFinite(Number(l.latitude)) && Number.isFinite(Number(l.longitude)) &&
-        Math.abs(Number(l.latitude)) <= 90 && Math.abs(Number(l.longitude)) <= 180
-      ).map(l => ({ ...l, latitude: Number(l.latitude), longitude: Number(l.longitude) }));
+      const valid = g.locations
+        .filter((l) => isValidCoordinate(Number(l.latitude), Number(l.longitude)))
+        .map((l) => ({ ...l, latitude: Number(l.latitude), longitude: Number(l.longitude) }));
+
       if (!valid.length) return [];
+
       const sampled = valid.length <= 150 ? valid : valid.filter((_, i) => {
         const step = Math.ceil(valid.length / 150);
         return i === 0 || i === valid.length - 1 || i % step === 0;
       });
+
       return [{ ...g, locations: sampled, lastLocation: valid[valid.length - 1] }];
     });
   }, [userGroups, selectedUserId]);
 
-  const mapBounds = useMemo(() => {
-    if (!leafletLib) return null;
-    const L = leafletLib;
-    const pts = displayGroups.flatMap(g => g.locations.map(l => [l.latitude, l.longitude] as [number, number]));
-    return pts.length ? L.latLngBounds(pts) : null;
-  }, [displayGroups]);
+  const mapPoints = useMemo(
+    () => displayGroups.flatMap((g) => g.locations.map((l) => [l.latitude, l.longitude] as [number, number])),
+    [displayGroups],
+  );
 
   const formatTime = (iso: string) => {
     const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
@@ -349,7 +375,15 @@ export default function PainelLocalizacao() {
         </div>
       )}
 
-      {/* Loading overlay on data area */}
+      {errorMessage && (
+        <div className="section-card border-destructive/30 bg-destructive/5">
+          <div className="flex items-start gap-2">
+            <AlertTriangle size={14} className="text-destructive mt-0.5" />
+            <p className="text-xs text-foreground">{errorMessage}</p>
+          </div>
+        </div>
+      )}
+
       {loading && locations.length === 0 ? (
         <div className="flex justify-center py-8">
           <Loader2 size={24} className="animate-spin text-primary" />
@@ -359,10 +393,7 @@ export default function PainelLocalizacao() {
           <MapPin size={32} className="mx-auto text-muted-foreground mb-2" />
           <p className="text-sm text-muted-foreground">Nenhuma localização registrada</p>
         </div>
-      ) : view === 'map' && mapReady && reactLeafletModule ? (
-        (() => {
-          const { MapContainer, TileLayer, Polyline, Marker, Popup } = reactLeafletModule!;
-          return (
+      ) : view === 'map' ? (
         <div className="rounded-2xl overflow-hidden border border-border relative" style={{ height: 400 }}>
           {loading && (
             <div className="absolute inset-0 z-[1000] bg-background/50 flex items-center justify-center">
@@ -374,43 +405,79 @@ export default function PainelLocalizacao() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <FitBounds bounds={mapBounds} />
+            <FitBounds points={mapPoints} />
             {displayGroups.map(group => {
               const path = group.locations.map(l => [l.latitude, l.longitude] as [number, number]);
               if (!path.length) return null;
               const last = group.locations[group.locations.length - 1];
+              const sampled = group.locations.slice(1, -1).filter((_, i) => i % 3 === 0);
+
               return (
                 <React.Fragment key={group.usuario_id}>
                   {path.length > 1 && (
                     <Polyline positions={path} pathOptions={{ color: group.color, weight: 3, opacity: 0.7, dashArray: '8, 6' }} />
                   )}
-                  {group.locations.slice(1, -1).filter((_, i) => i % 3 === 0).map(loc => (
-                    <Marker key={loc.id} position={[loc.latitude, loc.longitude]} icon={createDotIcon(group.color)}>
-                      <Popup><div className="text-xs"><strong>{group.nome}</strong><br/>{formatDateTime(loc.criado_em)}<br/>Fonte: {fonteLabel(loc.fonte)}</div></Popup>
-                    </Marker>
+                  {sampled.map((loc) => (
+                    <CircleMarker
+                      key={loc.id}
+                      center={[loc.latitude, loc.longitude]}
+                      radius={4}
+                      pathOptions={{ color: group.color, fillColor: group.color, fillOpacity: 0.8, weight: 1 }}
+                    >
+                      <Popup>
+                        <div className="text-xs">
+                          <strong>{group.nome}</strong>
+                          <br />
+                          {formatDateTime(loc.criado_em)}
+                          <br />
+                          Fonte: {fonteLabel(loc.fonte)}
+                        </div>
+                      </Popup>
+                    </CircleMarker>
                   ))}
-                  <Marker position={[last.latitude, last.longitude]} icon={createUserIcon(group.nome.charAt(0).toUpperCase(), group.color)}>
+                  <CircleMarker
+                    center={[last.latitude, last.longitude]}
+                    radius={8}
+                    pathOptions={{ color: group.color, fillColor: group.color, fillOpacity: 1, weight: 3 }}
+                  >
                     <Popup>
                       <div className="text-xs space-y-0.5">
-                        <strong>{group.nome}</strong> <span style={{ color: '#999' }}>({group.tipo})</span><br/>
-                        📍 Última posição<br/>{formatDateTime(last.criado_em)}<br/>
-                        Fonte: {fonteLabel(last.fonte)}<br/>
-                        {last.precisao && <>Precisão: ±{Math.round(last.precisao)}m<br/></>}
-                        {last.bateria_nivel !== null && <>🔋 {last.bateria_nivel}%<br/></>}
-                        <a href={`https://www.google.com/maps?q=${last.latitude},${last.longitude}`} target="_blank" rel="noreferrer" style={{ color: '#3b82f6' }}>Google Maps</a>
+                        <strong>{group.nome}</strong>{' '}
+                        <span className="text-muted-foreground">({group.tipo})</span>
+                        <br />
+                        📍 Última posição
+                        <br />
+                        {formatDateTime(last.criado_em)}
+                        <br />
+                        Fonte: {fonteLabel(last.fonte)}
+                        <br />
+                        {last.precisao && (
+                          <>
+                            Precisão: ±{Math.round(last.precisao)}m
+                            <br />
+                          </>
+                        )}
+                        {last.bateria_nivel !== null && (
+                          <>
+                            🔋 {last.bateria_nivel}%
+                            <br />
+                          </>
+                        )}
+                        <a
+                          href={`https://www.google.com/maps?q=${last.latitude},${last.longitude}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-primary underline"
+                        >
+                          Google Maps
+                        </a>
                       </div>
                     </Popup>
-                  </Marker>
+                  </CircleMarker>
                 </React.Fragment>
               );
             })}
           </MapContainer>
-        </div>
-          );
-        })()
-      ) : view === 'map' && !mapReady ? (
-        <div className="flex justify-center py-8">
-          <Loader2 size={24} className="animate-spin text-primary" />
         </div>
       ) : (
         <div className="space-y-2">
