@@ -63,6 +63,27 @@ function FitBounds({ bounds }: { bounds: L.LatLngBoundsExpression | null }) {
   return null;
 }
 
+type DateFilter = '24h' | '48h' | '7d' | '30d' | 'all';
+
+const DATE_FILTER_OPTIONS: { id: DateFilter; label: string }[] = [
+  { id: '24h', label: '24h' },
+  { id: '48h', label: '48h' },
+  { id: '7d', label: '7 dias' },
+  { id: '30d', label: '30 dias' },
+  { id: 'all', label: 'Tudo' },
+];
+
+function getDateFilterISO(filter: DateFilter): string | null {
+  const now = new Date();
+  switch (filter) {
+    case '24h': return new Date(now.getTime() - 24 * 60 * 60_000).toISOString();
+    case '48h': return new Date(now.getTime() - 48 * 60 * 60_000).toISOString();
+    case '7d': return new Date(now.getTime() - 7 * 24 * 60 * 60_000).toISOString();
+    case '30d': return new Date(now.getTime() - 30 * 24 * 60 * 60_000).toISOString();
+    default: return null;
+  }
+}
+
 export default function PainelLocalizacao() {
   const [locations, setLocations] = useState<LocationRecord[]>([]);
   const [usuarios, setUsuarios] = useState<any[]>([]);
@@ -72,17 +93,15 @@ export default function PainelLocalizacao() {
   const [view, setView] = useState<'map' | 'list'>('map');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [captureInterval, setCaptureInterval] = useState<CaptureIntervalMinutes>(() => getCaptureIntervalMinutes());
+  const [dateFilter, setDateFilter] = useState<DateFilter>('24h');
 
-  const fetchData = async () => {
+  const fetchData = async (filter?: DateFilter) => {
     try {
       setRefreshing(true);
+      const activeFilter = filter ?? dateFilter;
 
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setLocations([]);
-        setUsuarios([]);
-        return;
-      }
+      if (!user) { setLocations([]); setUsuarios([]); return; }
 
       const { data: currentUser } = await supabase
         .from('hierarquia_usuarios')
@@ -91,40 +110,35 @@ export default function PainelLocalizacao() {
         .eq('ativo', true)
         .single();
 
-      if (!currentUser) {
-        setLocations([]);
-        setUsuarios([]);
-        return;
-      }
+      if (!currentUser) { setLocations([]); setUsuarios([]); return; }
 
       const isAdmin = currentUser.tipo === 'super_admin' || currentUser.tipo === 'coordenador';
-      const locationQuery = supabase
+      
+      let locationQuery = supabase
         .from('localizacoes_usuarios')
         .select('*')
         .order('criado_em', { ascending: false })
-        .limit(1000);
+        .limit(500);
 
-      if (!isAdmin) {
-        locationQuery.eq('usuario_id', currentUser.id);
-      }
+      const since = getDateFilterISO(activeFilter);
+      if (since) locationQuery = locationQuery.gte('criado_em', since);
+      if (!isAdmin) locationQuery = locationQuery.eq('usuario_id', currentUser.id);
 
-      const userQuery = supabase
-        .from('hierarquia_usuarios')
-        .select('id, nome, tipo')
-        .eq('ativo', true);
-
-      if (!isAdmin) {
-        userQuery.eq('id', currentUser.id);
-      }
+      const userQuery = supabase.from('hierarquia_usuarios').select('id, nome, tipo').eq('ativo', true);
+      if (!isAdmin) userQuery.eq('id', currentUser.id);
 
       const [locRes, usrRes] = await Promise.all([locationQuery, userQuery]);
-
       setLocations((locRes.data || []) as unknown as LocationRecord[]);
       setUsuarios(usrRes.data || []);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
+  };
+
+  const handleDateFilterChange = (f: DateFilter) => {
+    setDateFilter(f);
+    fetchData(f);
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -255,7 +269,7 @@ export default function PainelLocalizacao() {
             className="p-2 rounded-xl bg-muted hover:bg-muted/80 active:scale-95 transition-all">
             {view === 'map' ? <List size={16} className="text-foreground" /> : <Map size={16} className="text-foreground" />}
           </button>
-          <button onClick={fetchData} disabled={refreshing}
+          <button onClick={() => fetchData()} disabled={refreshing}
             className="p-2 rounded-xl bg-muted hover:bg-muted/80 active:scale-95 transition-all">
             <RefreshCw size={16} className={`text-foreground ${refreshing ? 'animate-spin' : ''}`} />
           </button>
@@ -282,6 +296,21 @@ export default function PainelLocalizacao() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Date range filter */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+        {DATE_FILTER_OPTIONS.map(opt => (
+          <button
+            key={opt.id}
+            onClick={() => handleDateFilterChange(opt.id)}
+            className={`shrink-0 text-[10px] px-2.5 py-1 rounded-full border font-semibold transition-all active:scale-95 ${
+              dateFilter === opt.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
       </div>
 
       {/* User filter chips */}

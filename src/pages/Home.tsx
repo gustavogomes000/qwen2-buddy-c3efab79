@@ -2,11 +2,11 @@ import { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import BottomNav, { type TabId } from '@/components/BottomNav';
 import TabCadastrar from '@/components/TabCadastrar';
-import TabFiscais from '@/components/TabFiscais';
-import TabEleitores from '@/components/TabEleitores';
 import TabCadastros from '@/components/TabCadastros';
 import TabRede from '@/components/TabRede';
 import TabPerfil from '@/components/TabPerfil';
+import TabHierarquia from '@/components/TabHierarquia';
+import TabPagamentos from '@/components/TabPagamentos';
 import PainelLocalizacao from '@/components/PainelLocalizacao';
 
 export default function Home() {
@@ -26,19 +26,16 @@ export default function Home() {
     if (activeTab === 'liderancas') setActiveTab('cadastros');
   };
 
-  const getTitle = () => {
-    if (activeTab === 'liderancas') {
-      if (tipoUsuario === 'fiscal') return 'Cadastrar Eleitor';
-      if (tipoUsuario === 'lideranca') return 'Cadastrar Fiscal';
-      return 'Nova Liderança';
-    }
-    if (activeTab === 'fiscais') return isAdmin ? 'Todos os Fiscais' : 'Meus Fiscais';
-    if (activeTab === 'eleitores') return isAdmin ? 'Todos os Eleitores' : 'Meus Eleitores';
-    if (activeTab === 'cadastros') return isAdmin ? 'Todos os Cadastros' : 'Meus Cadastros';
-    if (activeTab === 'rede') return 'Rede por Suplente';
-    if (activeTab === 'rastreamento') return 'Rastreamento';
-    if (activeTab === 'perfil') return 'Perfil';
-    return '';
+  const titles: Record<TabId, string> = {
+    liderancas: tipoUsuario === 'fiscal' ? 'Cadastrar Eleitor' : tipoUsuario === 'lideranca' ? 'Cadastrar Fiscal' : 'Novo Cadastro',
+    fiscais: isAdmin ? 'Todos os Fiscais' : 'Meus Fiscais',
+    eleitores: isAdmin ? 'Todos os Eleitores' : 'Meus Eleitores',
+    cadastros: isAdmin ? 'Todos os Cadastros' : 'Meus Cadastros',
+    rede: 'Rede por Suplente',
+    hierarquia: 'Hierarquia da Rede',
+    pagamentos: 'Pagamentos',
+    rastreamento: 'Rastreamento',
+    perfil: 'Perfil',
   };
 
   return (
@@ -47,7 +44,7 @@ export default function Home() {
 
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border shrink-0">
         <div className="max-w-[672px] mx-auto px-4 py-3">
-          <h1 className="text-xl font-bold text-foreground">{getTitle()}</h1>
+          <h1 className="text-xl font-bold text-foreground">{titles[activeTab] || ''}</h1>
           <p className="text-[10px] text-muted-foreground mt-0.5">Rede política – Dra. Fernanda Sarelli</p>
         </div>
       </header>
@@ -55,10 +52,10 @@ export default function Home() {
       <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain">
         <div className="max-w-[672px] mx-auto px-4 py-4 animate-in">
           {activeTab === 'liderancas' && <TabCadastrar onSaved={handleSaved} />}
-          {activeTab === 'fiscais' && <TabFiscais refreshKey={refreshKey} onSaved={() => setRefreshKey(k => k + 1)} />}
-          {activeTab === 'eleitores' && <TabEleitores refreshKey={refreshKey} onSaved={() => setRefreshKey(k => k + 1)} />}
           {activeTab === 'cadastros' && <TabCadastros refreshKey={refreshKey} onSaved={() => setRefreshKey(k => k + 1)} />}
           {activeTab === 'rede' && <TabRede />}
+          {activeTab === 'hierarquia' && <TabHierarquia />}
+          {activeTab === 'pagamentos' && <TabPagamentos />}
           {activeTab === 'rastreamento' && <PainelLocalizacao />}
           {activeTab === 'perfil' && <TabPerfil />}
         </div>
