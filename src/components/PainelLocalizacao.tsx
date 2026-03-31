@@ -1,6 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Polyline, CircleMarker, Popup, useMap } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
+import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   CAPTURE_INTERVALS,
@@ -26,16 +24,10 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 
-const COLORS = [
-  'hsl(var(--chart-1))',
-  'hsl(var(--chart-2))',
-  'hsl(var(--chart-3))',
-  'hsl(var(--chart-4))',
-  'hsl(var(--chart-5))',
-  'hsl(var(--primary))',
-  'hsl(var(--accent))',
-  'hsl(var(--secondary-foreground))',
-];
+// Lazy load the map to isolate leaflet from crashing the app
+const TrackingMap = React.lazy(() => import('./TrackingMap'));
+
+const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
 interface LocationRecord {
   id: string;
@@ -59,17 +51,6 @@ interface UserLocationGroup {
   color: string;
 }
 
-function FitBounds({ points }: { points: Array<[number, number]> }) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!points.length) return;
-    map.fitBounds(points, { padding: [30, 30], maxZoom: 15 });
-  }, [points, map]);
-
-  return null;
-}
-
 type DateFilter = '24h' | '48h' | '7d' | '30d' | 'all';
 
 const DATE_FILTER_OPTIONS: { id: DateFilter; label: string }[] = [
@@ -91,8 +72,6 @@ function getDateFilterISO(filter: DateFilter): string | null {
   }
 }
 
-const LIVE_POINT_ID_PREFIX = 'live-';
-
 function isValidCoordinate(lat: number, lng: number) {
   return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
 }
@@ -112,7 +91,7 @@ function normalizeLocationRecord(raw: unknown): LocationRecord | null {
   const createdAt = Number.isNaN(new Date(createdAtValue).getTime()) ? new Date().toISOString() : createdAtValue;
 
   return {
-    id: typeof source.id === 'string' ? source.id : `${LIVE_POINT_ID_PREFIX}${usuarioId}-${createdAt}`,
+    id: typeof source.id === 'string' ? source.id : `live-${usuarioId}-${createdAt}`,
     usuario_id: usuarioId,
     latitude,
     longitude,
@@ -127,14 +106,33 @@ function normalizeLocationRecord(raw: unknown): LocationRecord | null {
 
 function buildLiveLocationRecord(detail: unknown): LocationRecord | null {
   if (!detail || typeof detail !== 'object') return null;
-
   const point = detail as Partial<LiveTrackingPoint>;
   if (!point.usuario_id) return null;
+  return normalizeLocationRecord({ ...point, id: `live-${point.usuario_id}` });
+}
 
-  return normalizeLocationRecord({
-    ...point,
-    id: `${LIVE_POINT_ID_PREFIX}${point.usuario_id}`,
-  });
+// Error boundary to catch any leaflet/map crash
+class MapErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; fallback: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error('[TrackingMap] Erro ao renderizar mapa:', error.message);
+  }
+
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
 }
 
 export default function PainelLocalizacao() {
@@ -143,7 +141,7 @@ export default function PainelLocalizacao() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
-  const [view, setView] = useState<'map' | 'list'>('map');
+  const [view, setView] = useState<'map' | 'list'>('list');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [captureInterval, setCaptureInterval] = useState<CaptureIntervalMinutes>(() => getCaptureIntervalMinutes());
   const [dateFilter, setDateFilter] = useState<DateFilter>('24h');
@@ -212,12 +210,10 @@ export default function PainelLocalizacao() {
 
   useEffect(() => {
     const eventName = getLiveTrackingEventName();
-
     const handleLiveTracking = (event: Event) => {
       if (!(event instanceof CustomEvent)) return;
       const point = buildLiveLocationRecord(event.detail);
       if (!point) return;
-
       setLocations((prev) => {
         const withoutPending = prev.filter((item) => item.usuario_id !== point.usuario_id || !item.pending);
         return [point, ...withoutPending]
@@ -225,7 +221,6 @@ export default function PainelLocalizacao() {
           .slice(0, 300);
       });
     };
-
     window.addEventListener(eventName, handleLiveTracking as EventListener);
     return () => window.removeEventListener(eventName, handleLiveTracking as EventListener);
   }, []);
@@ -263,44 +258,44 @@ export default function PainelLocalizacao() {
 
   const displayGroups = useMemo(() => {
     const filtered = selectedUserId ? userGroups.filter(g => g.usuario_id === selectedUserId) : userGroups;
-
     return filtered.flatMap(g => {
       const valid = g.locations
         .filter((l) => isValidCoordinate(Number(l.latitude), Number(l.longitude)))
         .map((l) => ({ ...l, latitude: Number(l.latitude), longitude: Number(l.longitude) }));
-
       if (!valid.length) return [];
-
       const sampled = valid.length <= 150 ? valid : valid.filter((_, i) => {
         const step = Math.ceil(valid.length / 150);
         return i === 0 || i === valid.length - 1 || i % step === 0;
       });
-
       return [{ ...g, locations: sampled, lastLocation: valid[valid.length - 1] }];
     });
   }, [userGroups, selectedUserId]);
 
-  const mapPoints = useMemo(
-    () => displayGroups.flatMap((g) => g.locations.map((l) => [l.latitude, l.longitude] as [number, number])),
-    [displayGroups],
-  );
-
   const formatTime = (iso: string) => {
-    const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-    if (diff < 1) return 'Agora';
-    if (diff < 60) return `${diff}min`;
-    if (diff < 1440) return `${Math.floor(diff / 60)}h`;
-    return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    try {
+      const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+      if (diff < 1) return 'Agora';
+      if (diff < 60) return `${diff}min`;
+      if (diff < 1440) return `${Math.floor(diff / 60)}h`;
+      return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    } catch {
+      return '—';
+    }
   };
-
-  const formatDateTime = (iso: string) => new Date(iso).toLocaleString('pt-BR', {
-    day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit',
-    timeZone: 'America/Sao_Paulo',
-  });
 
   const fonteIcon = (f: string | null) => f === 'gps' ? <Navigation size={10} className="text-primary" /> : <Wifi size={10} className="text-muted-foreground" />;
   const fonteLabel = (f: string | null) => f === 'gps' ? 'GPS' : f === 'ip' ? 'IP' : f === 'ip_background' ? 'IP(bg)' : f || '—';
   const openMaps = (lat: number, lng: number) => window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank');
+
+  const mapFallback = (
+    <div className="rounded-2xl border border-border bg-muted/20 flex items-center justify-center" style={{ height: 400 }}>
+      <div className="text-center">
+        <AlertTriangle size={32} className="mx-auto text-muted-foreground mb-2" />
+        <p className="text-sm text-muted-foreground">Mapa indisponível</p>
+        <button onClick={() => setView('list')} className="text-xs text-primary underline mt-1">Ver lista</button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-3 pb-24">
@@ -394,91 +389,15 @@ export default function PainelLocalizacao() {
           <p className="text-sm text-muted-foreground">Nenhuma localização registrada</p>
         </div>
       ) : view === 'map' ? (
-        <div className="rounded-2xl overflow-hidden border border-border relative" style={{ height: 400 }}>
-          {loading && (
-            <div className="absolute inset-0 z-[1000] bg-background/50 flex items-center justify-center">
+        <MapErrorBoundary fallback={mapFallback}>
+          <Suspense fallback={
+            <div className="flex justify-center py-8">
               <Loader2 size={24} className="animate-spin text-primary" />
             </div>
-          )}
-          <MapContainer center={[-15.78, -47.93]} zoom={4} style={{ height: '100%', width: '100%' }} zoomControl={false}>
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <FitBounds points={mapPoints} />
-            {displayGroups.map(group => {
-              const path = group.locations.map(l => [l.latitude, l.longitude] as [number, number]);
-              if (!path.length) return null;
-              const last = group.locations[group.locations.length - 1];
-              const sampled = group.locations.slice(1, -1).filter((_, i) => i % 3 === 0);
-
-              return (
-                <React.Fragment key={group.usuario_id}>
-                  {path.length > 1 && (
-                    <Polyline positions={path} pathOptions={{ color: group.color, weight: 3, opacity: 0.7, dashArray: '8, 6' }} />
-                  )}
-                  {sampled.map((loc) => (
-                    <CircleMarker
-                      key={loc.id}
-                      center={[loc.latitude, loc.longitude]}
-                      radius={4}
-                      pathOptions={{ color: group.color, fillColor: group.color, fillOpacity: 0.8, weight: 1 }}
-                    >
-                      <Popup>
-                        <div className="text-xs">
-                          <strong>{group.nome}</strong>
-                          <br />
-                          {formatDateTime(loc.criado_em)}
-                          <br />
-                          Fonte: {fonteLabel(loc.fonte)}
-                        </div>
-                      </Popup>
-                    </CircleMarker>
-                  ))}
-                  <CircleMarker
-                    center={[last.latitude, last.longitude]}
-                    radius={8}
-                    pathOptions={{ color: group.color, fillColor: group.color, fillOpacity: 1, weight: 3 }}
-                  >
-                    <Popup>
-                      <div className="text-xs space-y-0.5">
-                        <strong>{group.nome}</strong>{' '}
-                        <span className="text-muted-foreground">({group.tipo})</span>
-                        <br />
-                        📍 Última posição
-                        <br />
-                        {formatDateTime(last.criado_em)}
-                        <br />
-                        Fonte: {fonteLabel(last.fonte)}
-                        <br />
-                        {last.precisao && (
-                          <>
-                            Precisão: ±{Math.round(last.precisao)}m
-                            <br />
-                          </>
-                        )}
-                        {last.bateria_nivel !== null && (
-                          <>
-                            🔋 {last.bateria_nivel}%
-                            <br />
-                          </>
-                        )}
-                        <a
-                          href={`https://www.google.com/maps?q=${last.latitude},${last.longitude}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-primary underline"
-                        >
-                          Google Maps
-                        </a>
-                      </div>
-                    </Popup>
-                  </CircleMarker>
-                </React.Fragment>
-              );
-            })}
-          </MapContainer>
-        </div>
+          }>
+            <TrackingMap groups={displayGroups} loading={loading} />
+          </Suspense>
+        </MapErrorBoundary>
       ) : (
         <div className="space-y-2">
           {displayGroups.map(group => {
