@@ -55,6 +55,7 @@ export default function BottomNav({ active, onChange }: Props) {
     // Module-based tabs
     if (tab.module) {
       if (isAdminOrCoord) return true;
+      if (modulos.has('master')) return true;
       return modulos.has(tab.module);
     }
     return false;
