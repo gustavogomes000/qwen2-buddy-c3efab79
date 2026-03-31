@@ -33,6 +33,7 @@ const tipoColors: Record<string, string> = {
 };
 
 const MODULOS_OPTIONS = [
+  { id: 'master', label: '🔑 Master' },
   { id: 'cadastrar_liderancas', label: '👥 Lideranças' },
   { id: 'cadastrar_fiscais', label: '🛡️ Fiscais' },
   { id: 'cadastrar_eleitores', label: '🎯 Eleitores' },
