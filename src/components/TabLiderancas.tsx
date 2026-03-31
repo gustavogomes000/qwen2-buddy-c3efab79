@@ -54,7 +54,7 @@ interface Props {
 }
 
 export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) {
-  const { usuario, isAdmin } = useAuth();
+  const { usuario, isAdmin, tipoUsuario } = useAuth();
   const [mode, setMode] = useState<'list' | 'form' | 'detail'>('list');
   const [data, setData] = useState<LiderancaRow[]>([]);
   const [loading, setLoading] = useState(true);
