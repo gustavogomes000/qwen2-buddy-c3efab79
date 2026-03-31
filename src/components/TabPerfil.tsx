@@ -49,12 +49,9 @@ interface SuplenteOption {
 
 interface LiderancaOption {
   id: string;
-  pessoa_id: string;
-  status: string | null;
-  tipo_lideranca: string | null;
+  nome: string;
   regiao_atuacao: string | null;
-  suplente_id: string | null;
-  pessoas: { id: string; nome: string; telefone: string | null; whatsapp: string | null } | null;
+  whatsapp: string | null;
 }
 
 interface UsuarioItem {
