@@ -30,7 +30,7 @@ export default function BottomNav({ active, onChange }: Props) {
     if (!usuario?.id) return;
     // Super admin / coordenador see everything
     if (tipoUsuario === 'super_admin' || tipoUsuario === 'coordenador') {
-      setModulos(new Set(['cadastrar_liderancas', 'cadastrar_fiscais', 'cadastrar_eleitores', 'ver_rede']));
+      setModulos(new Set(['master', 'cadastrar_liderancas', 'cadastrar_fiscais', 'cadastrar_eleitores']));
       setLoaded(true);
       return;
     }
