@@ -44,11 +44,11 @@ export default function Home() {
       </header>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain">
-        <div key={activeTab} className="max-w-[672px] mx-auto px-4 py-4 animate-in">
-          {activeTab === 'liderancas' && <TabLiderancas refreshKey={refreshKey} onSaved={handleSaved} />}
-          {activeTab === 'fiscais' && <TabFiscais refreshKey={refreshKey} onSaved={handleSaved} />}
-          {activeTab === 'eleitores' && <TabEleitores refreshKey={refreshKey} onSaved={handleSaved} />}
-          {activeTab === 'cadastros' && <TabCadastros refreshKey={refreshKey} onSaved={handleSaved} />}
+        <div className="max-w-[672px] mx-auto px-4 py-4">
+          <div className={activeTab === 'liderancas' ? '' : 'hidden'}><TabLiderancas refreshKey={refreshKey} onSaved={handleSaved} /></div>
+          <div className={activeTab === 'fiscais' ? '' : 'hidden'}><TabFiscais refreshKey={refreshKey} onSaved={handleSaved} /></div>
+          <div className={activeTab === 'eleitores' ? '' : 'hidden'}><TabEleitores refreshKey={refreshKey} onSaved={handleSaved} /></div>
+          <div className={activeTab === 'cadastros' ? '' : 'hidden'}><TabCadastros refreshKey={refreshKey} onSaved={handleSaved} /></div>
           {activeTab === 'rastreamento' && <PainelLocalizacao />}
           {activeTab === 'perfil' && <TabPerfil />}
         </div>

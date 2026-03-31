@@ -16,45 +16,72 @@ Deno.serve(async (req) => {
 
     if (!externalUrl || !externalKey) {
       return new Response(
-        JSON.stringify({ error: 'Credenciais do banco externo não configuradas' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify([]),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const externalSupabase = createClient(externalUrl, externalKey);
 
-    const { data, error } = await externalSupabase
-      .from('liderancas')
-      .select('id, nome, cpf, regiao, whatsapp, rede_social, ligacao_politica, created_at')
-      .order('nome');
+    // Fetch liderancas and pessoas separately to avoid FK join issues
+    const [lRes, pRes] = await Promise.all([
+      externalSupabase.from('liderancas').select('*'),
+      externalSupabase.from('pessoas').select('id, nome, telefone, whatsapp, email'),
+    ]);
 
-    if (error) {
-      console.error('Erro ao buscar lideranças externas:', error);
-      return new Response(
-        JSON.stringify({ error: error.message }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (lRes.error && pRes.error) {
+      // Both failed - try direct query on liderancas with nome column
+      const { data, error } = await externalSupabase
+        .from('liderancas')
+        .select('id, nome, regiao_atuacao, whatsapp')
+        .order('nome');
+
+      if (error) {
+        console.error('Fallback also failed:', error);
+        return new Response(JSON.stringify([]), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      return new Response(JSON.stringify(
+        (data || []).map((l: any) => ({
+          id: l.id,
+          nome: l.nome || '—',
+          regiao_atuacao: l.regiao_atuacao || l.regiao || null,
+          whatsapp: l.whatsapp || null,
+        }))
+      ), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Map to a consistent format for the frontend
-    const result = (data || []).map((l: any) => ({
-      id: l.id,
-      nome: l.nome,
-      regiao_atuacao: l.regiao || null,
-      whatsapp: l.whatsapp || null,
-      rede_social: l.rede_social || null,
-      ligacao_politica: l.ligacao_politica || null,
-    }));
+    // If pessoas loaded, merge; otherwise use liderancas directly
+    if (!lRes.error && lRes.data) {
+      const pessoasById = new Map(
+        (pRes.data ?? []).map((p: any) => [p.id, p])
+      );
 
-    return new Response(
-      JSON.stringify(result),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+      const result = (lRes.data || []).map((l: any) => {
+        const pessoa = pessoasById.get(l.pessoa_id);
+        return {
+          id: l.id,
+          nome: pessoa?.nome || l.nome || '—',
+          regiao_atuacao: l.regiao_atuacao || l.regiao || null,
+          whatsapp: pessoa?.whatsapp || l.whatsapp || null,
+        };
+      });
+
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    return new Response(JSON.stringify([]), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   } catch (error) {
     console.error('Error:', error);
-    return new Response(
-      JSON.stringify({ error: (error as Error).message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify([]), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });

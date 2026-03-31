@@ -105,18 +105,21 @@ export default function TabPerfil() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [usrRes, supRes, lidRes] = await Promise.all([
-        supabase.from('hierarquia_usuarios').select('id, nome, tipo, criado_em, suplente_id, auth_user_id').eq('ativo', true).order('nome'),
-        supabase.functions.invoke('buscar-suplentes').catch(() => ({ data: null, error: true })),
-        supabase.functions.invoke('buscar-liderancas-externo').catch(() => ({ data: null, error: true })),
-      ]);
+      // Load users first (fast, local DB)
+      const usrRes = await supabase.from('hierarquia_usuarios').select('id, nome, tipo, criado_em, suplente_id, auth_user_id').eq('ativo', true).order('nome');
       setUsuarios((usrRes.data || []) as UsuarioItem[]);
-      if (!supRes.error && supRes.data) setSuplentes(Array.isArray(supRes.data) ? supRes.data : []);
-      if (!lidRes.error && lidRes.data) setLiderancas(Array.isArray(lidRes.data) ? lidRes.data : []);
     } catch (err) {
-      console.error('Erro ao carregar dados:', err);
+      console.error('Erro ao carregar usuários:', err);
     }
     setLoading(false);
+
+    // Load external data in background (slow edge functions - don't block UI)
+    supabase.functions.invoke('buscar-suplentes')
+      .then(({ data }) => { if (data && Array.isArray(data)) setSuplentes(data); })
+      .catch(() => {});
+    supabase.functions.invoke('buscar-liderancas-externo')
+      .then(({ data }) => { if (data && Array.isArray(data)) setLiderancas(data); })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
