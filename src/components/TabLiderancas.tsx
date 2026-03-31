@@ -474,14 +474,16 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
           className="w-full h-11 pl-9 pr-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30" />
       </div>
 
-      <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
-        {statusFilters.map(s => (
-          <button key={s} onClick={() => setStatusFilter(s)}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium active:scale-95 transition-all ${statusFilter === s ? 'gradient-primary text-white' : 'bg-muted text-muted-foreground'}`}>
-            {s}
-          </button>
-        ))}
-      </div>
+      {!viewOnly && (
+        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
+          {statusFilters.map(s => (
+            <button key={s} onClick={() => setStatusFilter(s)}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium active:scale-95 transition-all ${statusFilter === s ? 'gradient-primary text-white' : 'bg-muted text-muted-foreground'}`}>
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
 
       {isAdmin && (
         <select value={agenteFilter} onChange={e => setAgenteFilter(e.target.value)}
