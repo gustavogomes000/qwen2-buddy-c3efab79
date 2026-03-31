@@ -157,6 +157,7 @@ export default function TabLiderancas({ refreshKey, onSaved }: Props) {
     setCpfStatus('idle');
     setCpfNomePessoa('');
     setPessoaExistenteId(null);
+    setCpfDuplicado({ isDuplicate: false, tipos: [] });
     if (cpfTimeoutRef.current) clearTimeout(cpfTimeoutRef.current);
     if (cleaned.length === 11) {
       cpfTimeoutRef.current = setTimeout(() => validarCPF(cleaned), 500);
