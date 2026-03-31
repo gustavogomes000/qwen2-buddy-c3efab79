@@ -2,17 +2,20 @@ import { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import BottomNav, { type TabId } from '@/components/BottomNav';
 import TabCadastrar from '@/components/TabCadastrar';
-import TabCadastros from '@/components/TabCadastros';
+import TabLiderancas from '@/components/TabLiderancas';
+import TabFiscais from '@/components/TabFiscais';
+import TabEleitores from '@/components/TabEleitores';
 import TabRede from '@/components/TabRede';
 import TabPerfil from '@/components/TabPerfil';
 import TabHierarquia from '@/components/TabHierarquia';
 import PainelLocalizacao from '@/components/PainelLocalizacao';
 import TabCriarUsuarios from '@/components/TabCriarUsuarios';
+import TabSuplentes from '@/components/TabSuplentes';
 
 export default function Home() {
   const { isAdmin, tipoUsuario, usuario } = useAuth();
   const isAgenteCampo = tipoUsuario === 'lideranca' && !usuario?.suplente_id;
-  const [activeTab, setActiveTab] = useState<TabId>(isAgenteCampo ? 'eleitores' : 'liderancas');
+  const [activeTab, setActiveTab] = useState<TabId>(isAgenteCampo ? 'eleitores' : 'cadastrar');
   const [refreshKey, setRefreshKey] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -23,18 +26,18 @@ export default function Home() {
 
   const handleSaved = () => {
     setRefreshKey(k => k + 1);
-    if (activeTab === 'liderancas') setActiveTab('cadastros');
   };
 
   const titles: Record<TabId, string> = {
-    liderancas: tipoUsuario === 'fiscal' ? 'Cadastrar Eleitor' : tipoUsuario === 'lideranca' ? 'Cadastrar Fiscal' : 'Novo Cadastro',
+    cadastrar: tipoUsuario === 'fiscal' ? 'Cadastrar Eleitor' : tipoUsuario === 'lideranca' ? 'Cadastrar Fiscal' : 'Novo Cadastro',
+    suplentes: 'Suplentes',
+    liderancas: isAdmin ? 'Todas as Lideranças' : 'Minhas Lideranças',
     fiscais: isAdmin ? 'Todos os Fiscais' : 'Meus Fiscais',
     eleitores: isAdmin ? 'Todos os Eleitores' : 'Meus Eleitores',
-    cadastros: isAdmin ? 'Todos os Cadastros' : 'Meus Cadastros',
+    arvore: 'Árvore Hierárquica',
     rede: 'Rede por Suplente',
-    hierarquia: 'Hierarquia da Rede',
     rastreamento: 'Rastreamento',
-    criar_usuarios: 'Criar Usuários',
+    importar: 'Importar Usuários',
     perfil: 'Perfil',
   };
 
@@ -51,12 +54,15 @@ export default function Home() {
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain">
         <div className="max-w-[672px] mx-auto px-4 py-4 animate-in">
-          {activeTab === 'liderancas' && <TabCadastrar onSaved={handleSaved} />}
-          {activeTab === 'cadastros' && <TabCadastros refreshKey={refreshKey} onSaved={() => setRefreshKey(k => k + 1)} />}
+          {activeTab === 'cadastrar' && <TabCadastrar onSaved={handleSaved} />}
+          {activeTab === 'suplentes' && <TabSuplentes refreshKey={refreshKey} />}
+          {activeTab === 'liderancas' && <TabLiderancas refreshKey={refreshKey} />}
+          {activeTab === 'fiscais' && <TabFiscais refreshKey={refreshKey} onSaved={handleSaved} />}
+          {activeTab === 'eleitores' && <TabEleitores refreshKey={refreshKey} onSaved={handleSaved} />}
+          {activeTab === 'arvore' && <TabHierarquia />}
           {activeTab === 'rede' && <TabRede />}
-          {activeTab === 'hierarquia' && <TabHierarquia />}
           {activeTab === 'rastreamento' && <PainelLocalizacao />}
-          {activeTab === 'criar_usuarios' && <TabCriarUsuarios />}
+          {activeTab === 'importar' && <TabCriarUsuarios />}
           {activeTab === 'perfil' && <TabPerfil />}
         </div>
       </div>
