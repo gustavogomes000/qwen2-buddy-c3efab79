@@ -34,6 +34,7 @@ interface UserLocationGroup {
   usuario_id: string;
   nome: string;
   tipo: string;
+  suplente_id: string | null;
   locations: LocationRecord[];
   lastLocation: LocationRecord;
   color: string;
@@ -119,6 +120,8 @@ export default function PainelLocalizacao() {
   const [captureInterval, setCaptureIntervalState] = useState<CaptureIntervalMinutes>(() => getCaptureIntervalMinutes());
   const [dateFilter, setDateFilter] = useState<DateFilter>('24h');
   const [addresses, setAddresses] = useState<Record<string, string>>({});
+  const [filtroTipo, setFiltroTipo] = useState<string>('todos');
+  const [filtroSuplente, setFiltroSuplente] = useState<string>('todos');
   const hasFetched = useRef(false);
 
   // Fetch from Supabase + merge IndexedDB
@@ -144,7 +147,7 @@ export default function PainelLocalizacao() {
       if (since) locQuery = locQuery.gte('criado_em', since);
       if (!isAdmin) locQuery = locQuery.eq('usuario_id', currentUser.id);
 
-      const userQuery = supabase.from('hierarquia_usuarios').select('id, nome, tipo').neq('ativo', false);
+      const userQuery = supabase.from('hierarquia_usuarios').select('id, nome, tipo, suplente_id').neq('ativo', false);
       if (!isAdmin) userQuery.eq('id', currentUser.id);
 
       const [locRes, usrRes] = await Promise.all([locQuery, userQuery]);
@@ -238,6 +241,7 @@ export default function PainelLocalizacao() {
         usuario_id: uid,
         nome: user?.nome || uid.slice(0, 8),
         tipo: user?.tipo || '—',
+        suplente_id: user?.suplente_id || null,
         locations: sorted,
         lastLocation: sorted[0],
         color: COLORS[i % COLORS.length],
@@ -245,7 +249,38 @@ export default function PainelLocalizacao() {
     }).sort((a, b) => new Date(b.lastLocation.criado_em).getTime() - new Date(a.lastLocation.criado_em).getTime());
   }, [locations, usuarios]);
 
-  const displayGroups = selectedUserId ? userGroups.filter(g => g.usuario_id === selectedUserId) : userGroups;
+  // Suplentes list for filter
+  const suplentesUnicos = useMemo(() => {
+    const ids = new Set<string>();
+    const result: { id: string; nome: string }[] = [];
+    for (const u of usuarios) {
+      if (u.suplente_id && !ids.has(u.suplente_id)) {
+        ids.add(u.suplente_id);
+        // Find the suplente user name
+        const supUser = usuarios.find(x => x.suplente_id === u.suplente_id && x.tipo === 'suplente');
+        result.push({ id: u.suplente_id, nome: supUser?.nome || u.suplente_id.slice(0, 8) });
+      }
+    }
+    return result;
+  }, [usuarios]);
+
+  // Tipo counts
+  const tipoCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    userGroups.forEach(g => { counts[g.tipo] = (counts[g.tipo] || 0) + 1; });
+    return counts;
+  }, [userGroups]);
+
+  // Apply filters
+  const filteredGroups = useMemo(() => {
+    let groups = userGroups;
+    if (filtroTipo !== 'todos') groups = groups.filter(g => g.tipo === filtroTipo);
+    if (filtroSuplente !== 'todos') groups = groups.filter(g => g.suplente_id === filtroSuplente);
+    if (selectedUserId) groups = groups.filter(g => g.usuario_id === selectedUserId);
+    return groups;
+  }, [userGroups, filtroTipo, filtroSuplente, selectedUserId]);
+
+  const displayGroups = filteredGroups;
   const fonteIcon = (f: string | null) => f === 'gps' ? <Navigation size={10} className="text-primary" /> : <Wifi size={10} className="text-muted-foreground" />;
   const fonteLabel = (f: string | null) => f === 'gps' ? 'GPS' : f === 'ip' ? 'IP' : f || '—';
   const getAddr = (lat: number, lng: number) => addresses[`${lat.toFixed(4)},${lng.toFixed(4)}`] || null;
@@ -257,7 +292,7 @@ export default function PainelLocalizacao() {
         <div>
           <h2 className="text-sm font-bold text-foreground">📍 Rastreamento</h2>
           <p className="text-[10px] text-muted-foreground">
-            {loading ? 'Carregando...' : `${userGroups.length} usuários · ${locations.length} pontos`}
+            {loading ? 'Carregando...' : `${displayGroups.length}/${userGroups.length} usuários · ${locations.length} pontos`}
           </p>
         </div>
         <button onClick={() => fetchData()} disabled={loading}
@@ -296,14 +331,58 @@ export default function PainelLocalizacao() {
         ))}
       </div>
 
+      {/* Type filter */}
+      <div className="space-y-1">
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Filtrar por tipo</p>
+        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+          <button onClick={() => { setFiltroTipo('todos'); setSelectedUserId(null); }}
+            className={`shrink-0 text-[10px] px-2.5 py-1 rounded-full border font-semibold transition-all active:scale-95 ${
+              filtroTipo === 'todos' ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground'
+            }`}>
+            Todos ({userGroups.length})
+          </button>
+          {Object.entries(tipoCounts).map(([tipo, count]) => (
+            <button key={tipo} onClick={() => { setFiltroTipo(filtroTipo === tipo ? 'todos' : tipo); setSelectedUserId(null); }}
+              className={`shrink-0 text-[10px] px-2.5 py-1 rounded-full border font-semibold transition-all active:scale-95 ${
+                filtroTipo === tipo ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground'
+              }`}>
+              {tipo === 'super_admin' ? 'Admin' : tipo === 'coordenador' ? 'Coord.' : tipo === 'suplente' ? 'Suplente' : tipo === 'lideranca' ? 'Liderança' : tipo === 'fiscal' ? 'Fiscal' : tipo} ({count})
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Suplente filter */}
+      {suplentesUnicos.length > 0 && (
+        <div className="space-y-1">
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Filtrar por suplente</p>
+          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+            <button onClick={() => { setFiltroSuplente('todos'); setSelectedUserId(null); }}
+              className={`shrink-0 text-[10px] px-2.5 py-1 rounded-full border font-semibold transition-all active:scale-95 ${
+                filtroSuplente === 'todos' ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground'
+              }`}>
+              Todos
+            </button>
+            {suplentesUnicos.map(s => (
+              <button key={s.id} onClick={() => { setFiltroSuplente(filtroSuplente === s.id ? 'todos' : s.id); setSelectedUserId(null); }}
+                className={`shrink-0 text-[10px] px-2.5 py-1 rounded-full border font-semibold transition-all active:scale-95 ${
+                  filtroSuplente === s.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground'
+                }`}>
+                {s.nome.split(' ')[0]}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* User filter chips */}
-      {userGroups.length > 1 && (
+      {filteredGroups.length > 1 && (
         <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
           <button onClick={() => setSelectedUserId(null)}
             className={`shrink-0 text-[10px] px-2.5 py-1 rounded-full border transition-all active:scale-95 ${
               !selectedUserId ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground'
             }`}>Todos</button>
-          {userGroups.map(g => (
+          {filteredGroups.map(g => (
             <button key={g.usuario_id} onClick={() => setSelectedUserId(selectedUserId === g.usuario_id ? null : g.usuario_id)}
               className={`shrink-0 text-[10px] px-2.5 py-1 rounded-full border transition-all active:scale-95 flex items-center gap-1 ${
                 selectedUserId === g.usuario_id ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground'
