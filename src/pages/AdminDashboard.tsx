@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { exportAllCadastros } from '@/lib/exportXlsx';
 import SeletorCidade from '@/components/SeletorCidade';
+import TabLiderancasExternas from '@/components/TabLiderancasExternas';
 
 /* ── types ── */
 interface Pessoa {
