@@ -311,13 +311,20 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
     return true;
   }), [data, statusFilter, searchQuery]);
 
+  const QUERY_DETALHE = 'id, status, tipo_lideranca, nivel, zona_atuacao, apoiadores_estimados, cadastrado_por, suplente_id, criado_em, regiao_atuacao, bairros_influencia, comunidades_influencia, origem_captacao, meta_votos, nivel_comprometimento, observacoes, municipio_id, pessoas(*), hierarquia_usuarios!liderancas_cadastrado_por_fkey(nome)';
+
+  const fetchDetalhe = useCallback(async (id: string) => {
+    const { data } = await (supabase as any).from('liderancas').select(QUERY_DETALHE).eq('id', id).single();
+    if (data) setSelected(data as unknown as LiderancaRow);
+  }, []);
+
   const handleDelete = async (id: string) => {
     if (!confirm('Excluir esta liderança permanentemente?')) return;
     await supabase.from('liderancas').delete().eq('id', id);
     toast({ title: 'Liderança excluída' });
     setSelected(null);
     setMode('list');
-    fetchData();
+    fetchData(true);
   };
 
   const handleDiscard = async (id: string) => {
@@ -325,7 +332,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
     toast({ title: 'Liderança descartada' });
     setSelected(null);
     setMode('list');
-    fetchData();
+    fetchData(true);
   };
 
   const inputCls = "w-full h-11 px-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30";
