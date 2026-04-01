@@ -687,6 +687,37 @@ export default function AdminDashboard() {
             </button>
           </div>
         )}
+
+        {/* ══════════ CIDADES ══════════ */}
+        {vistaAtiva === 'cidades' && (
+          <div className="space-y-3">
+            {municipios.map(m => (
+              <div key={m.id} className="section-card">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Building2 size={18} className="text-primary" />
+                    <div>
+                      <p className="text-sm font-bold text-foreground">{m.nome}</p>
+                      <p className="text-[10px] text-muted-foreground">{m.uf}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { setCidadeAtiva({ id: m.id, nome: m.nome }); navigate('/'); }}
+                    className="text-[10px] text-primary font-semibold px-2 py-1 rounded-lg bg-primary/5 active:scale-95"
+                  >
+                    Ver cidade →
+                  </button>
+                </div>
+              </div>
+            ))}
+            {municipios.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-sm text-muted-foreground">Nenhum município cadastrado</p>
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
     </div>
   );
