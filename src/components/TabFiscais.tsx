@@ -96,7 +96,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
   const update = useCallback((field: string, value: string) => setForm(f => ({ ...f, [field]: value })), []);
 
   const PAGE_SIZE = 20;
-  const QUERY_LISTA_FISC = 'id, status, colegio_eleitoral, zona_fiscal, secao_fiscal, cadastrado_por, criado_em, municipio_id, pessoas(nome, cpf, telefone, whatsapp)';
+  const QUERY_LISTA_FISC = 'id, status, colegio_eleitoral, zona_fiscal, secao_fiscal, cadastrado_por, criado_em, municipio_id, origem_captacao, pessoas(nome, cpf, telefone, whatsapp)';
 
   const fetchData = useCallback(async (reset = true) => {
     if (!usuario) return;
@@ -444,6 +444,9 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="font-semibold text-foreground text-sm truncate">{f.pessoas?.nome || '—'}</span>
                   <StatusBadge status={f.status} />
+                  {(f as any).origem_captacao === 'visita_comite' && (
+                    <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-500/15 text-blue-600 dark:text-blue-400">Visita</span>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground truncate">
                   {f.colegio_eleitoral || '—'}{f.zona_fiscal ? ` · Z${f.zona_fiscal}` : ''}

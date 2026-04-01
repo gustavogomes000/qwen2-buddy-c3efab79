@@ -104,7 +104,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
   }, [usuario]);
 
   const PAGE_SIZE = 20;
-  const QUERY_LISTA = 'id, status, tipo_lideranca, zona_atuacao, apoiadores_estimados, cadastrado_por, criado_em, municipio_id, pessoas(nome, telefone, whatsapp, cpf), hierarquia_usuarios!liderancas_cadastrado_por_fkey(nome)';
+  const QUERY_LISTA = 'id, status, tipo_lideranca, zona_atuacao, apoiadores_estimados, cadastrado_por, criado_em, municipio_id, origem_captacao, pessoas(nome, telefone, whatsapp, cpf), hierarquia_usuarios!liderancas_cadastrado_por_fkey(nome)';
 
   const fetchData = useCallback(async (reset = true) => {
     if (!usuario) return;
@@ -595,6 +595,9 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="font-semibold text-foreground text-sm truncate">{l.pessoas?.nome || '—'}</span>
                   <StatusBadge status={l.status} />
+                  {(l as any).origem_captacao === 'visita_comite' && (
+                    <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-500/15 text-blue-600 dark:text-blue-400">Visita</span>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground truncate">
                   {l.tipo_lideranca || '—'}{l.zona_atuacao ? ` · Z${l.zona_atuacao}` : ''}
