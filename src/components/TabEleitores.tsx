@@ -383,15 +383,9 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
               </div>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Telefone</label>
-              <input type="tel" value={form.telefone} onChange={e => update('telefone', e.target.value)} placeholder="(00) 0000-0000" className={inputCls} />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">WhatsApp</label>
-              <input type="tel" value={form.whatsapp} onChange={e => update('whatsapp', e.target.value)} placeholder="(00) 00000-0000" className={inputCls} />
-            </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">WhatsApp <span className="text-primary">*</span></label>
+            <input type="tel" value={form.whatsapp} onChange={e => update('whatsapp', e.target.value)} placeholder="(00) 00000-0000" className={inputCls} />
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">E-mail</label>
