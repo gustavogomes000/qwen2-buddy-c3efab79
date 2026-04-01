@@ -76,6 +76,19 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
   const [ligMunicipioId, setLigMunicipioId] = useState<string | null>(null);
   const [ligErro, setLigErro] = useState<string | null>(null);
 
+  // Resolver ligação política
+  useEffect(() => {
+    if (!usuario) return;
+    resolverLigacaoPolitica(usuario).then(res => {
+      setLigBloqueado(res.bloqueado);
+      setLigNomeFixo(res.nomeFixo);
+      setLigSubtitulo(res.subtitulo);
+      setLigSuplenteId(res.suplenteId);
+      setLigMunicipioId(res.municipioId);
+      if (res.liderancaId) setLigLiderancaId(res.liderancaId);
+    });
+  }, [usuario]);
+
   const update = useCallback((field: string, value: string) => setForm(f => ({ ...f, [field]: value })), []);
 
   const fetchData = useCallback(async () => {
