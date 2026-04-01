@@ -75,16 +75,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const fetchUsuario = async (authUserId: string) => {
-    const { data } = await supabase
-      .from('hierarquia_usuarios')
-      .select('*')
-      .eq('auth_user_id', authUserId)
-      .eq('ativo', true)
-      .single();
-    if (data) {
-      const usr = data as unknown as HierarquiaUsuario;
-      setUsuario(usr);
-      await resolverMunicipio(usr);
+    try {
+      const { data, error } = await supabase
+        .from('hierarquia_usuarios')
+        .select('*')
+        .eq('auth_user_id', authUserId)
+        .eq('ativo', true)
+        .single();
+      if (error) {
+        console.error('Erro ao buscar usuário:', error.message);
+        setUsuario(null);
+        return;
+      }
+      if (data) {
+        const usr = data as unknown as HierarquiaUsuario;
+        setUsuario(usr);
+        await resolverMunicipio(usr);
+      } else {
+        setUsuario(null);
+      }
+    } catch (err) {
+      console.error('Erro inesperado ao buscar usuário:', err);
+      setUsuario(null);
     }
   };
 
@@ -92,30 +104,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let initialized = false;
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchUsuario(session.user.id);
-        startLocationTracking();
-        registerBackgroundSync();
+      try {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          await fetchUsuario(session.user.id);
+          startLocationTracking();
+          registerBackgroundSync();
+        }
+      } catch (err) {
+        console.error('Erro na inicialização:', err);
+      } finally {
+        setLoading(false);
+        initialized = true;
       }
-      setLoading(false);
-      initialized = true;
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!initialized) return;
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchUsuario(session.user.id);
-        startLocationTracking();
-        registerBackgroundSync();
-      } else {
-        setUsuario(null);
-        setMunicipioId(null);
-        setMunicipioNome(null);
-        stopLocationTracking();
+      try {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          await fetchUsuario(session.user.id);
+          startLocationTracking();
+          registerBackgroundSync();
+        } else {
+          setUsuario(null);
+          setMunicipioId(null);
+          setMunicipioNome(null);
+          stopLocationTracking();
+        }
+      } catch (err) {
+        console.error('Erro no auth state change:', err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => {
