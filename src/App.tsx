@@ -9,6 +9,7 @@ import LoadingScreen from "@/components/LoadingScreen";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import AdminDashboard from "./pages/AdminDashboard";
+import CadastrosExternos from "./pages/CadastrosExternos";
 
 const queryClient = new QueryClient();
 
