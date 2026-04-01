@@ -888,6 +888,40 @@ export default function TabPerfil() {
         </div>
       )}
 
+      {/* City Management - Admin only */}
+      {isAdmin && (
+        <div className="section-card">
+          <h2 className="section-title flex items-center gap-2">🏙️ Gerenciar Cidades</h2>
+          <div className="flex gap-2 mb-3">
+            <input type="text" placeholder="Nome da nova cidade..." id="perfil-nova-cidade"
+              className="flex-1 h-10 px-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30" />
+            <button
+              onClick={async () => {
+                const input = document.getElementById('perfil-nova-cidade') as HTMLInputElement;
+                const nome = input?.value?.trim();
+                if (!nome) return;
+                const { error } = await (supabase as any).from('municipios').insert({ nome, uf: 'GO' });
+                if (error) { toast({ title: 'Erro', description: error.message, variant: 'destructive' }); return; }
+                toast({ title: `✅ ${nome} adicionada!` });
+                input.value = '';
+                window.location.reload();
+              }}
+              className="h-10 px-4 gradient-primary text-white rounded-xl text-sm font-semibold flex items-center gap-1 active:scale-95">
+              <Plus size={14} /> Adicionar
+            </button>
+          </div>
+          <div className="space-y-1.5">
+            {municipios.map(m => (
+              <div key={m.id} className="flex items-center gap-2 p-2.5 rounded-xl bg-muted/50 border border-border/50">
+                <Building2 size={14} className="text-primary shrink-0" />
+                <span className="text-sm font-medium text-foreground flex-1">{m.nome}</span>
+                <span className="text-[10px] text-muted-foreground">{m.uf}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Sign out */}
       <button
         onClick={signOut}
