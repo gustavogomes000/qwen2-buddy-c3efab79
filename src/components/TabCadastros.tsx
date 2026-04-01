@@ -136,11 +136,19 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
     }
 
     results.sort((a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime());
-    setCadastros(results);
+    
+    if (reset) {
+      setCadastros(results);
+    } else {
+      setCadastros(prev => [...prev, ...results]);
+    }
+    paginaRef.current += 1;
+    setTemMais(results.length >= PAGE_SIZE);
     setLoading(false);
+    setCarregandoMais(false);
   }, [usuario, tipoUsuario, cidadeAtiva, isTodasCidades, authMunicipioId]);
 
-  useEffect(() => { fetchAll(); }, [fetchAll, refreshKey]);
+  useEffect(() => { fetchAll(true); }, [fetchAll, refreshKey]);
 
   const stats = useMemo(() => {
     const total = cadastros.length;
