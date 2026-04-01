@@ -44,7 +44,8 @@ interface Props {
 }
 
 export default function TabCadastros({ refreshKey, onSaved }: Props) {
-  const { tipoUsuario, usuario, isAdmin } = useAuth();
+  const { tipoUsuario, usuario, isAdmin, municipioId: authMunicipioId } = useAuth();
+  const { cidadeAtiva, isTodasCidades, nomeMunicipioPorId } = useCidade();
   const [loading, setLoading] = useState(true);
   const [cadastros, setCadastros] = useState<CadastroUnificado[]>([]);
   const [tipoFiltro, setTipoFiltro] = useState<TipoFiltro>('todos');
