@@ -46,28 +46,10 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (sup) {
+        // indicador_id IS a valid suplentes.id — safe for FK
         validatedSuplenteId = sup.id;
-      } else {
-        // Try hierarquia_usuarios (buscar-indicadores returns hierarquia IDs for suplentes too)
-        const { data: hierSup } = await supabaseAdmin
-          .from('hierarquia_usuarios')
-          .select('id, suplente_id, municipio_id')
-          .eq('id', indicador_id)
-          .eq('tipo', 'suplente')
-          .eq('ativo', true)
-          .maybeSingle();
 
-        if (!hierSup) {
-          return jsonResp({ erro: 'Indicador (suplente) não encontrado' }, 400);
-        }
-        // This hierarquia user IS the suplente — use their suplente_id FK if it exists
-        validatedSuplenteId = hierSup.suplente_id || null;
-        cadastradoPor = hierSup.id;
-        municipioId = hierSup.municipio_id;
-      }
-
-      // Resolve cadastrado_por + municipio from hierarquia if not set yet
-      if (!cadastradoPor) {
+        // Resolve cadastrado_por from hierarquia
         const { data: usuario } = await supabaseAdmin
           .from('hierarquia_usuarios')
           .select('id, municipio_id')
@@ -76,9 +58,28 @@ Deno.serve(async (req) => {
           .maybeSingle();
         if (usuario) {
           cadastradoPor = usuario.id;
-          municipioId = municipioId || usuario.municipio_id;
+          municipioId = usuario.municipio_id;
         }
+      } else {
+        // indicador_id is a hierarquia_usuarios.id (buscar-indicadores returns these)
+        const { data: hierSup } = await supabaseAdmin
+          .from('hierarquia_usuarios')
+          .select('id, suplente_id, municipio_id')
+          .eq('id', indicador_id)
+          .in('tipo', ['suplente', 'coordenador'])
+          .eq('ativo', true)
+          .maybeSingle();
+
+        if (!hierSup) {
+          return jsonResp({ erro: 'Indicador (suplente) não encontrado' }, 400);
+        }
+        // Use the hierarquia user's suplente_id (FK to suplentes table) — may be null
+        validatedSuplenteId = hierSup.suplente_id || null;
+        cadastradoPor = hierSup.id;
+        municipioId = hierSup.municipio_id;
       }
+
+      // Resolve municipio if still missing
       if (!municipioId && validatedSuplenteId) {
         const { data: sm } = await supabaseAdmin
           .from('suplente_municipio')
