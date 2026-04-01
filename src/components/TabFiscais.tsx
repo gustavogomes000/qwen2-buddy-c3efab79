@@ -198,7 +198,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
       setPessoaExistenteId(null);
       setCpfStatus('idle');
       setMode('list');
-      fetchData(true);
+      invalidarCadastros();
       onSaved?.();
     } catch (err: any) {
       toast({ title: 'Erro ao salvar', description: err.message, variant: 'destructive' });
