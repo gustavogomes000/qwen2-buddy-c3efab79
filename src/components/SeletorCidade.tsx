@@ -59,7 +59,7 @@ export default function SeletorCidade() {
   }, [aberto, municipios]);
 
   const nomeAtual = isTodasCidades ? 'Todas as cidades' : cidadeAtiva?.nome || 'Selecionar';
-  const totalGeralNum = totalGeral.liderancas + totalGeral.fiscais + totalGeral.eleitores;
+  const totalGeralNum = totalGeral.liderancas + totalGeral.fiscais + totalGeral.eleitores + totalGeral.usuarios;
 
   return (
     <>
