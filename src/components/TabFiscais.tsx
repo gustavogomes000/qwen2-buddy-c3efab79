@@ -261,18 +261,15 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
             <StatusBadge status={f.status} />
           </div>
           <div className="flex gap-2 pt-2">
-            {p.telefone && <a href={`tel:${p.telefone}`} className="flex items-center gap-1 px-3 py-1.5 bg-muted rounded-lg text-xs font-medium"><Phone size={14} /> Ligar</a>}
             {p.whatsapp && <a href={`https://wa.me/55${p.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener" className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg text-xs font-medium"><MessageCircle size={14} /> WhatsApp</a>}
           </div>
         </div>
         <div className="section-card">
           <h3 className="section-title">👤 Dados Pessoais</h3>
           <Info label="CPF" value={p.cpf ? formatCPF(p.cpf) : null} />
-          <Info label="Telefone" value={p.telefone} link={p.telefone ? `tel:${p.telefone}` : undefined} />
           <Info label="WhatsApp" value={p.whatsapp} />
           <Info label="E-mail" value={p.email} link={p.email ? `mailto:${p.email}` : undefined} />
-          <Info label="Instagram" value={p.instagram} link={p.instagram ? `https://instagram.com/${p.instagram.replace('@', '')}` : undefined} />
-          <Info label="Facebook" value={p.facebook} />
+          <Info label="Rede social" value={p.instagram || p.facebook} link={p.instagram ? `https://instagram.com/${p.instagram.replace('@', '')}` : undefined} />
         </div>
         <div className="section-card">
           <h3 className="section-title">🗳️ Dados Eleitorais</h3>
@@ -281,7 +278,6 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
           <Info label="Município / UF" value={`${p.municipio_eleitoral || '—'} / ${p.uf_eleitoral || '—'}`} />
           <Info label="Colégio" value={p.colegio_eleitoral} />
           <Info label="End. colégio" value={p.endereco_colegio} />
-          <Info label="Situação" value={p.situacao_titulo} />
         </div>
         <div className="section-card">
           <h3 className="section-title">🔍 Dados de Fiscalização</h3>
