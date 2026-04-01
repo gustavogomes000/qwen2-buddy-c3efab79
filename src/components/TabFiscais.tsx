@@ -6,8 +6,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCidade } from '@/contexts/CidadeContext';
 import { formatCPF, cleanCPF, validateCPF } from '@/lib/cpf';
 import { checkCpfDuplicateByUser } from '@/lib/cpfDuplicateCheck';
+import { resolverLigacaoPolitica } from '@/lib/resolverLigacaoPolitica';
 import { toast } from '@/hooks/use-toast';
 import StatusBadge from '@/components/StatusBadge';
+import CampoLigacaoPolitica from '@/components/CampoLigacaoPolitica';
 
 const situacoesTitulo = ['Regular', 'Cancelado', 'Suspenso', 'Não informado'];
 
