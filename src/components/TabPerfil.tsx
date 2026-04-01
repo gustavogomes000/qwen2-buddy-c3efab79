@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth, TipoUsuario } from '@/contexts/AuthContext';
+import { useCidade } from '@/contexts/CidadeContext';
 import { supabase } from '@/integrations/supabase/client';
 import {
   LogOut, Shield, User, UserPlus, Loader2, Crown, Users, Eye, Copy, X,
-  Pencil, Trash2, Settings, Search, ArrowLeft, KeyRound, EyeOff, ChevronDown
+  Pencil, Trash2, Settings, Search, ArrowLeft, KeyRound, EyeOff, ChevronDown,
+  MapPin, Building2, Plus
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import ModulosUsuario from '@/components/ModulosUsuario';
@@ -60,6 +62,7 @@ interface UsuarioItem {
   criado_em: string;
   suplente_id: string | null;
   auth_user_id: string | null;
+  municipio_id: string | null;
 }
 
 type ViewMode = 'list' | 'create' | 'edit';
@@ -159,6 +162,7 @@ function SelfPasswordChange() {
 
 export default function TabPerfil() {
   const { usuario, isAdmin, tipoUsuario, signOut } = useAuth();
+  const { municipios } = useCidade();
 
   // Data
   const [usuarios, setUsuarios] = useState<UsuarioItem[]>([]);
@@ -180,6 +184,7 @@ export default function TabPerfil() {
   const [selectedModulos, setSelectedModulos] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [externalSearch, setExternalSearch] = useState('');
+  const [createCidade, setCreateCidade] = useState('');
 
   // Edit
   const [editUser, setEditUser] = useState<UsuarioItem | null>(null);
@@ -188,6 +193,7 @@ export default function TabPerfil() {
   const [showEditSenha, setShowEditSenha] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editCidade, setEditCidade] = useState('');
 
   // Credentials modal after creation
   const [credenciais, setCredenciais] = useState<{ nome: string; senha: string; id: string; auth_user_id: string; tipo: string } | null>(null);
@@ -200,7 +206,7 @@ export default function TabPerfil() {
     try {
       const usrRes = await supabase
         .from('hierarquia_usuarios')
-        .select('id, nome, tipo, criado_em, suplente_id, auth_user_id')
+        .select('id, nome, tipo, criado_em, suplente_id, auth_user_id, municipio_id')
         .eq('ativo', true)
         .order('nome')
         .abortSignal(controller.signal);
@@ -275,6 +281,7 @@ export default function TabPerfil() {
     setShowSenha(false);
     setSelectedModulos(new Set());
     setExternalSearch('');
+    setCreateCidade(municipios.length === 1 ? municipios[0].id : '');
   };
 
   const handleCreate = async () => {
@@ -294,6 +301,10 @@ export default function TabPerfil() {
       toast({ title: 'Senha deve ter ao menos 4 caracteres', variant: 'destructive' });
       return;
     }
+    if (!createCidade) {
+      toast({ title: 'Selecione a cidade do usuário', variant: 'destructive' });
+      return;
+    }
 
     setSaving(true);
     try {
@@ -302,6 +313,7 @@ export default function TabPerfil() {
         senha: senhaNova.trim(),
         tipo: tipoNovo,
         superior_id: usuario?.id || null,
+        municipio_id: createCidade,
       };
       if (createMode === 'suplente' && selectedExternalId) {
         body.suplente_id = selectedExternalId;
@@ -344,6 +356,7 @@ export default function TabPerfil() {
     setEditSenha('');
     setShowEditSenha(false);
     setConfirmDelete(false);
+    setEditCidade(u.municipio_id || '');
     setView('edit');
   };
 
@@ -357,7 +370,8 @@ export default function TabPerfil() {
       const body: any = { acao: 'atualizar', hierarquia_id: editUser.id, auth_user_id: editUser.auth_user_id };
       if (editNome.trim() !== editUser.nome) body.novo_nome = editNome.trim();
       if (editSenha.trim()) body.nova_senha = editSenha.trim();
-      if (!body.novo_nome && !body.nova_senha) { toast({ title: 'Nenhuma alteração' }); setEditSaving(false); return; }
+      if (editCidade && editCidade !== (editUser.municipio_id || '')) body.novo_municipio_id = editCidade;
+      if (!body.novo_nome && !body.nova_senha && !body.novo_municipio_id) { toast({ title: 'Nenhuma alteração' }); setEditSaving(false); return; }
 
       const { data, error } = await supabase.functions.invoke('gerenciar-usuario', { body });
       if (error) throw new Error(error.message);
@@ -615,6 +629,19 @@ export default function TabPerfil() {
               </div>
             </div>
 
+            {/* Cidade */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <MapPin size={12} /> Cidade *
+              </label>
+              <select value={createCidade} onChange={e => setCreateCidade(e.target.value)} className={inputCls}>
+                <option value="">Selecione a cidade...</option>
+                {municipios.map(m => (
+                  <option key={m.id} value={m.id}>{m.nome} – {m.uf}</option>
+                ))}
+              </select>
+            </div>
+
             {/* Módulos */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">Módulos / Permissões</label>
@@ -700,6 +727,19 @@ export default function TabPerfil() {
                   {showEditSenha ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+            </div>
+
+            {/* Cidade */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <MapPin size={12} /> Cidade
+              </label>
+              <select value={editCidade} onChange={e => setEditCidade(e.target.value)} className={inputCls}>
+                <option value="">Sem cidade</option>
+                {municipios.map(m => (
+                  <option key={m.id} value={m.id}>{m.nome} – {m.uf}</option>
+                ))}
+              </select>
             </div>
 
             <button
@@ -834,6 +874,7 @@ export default function TabPerfil() {
                       <p className="text-[10px] text-muted-foreground">
                         {tipoLabels[u.tipo as TipoUsuario] || u.tipo}
                         {getSuplenteNome(u.suplente_id) ? ` · ${getSuplenteNome(u.suplente_id)}` : ''}
+                        {u.municipio_id && (() => { const m = municipios.find(m => m.id === u.municipio_id); return m ? ` · ${m.nome}` : ''; })()}
                       </p>
                     </div>
                     <Pencil size={14} className="text-muted-foreground shrink-0" />
@@ -845,6 +886,40 @@ export default function TabPerfil() {
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {/* City Management - Admin only */}
+      {isAdmin && (
+        <div className="section-card">
+          <h2 className="section-title flex items-center gap-2">🏙️ Gerenciar Cidades</h2>
+          <div className="flex gap-2 mb-3">
+            <input type="text" placeholder="Nome da nova cidade..." id="perfil-nova-cidade"
+              className="flex-1 h-10 px-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30" />
+            <button
+              onClick={async () => {
+                const input = document.getElementById('perfil-nova-cidade') as HTMLInputElement;
+                const nome = input?.value?.trim();
+                if (!nome) return;
+                const { error } = await (supabase as any).from('municipios').insert({ nome, uf: 'GO' });
+                if (error) { toast({ title: 'Erro', description: error.message, variant: 'destructive' }); return; }
+                toast({ title: `✅ ${nome} adicionada!` });
+                input.value = '';
+                window.location.reload();
+              }}
+              className="h-10 px-4 gradient-primary text-white rounded-xl text-sm font-semibold flex items-center gap-1 active:scale-95">
+              <Plus size={14} /> Adicionar
+            </button>
+          </div>
+          <div className="space-y-1.5">
+            {municipios.map(m => (
+              <div key={m.id} className="flex items-center gap-2 p-2.5 rounded-xl bg-muted/50 border border-border/50">
+                <Building2 size={14} className="text-primary shrink-0" />
+                <span className="text-sm font-medium text-foreground flex-1">{m.nome}</span>
+                <span className="text-[10px] text-muted-foreground">{m.uf}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
