@@ -25,10 +25,16 @@ Deno.serve(async (req) => {
       return jsonResp({ erro: 'tipo e nome são obrigatórios' }, 400);
     }
 
+    // Client LOCAL — onde ficam pessoas, liderancas, fiscais, possiveis_eleitores, hierarquia_usuarios
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
+
+    // Client EXTERNO — onde ficam os suplentes
+    const externalUrl = Deno.env.get('EXTERNAL_SUPABASE_URL') || Deno.env.get('SUPABASE_URL')!;
+    const externalKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_KEY') || Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const externalClient = createClient(externalUrl, externalKey);
 
     // ── 0. Validate indicador & resolve context ───────────────
     let validatedSuplenteId: string | null = null;
@@ -37,31 +43,41 @@ Deno.serve(async (req) => {
     let municipioId: string | null = null;
 
     if (indicador_id && indicador_tipo === 'suplente') {
-      // The ID may come from table `suplentes` OR from `hierarquia_usuarios` (tipo=suplente)
-      // Try suplentes table first
-      const { data: sup } = await supabaseAdmin
+      // Buscar suplente no banco EXTERNO (onde os suplentes vivem)
+      const { data: sup } = await externalClient
         .from('suplentes')
         .select('id')
         .eq('id', indicador_id)
         .maybeSingle();
 
       if (sup) {
-        // indicador_id IS a valid suplentes.id — safe for FK
-        validatedSuplenteId = sup.id;
+        // Suplente encontrado no banco externo
+        // Verificar se TAMBÉM existe no banco local (para FK)
+        const { data: supLocal } = await supabaseAdmin
+          .from('suplentes')
+          .select('id')
+          .eq('id', indicador_id)
+          .maybeSingle();
 
-        // Resolve cadastrado_por from hierarquia
+        if (supLocal) {
+          validatedSuplenteId = supLocal.id;
+        }
+        // Se não existe localmente, não usar como FK (evita erro)
+
+        // Resolve cadastrado_por from hierarquia local
         const { data: usuario } = await supabaseAdmin
           .from('hierarquia_usuarios')
           .select('id, municipio_id')
           .eq('suplente_id', indicador_id)
           .eq('ativo', true)
           .maybeSingle();
+
         if (usuario) {
           cadastradoPor = usuario.id;
           municipioId = usuario.municipio_id;
         }
       } else {
-        // indicador_id is a hierarquia_usuarios.id (buscar-indicadores returns these)
+        // Talvez indicador_id é um hierarquia_usuarios.id
         const { data: hierSup } = await supabaseAdmin
           .from('hierarquia_usuarios')
           .select('id, suplente_id, municipio_id')
@@ -73,7 +89,7 @@ Deno.serve(async (req) => {
         if (!hierSup) {
           return jsonResp({ erro: 'Indicador (suplente) não encontrado' }, 400);
         }
-        // Validate that suplente_id actually exists in suplentes table before using as FK
+
         if (hierSup.suplente_id) {
           const { data: supCheck } = await supabaseAdmin
             .from('suplentes')
@@ -96,7 +112,6 @@ Deno.serve(async (req) => {
         if (sm) municipioId = sm.municipio_id;
       }
     } else if (indicador_id && indicador_tipo === 'lideranca') {
-      // ID may be from hierarquia_usuarios or liderancas
       const { data: usuario } = await supabaseAdmin
         .from('hierarquia_usuarios')
         .select('id, suplente_id, municipio_id')
@@ -114,7 +129,6 @@ Deno.serve(async (req) => {
           .maybeSingle();
         if (lid) {
           validatedLiderancaId = lid.id;
-          // Validate suplente_id FK
           if (lid.suplente_id) {
             const { data: sc } = await supabaseAdmin.from('suplentes').select('id').eq('id', lid.suplente_id).maybeSingle();
             validatedSuplenteId = sc ? sc.id : null;
