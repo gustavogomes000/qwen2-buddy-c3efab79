@@ -95,6 +95,7 @@ export default function AdminDashboard() {
 
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [expandedTipo, setExpandedTipo] = useState<string | null>(null);
+  const [totalVisitas, setTotalVisitas] = useState(0);
 
   useEffect(() => {
     if (!isAdmin) { navigate('/'); return; }
