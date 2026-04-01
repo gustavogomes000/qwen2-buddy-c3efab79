@@ -345,28 +345,70 @@ export default function AdminDashboard() {
                               : expandedTipo === 'fiscal' ? userCadastros.fiscais
                               : userCadastros.eleitores;
                             if (records.length === 0) return <p className="text-xs text-muted-foreground text-center py-4">Nenhum registro</p>;
-                            return records.map((r: any) => (
-                              <div key={r.id} className="flex items-start gap-2 p-2.5 rounded-xl bg-muted/50 border border-border/50">
-                                <div className="flex-1 min-w-0">
+                            return records.map((r: any) => {
+                              const p = r.pessoas || {};
+                              const Field = ({ label, value }: { label: string; value: any }) => (
+                                <div className="text-[10px] bg-background rounded px-2 py-1">
+                                  <span className="text-muted-foreground">{label}:</span>{' '}
+                                  <span className={value ? 'text-foreground' : 'text-muted-foreground/50 italic'}>{value || '—'}</span>
+                                </div>
+                              );
+                              return (
+                              <div key={r.id} className="p-3 rounded-xl bg-muted/50 border border-border/50 space-y-2">
+                                <div className="flex items-start justify-between">
                                   <div className="flex items-center gap-2">
-                                    <p className="text-sm font-semibold text-foreground truncate">{r.pessoas?.nome || '—'}</p>
+                                    <p className="text-sm font-semibold text-foreground">{p.nome || '—'}</p>
                                     {r.origem_captacao === 'visita_comite' && (
                                       <span className="text-[8px] px-1.5 py-0.5 rounded-full font-medium bg-primary/10 text-primary flex items-center gap-0.5">
                                         <Tag size={7} /> Visita
                                       </span>
                                     )}
                                   </div>
-                                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground mt-0.5">
-                                    {r.pessoas?.cpf && <span>{r.pessoas.cpf}</span>}
-                                    {r.pessoas?.telefone && <span>{r.pessoas.telefone}</span>}
-                                    {r.pessoas?.whatsapp && <span>📱 {r.pessoas.whatsapp}</span>}
-                                    {r.pessoas?.zona_eleitoral && <span>Z{r.pessoas.zona_eleitoral}</span>}
-                                    {r.pessoas?.secao_eleitoral && <span>S{r.pessoas.secao_eleitoral}</span>}
-                                  </div>
+                                  <span className="text-[10px] text-muted-foreground shrink-0">{new Date(r.criado_em).toLocaleDateString('pt-BR')}</span>
                                 </div>
-                                <span className="text-[10px] text-muted-foreground shrink-0">{new Date(r.criado_em).toLocaleDateString('pt-BR')}</span>
+
+                                {/* Contato */}
+                                <div className="grid grid-cols-2 gap-1">
+                                  <Field label="CPF" value={p.cpf} />
+                                  <Field label="WhatsApp" value={p.whatsapp} />
+                                  <Field label="E-mail" value={p.email} />
+                                  <Field label="Rede social" value={p.instagram || p.facebook} />
+                                </div>
+
+                                {/* Dados Eleitorais */}
+                                <div className="grid grid-cols-2 gap-1">
+                                  <Field label="Título" value={p.titulo_eleitor} />
+                                  <Field label="Zona / Seção" value={`${p.zona_eleitoral || '—'} / ${p.secao_eleitoral || '—'}`} />
+                                  <Field label="Município / UF" value={`${p.municipio_eleitoral || '—'} / ${p.uf_eleitoral || '—'}`} />
+                                  <Field label="Colégio" value={p.colegio_eleitoral} />
+                                  <Field label="End. Colégio" value={p.endereco_colegio} />
+                                </div>
+
+                                {/* Dados específicos */}
+                                {expandedTipo === 'lideranca' && (
+                                  <div className="grid grid-cols-2 gap-1">
+                                    <Field label="Região" value={r.regiao_atuacao} />
+                                    <Field label="Comprometimento" value={r.nivel_comprometimento} />
+                                    <Field label="Apoiadores" value={r.apoiadores_estimados} />
+                                    <Field label="Meta votos" value={r.meta_votos} />
+                                  </div>
+                                )}
+                                {expandedTipo === 'fiscal' && (
+                                  <div className="grid grid-cols-2 gap-1">
+                                    <Field label="Zona fiscal" value={r.zona_fiscal} />
+                                    <Field label="Seção fiscal" value={r.secao_fiscal} />
+                                  </div>
+                                )}
+                                {expandedTipo === 'eleitor' && (
+                                  <div className="grid grid-cols-2 gap-1">
+                                    <Field label="Compromisso" value={r.compromisso_voto} />
+                                  </div>
+                                )}
+
+                                {/* Observações */}
+                                {r.observacoes && <Field label="Observações" value={r.observacoes} />}
                               </div>
-                            ));
+                            );});
                           })()}
                         </div>
                       )}
