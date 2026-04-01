@@ -85,7 +85,7 @@ export default function CampoLigacaoPolitica({
   const buscarLiderancas = useCallback(async (q: string) => {
     setLoadingLid(true);
     try {
-      let query = supabase
+      let query = (supabase as any)
         .from('liderancas')
         .select('id, regiao_atuacao, suplente_id, pessoas(nome)')
         .eq('status', 'Ativa')
