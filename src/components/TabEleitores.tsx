@@ -274,12 +274,12 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
   };
 
   const Info = ({ label, value, link }: { label: string; value?: string | null; link?: string }) => {
-    if (!value) return null;
+    const display = value && value.trim() ? value : '—';
     return (
       <div className="flex justify-between items-start py-1.5 border-b border-border/50 last:border-0">
         <span className="text-[11px] text-muted-foreground shrink-0">{label}</span>
-        {link ? <a href={link} target="_blank" rel="noopener" className="text-sm text-primary text-right ml-2">{value}</a>
-          : <span className="text-sm text-foreground text-right ml-2 break-words">{value}</span>}
+        {link && display !== '—' ? <a href={link} target="_blank" rel="noopener" className="text-sm text-primary text-right ml-2">{display}</a>
+          : <span className={`text-sm text-right ml-2 break-words ${display === '—' ? 'text-muted-foreground' : 'text-foreground'}`}>{display}</span>}
       </div>
     );
   };
