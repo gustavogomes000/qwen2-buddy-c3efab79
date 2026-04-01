@@ -449,17 +449,24 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
           </div>
         </div>
 
+        {/* Ligação Política */}
+        <CampoLigacaoPolitica
+          bloqueado={ligBloqueado}
+          nomeFixo={ligNomeFixo}
+          subtituloFixo={ligSubtitulo}
+          suplenteIdSelecionado={ligSuplenteId}
+          liderancaIdSelecionada={ligLiderancaId}
+          onSuplenteChange={(id, _nome, munId) => { setLigSuplenteId(id); setLigLiderancaId(null); setLigMunicipioId(munId); setLigErro(null); }}
+          onLiderancaChange={(id, _nome, supId, munId) => { setLigLiderancaId(id); setLigSuplenteId(supId); setLigMunicipioId(munId); setLigErro(null); }}
+          obrigatorio={tipoUsuario !== 'super_admin' && tipoUsuario !== 'coordenador'}
+          erro={ligErro}
+          cidadeAtivaId={cidadeAtiva?.id || null}
+        />
+
         {/* Vínculo (opcional) */}
         <div className="section-card">
-          <h2 className="section-title">🔗 Vínculo (opcional)</h2>
-          <p className="text-[10px] text-muted-foreground -mt-2 mb-2">Pode cadastrar sem vincular a ninguém.</p>
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Liderança vinculada</label>
-            <select value={form.lideranca_id} onChange={e => update('lideranca_id', e.target.value)} className={selectCls}>
-              <option value="">Nenhuma</option>
-              {liderancas.map(l => <option key={l.id} value={l.id}>{l.nome}</option>)}
-            </select>
-          </div>
+          <h2 className="section-title">🔗 Vínculo Adicional</h2>
+          <p className="text-[10px] text-muted-foreground -mt-2 mb-2">Opcional: vincule a um fiscal específico.</p>
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">Fiscal vinculado</label>
             <select value={form.fiscal_id} onChange={e => update('fiscal_id', e.target.value)} className={selectCls}>
