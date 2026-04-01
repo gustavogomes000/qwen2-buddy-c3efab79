@@ -36,41 +36,78 @@ Deno.serve(async (req) => {
       .select('id, nome, partido, regiao_atuacao, situacao')
       .order('nome');
 
-    // Fonte B — usuários locais desta plataforma
+    // Fonte B — usuários do sistema (hierarquia)
     const { data: usuariosLocais } = await supabaseAdmin
       .from('hierarquia_usuarios')
       .select('id, nome, tipo, municipio_id, municipios(nome)')
       .eq('ativo', true)
-      .in('tipo', ['suplente', 'lideranca', 'coordenador'])
       .order('nome');
+
+    // Fonte C — lideranças cadastradas (tabela liderancas + pessoas)
+    const { data: liderancasCadastradas } = await supabaseAdmin
+      .from('liderancas')
+      .select('id, regiao_atuacao, status, tipo_lideranca, pessoa_id, pessoas(nome, whatsapp, cpf), municipios(nome)')
+      .order('criado_em', { ascending: false });
 
     function tipoLabel(tipo: string): string {
       const labels: Record<string, string> = {
+        super_admin: 'Super Admin',
         suplente: 'Suplente',
         lideranca: 'Liderança',
         coordenador: 'Coordenador',
+        fiscal: 'Fiscal',
       };
       return labels[tipo] ?? tipo;
     }
 
-    const listaUnificada = [
-      ...(suplentesExternos ?? []).map((s: any) => ({
+    // IDs já incluídos para evitar duplicatas
+    const idsUsados = new Set<string>();
+
+    const listaUnificada: any[] = [];
+
+    // Suplentes externos
+    for (const s of suplentesExternos ?? []) {
+      idsUsados.add(s.id);
+      listaUnificada.push({
         id: s.id,
         nome: s.nome,
         tipo: 'suplente',
         subtitulo: [s.partido, s.regiao_atuacao].filter(Boolean).join(' · '),
         municipio: null,
         fonte: 'externo',
-      })),
-      ...(usuariosLocais ?? []).map((u: any) => ({
+      });
+    }
+
+    // Usuários do sistema
+    for (const u of usuariosLocais ?? []) {
+      if (idsUsados.has(u.id)) continue;
+      idsUsados.add(u.id);
+      listaUnificada.push({
         id: u.id,
         nome: u.nome,
         tipo: u.tipo,
         subtitulo: tipoLabel(u.tipo),
         municipio: (u.municipios as any)?.nome ?? null,
         fonte: 'local',
-      })),
-    ].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+      });
+    }
+
+    // Lideranças cadastradas
+    for (const l of liderancasCadastradas ?? []) {
+      if (idsUsados.has(l.id)) continue;
+      idsUsados.add(l.id);
+      const nomePessoa = (l.pessoas as any)?.nome ?? '—';
+      listaUnificada.push({
+        id: l.id,
+        nome: nomePessoa,
+        tipo: 'lideranca_cadastrada',
+        subtitulo: [l.tipo_lideranca, l.regiao_atuacao, l.status].filter(Boolean).join(' · '),
+        municipio: (l.municipios as any)?.nome ?? null,
+        fonte: 'local',
+      });
+    }
+
+    listaUnificada.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 
     return new Response(
       JSON.stringify(listaUnificada),
