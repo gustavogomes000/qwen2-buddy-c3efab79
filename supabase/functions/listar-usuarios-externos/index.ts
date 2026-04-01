@@ -49,6 +49,18 @@ Deno.serve(async (req) => {
       .select('id, regiao_atuacao, status, tipo_lideranca, pessoa_id, pessoas(nome, whatsapp, cpf), municipios(nome)')
       .order('criado_em', { ascending: false });
 
+    // Fonte D — fiscais cadastrados
+    const { data: fiscaisCadastrados } = await supabaseAdmin
+      .from('fiscais')
+      .select('id, zona_fiscal, secao_fiscal, status, pessoa_id, pessoas(nome, whatsapp, cpf), municipios(nome)')
+      .order('criado_em', { ascending: false });
+
+    // Fonte E — eleitores cadastrados
+    const { data: eleitoresCadastrados } = await supabaseAdmin
+      .from('possiveis_eleitores')
+      .select('id, compromisso_voto, pessoa_id, pessoas(nome, whatsapp, cpf), municipios(nome)')
+      .order('criado_em', { ascending: false });
+
     function tipoLabel(tipo: string): string {
       const labels: Record<string, string> = {
         super_admin: 'Super Admin',
@@ -60,7 +72,8 @@ Deno.serve(async (req) => {
       return labels[tipo] ?? tipo;
     }
 
-    // IDs já incluídos para evitar duplicatas
+    // Nomes já incluídos (por pessoa_id) para evitar duplicatas
+    const pessoaIdsUsados = new Set<string>();
     const idsUsados = new Set<string>();
 
     const listaUnificada: any[] = [];
@@ -72,13 +85,14 @@ Deno.serve(async (req) => {
         id: s.id,
         nome: s.nome,
         tipo: 'suplente',
+        tag: 'Suplente',
         subtitulo: [s.partido, s.regiao_atuacao].filter(Boolean).join(' · '),
         municipio: null,
         fonte: 'externo',
       });
     }
 
-    // Usuários do sistema
+    // Usuários do sistema (hierarquia)
     for (const u of usuariosLocais ?? []) {
       if (idsUsados.has(u.id)) continue;
       idsUsados.add(u.id);
@@ -86,7 +100,8 @@ Deno.serve(async (req) => {
         id: u.id,
         nome: u.nome,
         tipo: u.tipo,
-        subtitulo: tipoLabel(u.tipo),
+        tag: tipoLabel(u.tipo),
+        subtitulo: tipoLabel(u.tipo) + ((u.municipios as any)?.nome ? ` · ${(u.municipios as any).nome}` : ''),
         municipio: (u.municipios as any)?.nome ?? null,
         fonte: 'local',
       });
@@ -94,15 +109,48 @@ Deno.serve(async (req) => {
 
     // Lideranças cadastradas
     for (const l of liderancasCadastradas ?? []) {
-      if (idsUsados.has(l.id)) continue;
-      idsUsados.add(l.id);
+      if (l.pessoa_id && pessoaIdsUsados.has(l.pessoa_id)) continue;
+      if (l.pessoa_id) pessoaIdsUsados.add(l.pessoa_id);
       const nomePessoa = (l.pessoas as any)?.nome ?? '—';
       listaUnificada.push({
         id: l.id,
         nome: nomePessoa,
         tipo: 'lideranca_cadastrada',
-        subtitulo: [l.tipo_lideranca, l.regiao_atuacao, l.status].filter(Boolean).join(' · '),
+        tag: 'Liderança',
+        subtitulo: [l.tipo_lideranca, l.regiao_atuacao].filter(Boolean).join(' · ') || 'Liderança',
         municipio: (l.municipios as any)?.nome ?? null,
+        fonte: 'local',
+      });
+    }
+
+    // Fiscais cadastrados
+    for (const f of fiscaisCadastrados ?? []) {
+      if (f.pessoa_id && pessoaIdsUsados.has(f.pessoa_id)) continue;
+      if (f.pessoa_id) pessoaIdsUsados.add(f.pessoa_id);
+      const nomePessoa = (f.pessoas as any)?.nome ?? '—';
+      listaUnificada.push({
+        id: f.id,
+        nome: nomePessoa,
+        tipo: 'fiscal_cadastrado',
+        tag: 'Fiscal',
+        subtitulo: [f.zona_fiscal ? `Zona ${f.zona_fiscal}` : null, f.secao_fiscal ? `Seção ${f.secao_fiscal}` : null].filter(Boolean).join(' · ') || 'Fiscal',
+        municipio: (f.municipios as any)?.nome ?? null,
+        fonte: 'local',
+      });
+    }
+
+    // Eleitores cadastrados
+    for (const e of eleitoresCadastrados ?? []) {
+      if (e.pessoa_id && pessoaIdsUsados.has(e.pessoa_id)) continue;
+      if (e.pessoa_id) pessoaIdsUsados.add(e.pessoa_id);
+      const nomePessoa = (e.pessoas as any)?.nome ?? '—';
+      listaUnificada.push({
+        id: e.id,
+        nome: nomePessoa,
+        tipo: 'eleitor_cadastrado',
+        tag: 'Eleitor',
+        subtitulo: e.compromisso_voto ? `Voto: ${e.compromisso_voto}` : 'Eleitor',
+        municipio: (e.municipios as any)?.nome ?? null,
         fonte: 'local',
       });
     }
