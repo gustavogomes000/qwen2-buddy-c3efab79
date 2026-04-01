@@ -502,8 +502,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
 
 
 
-      {isAdmin && (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {[
             { label: 'Total', value: data.length },
             { label: 'Apoiadores', value: data.reduce((s, l) => s + (l.apoiadores_estimados || 0), 0) },
