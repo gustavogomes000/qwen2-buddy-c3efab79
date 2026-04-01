@@ -433,7 +433,7 @@ export default function AdminDashboard() {
             <button onClick={() => handleExport()} disabled={exporting}
               className="w-full h-10 flex items-center justify-center gap-2 bg-card border border-border rounded-xl text-sm font-medium text-foreground active:scale-[0.97] transition-all disabled:opacity-50">
               {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-              Exportar Todos (CSV)
+              Exportar Todos (Excel)
             </button>
           </div>
         )}
@@ -531,7 +531,7 @@ export default function AdminDashboard() {
             <button onClick={() => handleExport(tipoFiltro === 'todos' ? undefined : tipoFiltro as any)} disabled={exporting}
               className="w-full h-10 flex items-center justify-center gap-2 bg-card border border-border rounded-xl text-sm font-medium text-foreground active:scale-[0.97] transition-all disabled:opacity-50">
               {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-              Exportar (CSV)
+              Exportar (Excel)
             </button>
           </div>
           );
@@ -590,7 +590,7 @@ export default function AdminDashboard() {
             <button onClick={() => handleExport(tipoFiltro === 'todos' ? undefined : tipoFiltro as any)} disabled={exporting}
               className="w-full h-10 flex items-center justify-center gap-2 bg-card border border-border rounded-xl text-sm font-medium text-foreground active:scale-[0.97] transition-all disabled:opacity-50">
               {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-              Exportar {tipoFiltro === 'todos' ? 'Todos' : tipoFiltroLabels[tipoFiltro]} (CSV)
+              Exportar {tipoFiltro === 'todos' ? 'Todos' : tipoFiltroLabels[tipoFiltro]} (Excel)
             </button>
           </div>
         )}

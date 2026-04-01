@@ -519,7 +519,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
 
       <button onClick={() => exportAllCadastros('lideranca')}
         className="w-full h-9 flex items-center justify-center gap-2 bg-card border border-border rounded-xl text-xs font-medium text-foreground active:scale-[0.97] transition-all">
-        <Download size={14} /> Exportar Lideranças (CSV)
+        <Download size={14} /> Exportar Lideranças (Excel)
       </button>
 
       {loading ? (

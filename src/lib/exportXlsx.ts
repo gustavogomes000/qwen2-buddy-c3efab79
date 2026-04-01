@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import * as XLSX from 'xlsx';
 
 interface ExportRow {
   tipo: string;
@@ -30,14 +31,6 @@ const headers = [
   'Status', 'Cadastrado por', 'Data Cadastro', 'Detalhes',
 ];
 
-function escapeCSV(val: string): string {
-  if (!val) return '';
-  if (val.includes(',') || val.includes('"') || val.includes('\n')) {
-    return `"${val.replace(/"/g, '""')}"`;
-  }
-  return val;
-}
-
 function formatDate(d: string | null): string {
   if (!d) return '';
   return new Date(d).toLocaleDateString('pt-BR');
@@ -51,15 +44,12 @@ export async function exportAllCadastros(tipo?: 'lideranca' | 'fiscal' | 'eleito
   const rows: ExportRow[] = [];
 
   if (!tipo || tipo === 'lideranca') {
-    const { data } = await supabase.from('liderancas')
-      .select('*, pessoas(*)');
+    const { data } = await supabase.from('liderancas').select('*, pessoas(*)');
     data?.forEach((l: any) => {
       const p = l.pessoas || {};
       rows.push({
-        tipo: 'Liderança',
-        nome: p.nome || '', cpf: p.cpf || '', telefone: p.telefone || '',
-        whatsapp: p.whatsapp || '', email: p.email || '',
-        instagram: p.instagram || '', facebook: p.facebook || '',
+        tipo: 'Liderança', nome: p.nome || '', cpf: p.cpf || '', telefone: p.telefone || '',
+        whatsapp: p.whatsapp || '', email: p.email || '', instagram: p.instagram || '', facebook: p.facebook || '',
         titulo_eleitor: p.titulo_eleitor || '', zona_eleitoral: p.zona_eleitoral || '',
         secao_eleitoral: p.secao_eleitoral || '', municipio_eleitoral: p.municipio_eleitoral || '',
         uf_eleitoral: p.uf_eleitoral || '', colegio_eleitoral: p.colegio_eleitoral || '',
@@ -72,15 +62,12 @@ export async function exportAllCadastros(tipo?: 'lideranca' | 'fiscal' | 'eleito
   }
 
   if (!tipo || tipo === 'fiscal') {
-    const { data } = await supabase.from('fiscais')
-      .select('*, pessoas(*)');
+    const { data } = await supabase.from('fiscais').select('*, pessoas(*)');
     data?.forEach((f: any) => {
       const p = f.pessoas || {};
       rows.push({
-        tipo: 'Fiscal',
-        nome: p.nome || '', cpf: p.cpf || '', telefone: p.telefone || '',
-        whatsapp: p.whatsapp || '', email: p.email || '',
-        instagram: p.instagram || '', facebook: p.facebook || '',
+        tipo: 'Fiscal', nome: p.nome || '', cpf: p.cpf || '', telefone: p.telefone || '',
+        whatsapp: p.whatsapp || '', email: p.email || '', instagram: p.instagram || '', facebook: p.facebook || '',
         titulo_eleitor: p.titulo_eleitor || '', zona_eleitoral: p.zona_eleitoral || '',
         secao_eleitoral: p.secao_eleitoral || '', municipio_eleitoral: p.municipio_eleitoral || '',
         uf_eleitoral: p.uf_eleitoral || '', colegio_eleitoral: f.colegio_eleitoral || p.colegio_eleitoral || '',
@@ -93,15 +80,12 @@ export async function exportAllCadastros(tipo?: 'lideranca' | 'fiscal' | 'eleito
   }
 
   if (!tipo || tipo === 'eleitor') {
-    const { data } = await supabase.from('possiveis_eleitores')
-      .select('*, pessoas(*)');
+    const { data } = await supabase.from('possiveis_eleitores').select('*, pessoas(*)');
     data?.forEach((e: any) => {
       const p = e.pessoas || {};
       rows.push({
-        tipo: 'Eleitor',
-        nome: p.nome || '', cpf: p.cpf || '', telefone: p.telefone || '',
-        whatsapp: p.whatsapp || '', email: p.email || '',
-        instagram: p.instagram || '', facebook: p.facebook || '',
+        tipo: 'Eleitor', nome: p.nome || '', cpf: p.cpf || '', telefone: p.telefone || '',
+        whatsapp: p.whatsapp || '', email: p.email || '', instagram: p.instagram || '', facebook: p.facebook || '',
         titulo_eleitor: p.titulo_eleitor || '', zona_eleitoral: p.zona_eleitoral || '',
         secao_eleitoral: p.secao_eleitoral || '', municipio_eleitoral: p.municipio_eleitoral || '',
         uf_eleitoral: p.uf_eleitoral || '', colegio_eleitoral: p.colegio_eleitoral || '',
@@ -113,27 +97,39 @@ export async function exportAllCadastros(tipo?: 'lideranca' | 'fiscal' | 'eleito
     });
   }
 
-  // Build CSV
-  const csvLines = [headers.map(escapeCSV).join(',')];
-  rows.forEach(r => {
-    csvLines.push([
-      r.tipo, r.nome, r.cpf, r.telefone, r.whatsapp, r.email,
-      r.instagram, r.facebook, r.titulo_eleitor, r.zona_eleitoral,
-      r.secao_eleitoral, r.municipio_eleitoral, r.uf_eleitoral,
-      r.colegio_eleitoral, r.endereco_colegio, r.situacao_titulo,
-      r.status, r.cadastrado_por_nome, r.criado_em, r.extras,
-    ].map(escapeCSV).join(','));
-  });
+  // Build Excel workbook
+  const wsData = [headers, ...rows.map(r => [
+    r.tipo, r.nome, r.cpf, r.telefone, r.whatsapp, r.email,
+    r.instagram, r.facebook, r.titulo_eleitor, r.zona_eleitoral,
+    r.secao_eleitoral, r.municipio_eleitoral, r.uf_eleitoral,
+    r.colegio_eleitoral, r.endereco_colegio, r.situacao_titulo,
+    r.status, r.cadastrado_por_nome, r.criado_em, r.extras,
+  ])];
 
-  const BOM = '\uFEFF';
-  const blob = new Blob([BOM + csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  const tipoLabel = tipo ? `_${tipo}s` : '_todos';
-  a.download = `cadastros${tipoLabel}_${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Auto-size columns
+  const colWidths = headers.map((h, i) => {
+    let max = h.length;
+    rows.forEach(r => {
+      const vals = [r.tipo, r.nome, r.cpf, r.telefone, r.whatsapp, r.email,
+        r.instagram, r.facebook, r.titulo_eleitor, r.zona_eleitoral,
+        r.secao_eleitoral, r.municipio_eleitoral, r.uf_eleitoral,
+        r.colegio_eleitoral, r.endereco_colegio, r.situacao_titulo,
+        r.status, r.cadastrado_por_nome, r.criado_em, r.extras];
+      const len = (vals[i] || '').length;
+      if (len > max) max = len;
+    });
+    return { wch: Math.min(max + 2, 40) };
+  });
+  ws['!cols'] = colWidths;
+
+  const wb = XLSX.utils.book_new();
+  const tipoLabel = tipo ? (tipo === 'lideranca' ? 'Lideranças' : tipo === 'fiscal' ? 'Fiscais' : 'Eleitores') : 'Cadastros';
+  XLSX.utils.book_append_sheet(wb, ws, tipoLabel);
+
+  const fileName = `cadastros_${tipo || 'todos'}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  XLSX.writeFile(wb, fileName);
 
   return rows.length;
 }
