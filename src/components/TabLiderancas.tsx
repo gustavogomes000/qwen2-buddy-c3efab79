@@ -64,7 +64,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
   const [mode, setMode] = useState<'list' | 'form' | 'detail'>('list');
   const [data, setData] = useState<LiderancaRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('Todas');
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [selected, setSelected] = useState<LiderancaRow | null>(null);
   const [temMais, setTemMais] = useState(true);
