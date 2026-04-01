@@ -66,7 +66,7 @@ export default function CampoLigacaoPolitica({
   const buscarSuplentes = useCallback(async (q: string) => {
     setLoadingSup(true);
     try {
-      const { data } = await supabase.functions.invoke('buscar-suplentes');
+      const data = await cachedInvoke<any[]>('buscar-suplentes');
       if (Array.isArray(data)) {
         let filtered = data as SuplenteResult[];
         if (q) {
