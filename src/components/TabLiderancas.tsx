@@ -106,53 +106,25 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
     });
   }, [usuario]);
 
-  const PAGE_SIZE = 20;
-  const QUERY_LISTA = 'id, status, tipo_lideranca, zona_atuacao, apoiadores_estimados, cadastrado_por, criado_em, municipio_id, origem_captacao, pessoas(nome, telefone, whatsapp, cpf), hierarquia_usuarios!liderancas_cadastrado_por_fkey(nome)';
-
-  const fetchData = useCallback(async (reset = true) => {
-    if (!usuario) return;
-    if (reset) {
-      setLoading(true);
-      paginaRef.current = 0;
-    } else {
-      setCarregandoMais(true);
+  // Use cached data from React Query
+  useEffect(() => {
+    if (cachedData) {
+      setData(cachedData as unknown as LiderancaRow[]);
+      setLoading(false);
+      setTemMais(false); // cached data already has all rows
     }
+  }, [cachedData]);
 
-    const filtroMunicipioId = (tipoUsuario === 'super_admin' || tipoUsuario === 'coordenador')
-      ? (isTodasCidades ? null : cidadeAtiva?.id)
-      : authMunicipioId;
+  useEffect(() => {
+    if (cacheLoading) setLoading(true);
+  }, [cacheLoading]);
 
-    const from = paginaRef.current * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
-
-    let query = (supabase as any)
-      .from('liderancas')
-      .select(QUERY_LISTA, { count: 'exact' })
-      .order('criado_em', { ascending: false })
-      .range(from, to);
-
-    if (filtroMunicipioId) {
-      query = query.eq('municipio_id', filtroMunicipioId);
+  // Refetch on refreshKey change
+  useEffect(() => {
+    if (refreshKey > 0) {
+      invalidarCadastros();
     }
-    if (tipoUsuario !== 'super_admin' && tipoUsuario !== 'coordenador') {
-      query = query.eq('cadastrado_por', usuario.id);
-    }
-
-    const { data: rows, error } = await query;
-    if (!error && rows) {
-      if (reset) {
-        setData(rows as unknown as LiderancaRow[]);
-      } else {
-        setData(prev => [...prev, ...(rows as unknown as LiderancaRow[])]);
-      }
-      paginaRef.current += 1;
-      setTemMais(rows.length === PAGE_SIZE);
-    }
-    setLoading(false);
-    setCarregandoMais(false);
-  }, [usuario, tipoUsuario, cidadeAtiva, isTodasCidades, authMunicipioId]);
-
-  useEffect(() => { fetchData(true); }, [fetchData, refreshKey]);
+  }, [refreshKey, invalidarCadastros]);
 
 
   useEffect(() => {
