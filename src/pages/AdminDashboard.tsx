@@ -73,7 +73,7 @@ export default function AdminDashboard() {
   const [_loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState<Periodo>('total');
   const [tipoFiltro, setTipoFiltro] = useState<TipoFiltro>('todos');
-  const [vistaAtiva, setVistaAtiva] = useState<VistaAtiva>('usuarios');
+  const [vistaAtiva, setVistaAtiva] = useState<VistaAtiva>('ranking');
   const [searchTerm, setSearchTerm] = useState('');
   const [exporting, setExporting] = useState(false);
   const [tipoUsuarioFiltro, setTipoUsuarioFiltro] = useState<TipoUsuarioFiltro>('todos');
