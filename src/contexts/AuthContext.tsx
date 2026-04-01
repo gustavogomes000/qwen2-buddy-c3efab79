@@ -121,18 +121,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!initialized) return;
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchUsuario(session.user.id);
-        startLocationTracking();
-        registerBackgroundSync();
-      } else {
-        setUsuario(null);
-        setMunicipioId(null);
-        setMunicipioNome(null);
-        stopLocationTracking();
+      try {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          await fetchUsuario(session.user.id);
+          startLocationTracking();
+          registerBackgroundSync();
+        } else {
+          setUsuario(null);
+          setMunicipioId(null);
+          setMunicipioNome(null);
+          stopLocationTracking();
+        }
+      } catch (err) {
+        console.error('Erro no auth state change:', err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => {
