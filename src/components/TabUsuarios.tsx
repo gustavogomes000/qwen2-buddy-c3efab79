@@ -47,6 +47,7 @@ const MODULOS_INLINE = [
 
 export default function TabUsuarios() {
   const { isAdmin } = useAuth();
+  const { municipios } = useCidade();
   const [subTab, setSubTab] = useState<SubTab>('gerenciar');
   const [suplentes, setSuplentes] = useState<SuplenteExterno[]>([]);
   const [liderancas, setLiderancas] = useState<LiderancaExterna[]>([]);
