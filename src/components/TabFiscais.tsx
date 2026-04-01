@@ -407,7 +407,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
       )}
       <div className="relative">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Buscar fiscal..." className="w-full h-11 pl-9 pr-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30" />
+        <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Buscar por nome, CPF ou WhatsApp..." className="w-full h-11 pl-9 pr-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30" />
       </div>
       <p className="text-xs text-muted-foreground">{filtered.length} fiscal{filtered.length !== 1 ? 'is' : ''}</p>
       {tipoUsuario === 'super_admin' && (
