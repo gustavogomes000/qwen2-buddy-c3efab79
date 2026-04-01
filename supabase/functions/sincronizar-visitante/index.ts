@@ -30,47 +30,65 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // ── 0. Validate indicador exists ──────────────────────────
+    // ── 0. Validate indicador & resolve context ───────────────
     let validatedSuplenteId: string | null = null;
     let validatedLiderancaId: string | null = null;
     let cadastradoPor: string | null = null;
     let municipioId: string | null = null;
 
     if (indicador_id && indicador_tipo === 'suplente') {
-      // Check suplentes table
+      // The ID may come from table `suplentes` OR from `hierarquia_usuarios` (tipo=suplente)
+      // Try suplentes table first
       const { data: sup } = await supabaseAdmin
         .from('suplentes')
         .select('id')
         .eq('id', indicador_id)
         .maybeSingle();
 
-      if (!sup) {
-        return jsonResp({ erro: 'Indicador (suplente) não encontrado' }, 400);
-      }
-      validatedSuplenteId = sup.id;
+      if (sup) {
+        validatedSuplenteId = sup.id;
+      } else {
+        // Try hierarquia_usuarios (buscar-indicadores returns hierarquia IDs for suplentes too)
+        const { data: hierSup } = await supabaseAdmin
+          .from('hierarquia_usuarios')
+          .select('id, suplente_id, municipio_id')
+          .eq('id', indicador_id)
+          .eq('tipo', 'suplente')
+          .eq('ativo', true)
+          .maybeSingle();
 
-      // Resolve cadastrado_por + municipio from hierarquia
-      const { data: usuario } = await supabaseAdmin
-        .from('hierarquia_usuarios')
-        .select('id, municipio_id')
-        .eq('suplente_id', indicador_id)
-        .eq('ativo', true)
-        .maybeSingle();
-      if (usuario) {
-        cadastradoPor = usuario.id;
-        municipioId = usuario.municipio_id;
+        if (!hierSup) {
+          return jsonResp({ erro: 'Indicador (suplente) não encontrado' }, 400);
+        }
+        // This hierarquia user IS the suplente — use their suplente_id FK if it exists
+        validatedSuplenteId = hierSup.suplente_id || null;
+        cadastradoPor = hierSup.id;
+        municipioId = hierSup.municipio_id;
       }
-      if (!municipioId) {
+
+      // Resolve cadastrado_por + municipio from hierarquia if not set yet
+      if (!cadastradoPor) {
+        const { data: usuario } = await supabaseAdmin
+          .from('hierarquia_usuarios')
+          .select('id, municipio_id')
+          .eq('suplente_id', indicador_id)
+          .eq('ativo', true)
+          .maybeSingle();
+        if (usuario) {
+          cadastradoPor = usuario.id;
+          municipioId = municipioId || usuario.municipio_id;
+        }
+      }
+      if (!municipioId && validatedSuplenteId) {
         const { data: sm } = await supabaseAdmin
           .from('suplente_municipio')
           .select('municipio_id')
-          .eq('suplente_id', indicador_id)
+          .eq('suplente_id', validatedSuplenteId)
           .maybeSingle();
         if (sm) municipioId = sm.municipio_id;
       }
     } else if (indicador_id && indicador_tipo === 'lideranca') {
-      // indicador_id may be hierarquia_usuarios.id or liderancas.id
-      // Try hierarquia first
+      // ID may be from hierarquia_usuarios or liderancas
       const { data: usuario } = await supabaseAdmin
         .from('hierarquia_usuarios')
         .select('id, suplente_id, municipio_id')
@@ -81,7 +99,7 @@ Deno.serve(async (req) => {
       if (usuario) {
         cadastradoPor = usuario.id;
         municipioId = usuario.municipio_id;
-        // Resolve the lideranca record linked to this user
+        // Find the lideranca record for this user
         const { data: lid } = await supabaseAdmin
           .from('liderancas')
           .select('id, suplente_id')
@@ -91,7 +109,6 @@ Deno.serve(async (req) => {
           validatedLiderancaId = lid.id;
           validatedSuplenteId = lid.suplente_id;
         } else {
-          // The user itself IS the liderança reference
           validatedSuplenteId = usuario.suplente_id;
         }
       } else {
