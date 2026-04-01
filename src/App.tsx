@@ -11,7 +11,16 @@ import Home from "./pages/Home";
 import AdminDashboard from "./pages/AdminDashboard";
 import CadastrosExternos from "./pages/CadastrosExternos";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, usuario } = useAuth();

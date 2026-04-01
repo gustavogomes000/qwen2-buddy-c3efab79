@@ -3,6 +3,7 @@ import { Loader2, CheckCircle2, Search, ChevronRight, ArrowLeft, Phone, MessageC
 import { exportAllCadastros } from '@/lib/exportXlsx';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useEleitores, useInvalidarCadastros } from '@/hooks/useDataCache';
 import { useCidade } from '@/contexts/CidadeContext';
 import { formatCPF, cleanCPF, validateCPF, maskCPF } from '@/lib/cpf';
 import { checkCpfDuplicateByUser } from '@/lib/cpfDuplicateCheck';
@@ -54,6 +55,8 @@ interface Props {
 export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
   const { usuario, isAdmin, tipoUsuario, municipioId: authMunicipioId } = useAuth();
   const { cidadeAtiva, isTodasCidades } = useCidade();
+  const { data: cachedData, isLoading: cacheLoading } = useEleitores();
+  const invalidarCadastros = useInvalidarCadastros();
   const [mode, setMode] = useState<'list' | 'form' | 'detail'>('list');
   const [data, setData] = useState<EleitorRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,41 +100,22 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
 
   const update = useCallback((field: string, value: string) => setForm(f => ({ ...f, [field]: value })), []);
 
-  const PAGE_SIZE = 20;
-  const QUERY_LISTA_ELE = 'id, compromisso_voto, lideranca_id, fiscal_id, cadastrado_por, criado_em, municipio_id, origem_captacao, pessoas(nome, cpf, telefone, whatsapp), liderancas:lideranca_id(id, pessoas(nome)), fiscais:fiscal_id(id, pessoas(nome))';
-
-  const fetchData = useCallback(async (reset = true) => {
-    if (!usuario) return;
-    if (reset) { setLoading(true); paginaRef.current = 0; } else { setCarregandoMais(true); }
-
-    const filtroMunicipioId = (tipoUsuario === 'super_admin' || tipoUsuario === 'coordenador')
-      ? (isTodasCidades ? null : cidadeAtiva?.id)
-      : authMunicipioId;
-
-    const from = paginaRef.current * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
-
-    let query = (supabase as any)
-      .from('possiveis_eleitores')
-      .select(QUERY_LISTA_ELE, { count: 'exact' })
-      .order('criado_em', { ascending: false })
-      .range(from, to);
-
-    if (filtroMunicipioId) query = query.eq('municipio_id', filtroMunicipioId);
-    if (tipoUsuario !== 'super_admin' && tipoUsuario !== 'coordenador') query = query.eq('cadastrado_por', usuario.id);
-
-    const { data: eleitores } = await query;
-    if (eleitores) {
-      if (reset) setData(eleitores as unknown as EleitorRow[]);
-      else setData(prev => [...prev, ...(eleitores as unknown as EleitorRow[])]);
-      paginaRef.current += 1;
-      setTemMais(eleitores.length === PAGE_SIZE);
+  // Use cached data from React Query
+  useEffect(() => {
+    if (cachedData) {
+      setData(cachedData as unknown as EleitorRow[]);
+      setLoading(false);
+      setTemMais(false);
     }
-    setLoading(false);
-    setCarregandoMais(false);
-  }, [usuario, tipoUsuario, cidadeAtiva, isTodasCidades, authMunicipioId]);
+  }, [cachedData]);
 
-  useEffect(() => { fetchData(true); }, [fetchData, refreshKey]);
+  useEffect(() => {
+    if (cacheLoading) setLoading(true);
+  }, [cacheLoading]);
+
+  useEffect(() => {
+    if (refreshKey > 0) invalidarCadastros();
+  }, [refreshKey, invalidarCadastros]);
 
   useEffect(() => {
     supabase.from('liderancas').select('id, pessoas(nome)').eq('status', 'Ativa')
@@ -245,7 +229,7 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
       setCpfStatus('idle');
       setCpfNomePessoa('');
       setMode('list');
-      fetchData(true);
+      invalidarCadastros();
       onSaved?.();
     } catch (err: any) {
       toast({ title: 'Erro ao salvar', description: err.message, variant: 'destructive' });
@@ -265,7 +249,7 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
     toast({ title: 'Registro excluído' });
     setSelected(null);
     setMode('list');
-    fetchData(true);
+    invalidarCadastros();
   };
 
   const filtered = useMemo(() => data.filter(e => {
@@ -574,12 +558,7 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
               <ChevronRight size={16} className="text-muted-foreground shrink-0" />
             </button>
           ))}
-          {temMais && (
-            <button onClick={() => fetchData(false)} disabled={carregandoMais}
-              className="w-full py-3 text-sm text-primary font-medium flex items-center justify-center gap-2 active:scale-[0.97]">
-              {carregandoMais ? <Loader2 size={16} className="animate-spin" /> : 'Carregar mais'}
-            </button>
-          )}
+          {/* All data loaded from cache */}
         </div>
       )}
     </div>

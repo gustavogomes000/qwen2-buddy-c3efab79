@@ -1485,6 +1485,7 @@ export type Database = {
     Functions: {
       criar_primeiro_admin: { Args: { _email: string }; Returns: undefined }
       eh_admin: { Args: { _user_id: string }; Returns: boolean }
+      eh_admin_hierarquia: { Args: never; Returns: boolean }
       eh_admin_painel: { Args: { _user_id: string }; Returns: boolean }
       eh_super_admin: { Args: never; Returns: boolean }
       get_meu_suplente_id: { Args: never; Returns: string }

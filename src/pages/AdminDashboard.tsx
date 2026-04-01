@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCidade } from '@/contexts/CidadeContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useLiderancas, useFiscais, useEleitores, useUsuarios } from '@/hooks/useDataCache';
 import {
   ArrowLeft, Users, Shield, Target, Search,
   ChevronDown, ChevronUp, Loader2, Download, Trophy,
@@ -69,7 +70,7 @@ export default function AdminDashboard() {
   const { municipios, isTodasCidades, cidadeAtiva, setCidadeAtiva, nomeMunicipioPorId } = useCidade();
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState<Periodo>('total');
   const [tipoFiltro, setTipoFiltro] = useState<TipoFiltro>('todos');
   const [vistaAtiva, setVistaAtiva] = useState<VistaAtiva>('usuarios');
@@ -77,10 +78,16 @@ export default function AdminDashboard() {
   const [exporting, setExporting] = useState(false);
   const [tipoUsuarioFiltro, setTipoUsuarioFiltro] = useState<TipoUsuarioFiltro>('todos');
 
-  const [liderancas, setLiderancas] = useState<LiderancaReg[]>([]);
-  const [fiscais, setFiscais] = useState<FiscalReg[]>([]);
-  const [eleitores, setEleitores] = useState<EleitorReg[]>([]);
-  const [usuarios, setUsuarios] = useState<HierarquiaUsuario[]>([]);
+  const { data: liderancasData, isLoading: lLoading } = useLiderancas();
+  const { data: fiscaisData, isLoading: fLoading } = useFiscais();
+  const { data: eleitoresData, isLoading: eLoading } = useEleitores();
+  const { data: usuariosData, isLoading: uLoading } = useUsuarios();
+
+  const liderancas = (liderancasData || []) as LiderancaReg[];
+  const fiscais = (fiscaisData || []) as FiscalReg[];
+  const eleitores = (eleitoresData || []) as EleitorReg[];
+  const usuarios = (usuariosData || []) as unknown as HierarquiaUsuario[];
+  const loading = lLoading || fLoading || eLoading || uLoading;
 
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [expandedTipo, setExpandedTipo] = useState<string | null>(null);
@@ -89,34 +96,9 @@ export default function AdminDashboard() {
     isTodasCidades ? null : cidadeAtiva?.id || null
   , [isTodasCidades, cidadeAtiva]);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    let lQuery = (supabase as any).from('liderancas').select('id, criado_em, cadastrado_por, suplente_id, status, regiao_atuacao, tipo_lideranca, municipio_id, origem_captacao, pessoas(nome, cpf, telefone, whatsapp, zona_eleitoral, secao_eleitoral)').order('criado_em', { ascending: false }).limit(2000);
-    let fQuery = (supabase as any).from('fiscais').select('id, criado_em, cadastrado_por, suplente_id, status, zona_fiscal, secao_fiscal, colegio_eleitoral, municipio_id, origem_captacao, pessoas(nome, cpf, telefone, whatsapp, zona_eleitoral, secao_eleitoral)').order('criado_em', { ascending: false }).limit(2000);
-    let eQuery = (supabase as any).from('possiveis_eleitores').select('id, criado_em, cadastrado_por, suplente_id, compromisso_voto, municipio_id, origem_captacao, pessoas(nome, cpf, telefone, whatsapp, zona_eleitoral, secao_eleitoral)').order('criado_em', { ascending: false }).limit(2000);
-
-    if (filtroMunicipioId) {
-      lQuery = lQuery.eq('municipio_id', filtroMunicipioId);
-      fQuery = fQuery.eq('municipio_id', filtroMunicipioId);
-      eQuery = eQuery.eq('municipio_id', filtroMunicipioId);
-    }
-
-    const [lRes, fRes, eRes, uRes] = await Promise.all([
-      lQuery, fQuery, eQuery,
-      supabase.from('hierarquia_usuarios').select('id, nome, tipo, suplente_id, municipio_id, ativo').eq('ativo', true).order('nome'),
-    ]);
-
-    setLiderancas((lRes.data || []) as any);
-    setFiscais((fRes.data || []) as any);
-    setEleitores((eRes.data || []) as any);
-    setUsuarios((uRes.data || []) as any);
-    setLoading(false);
-  }, [filtroMunicipioId]);
-
   useEffect(() => {
     if (!isAdmin) { navigate('/'); return; }
-    fetchData();
-  }, [isAdmin, fetchData]);
+  }, [isAdmin]);
 
   /* ── date filters ── */
   const hoje = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }, []);
@@ -546,7 +528,7 @@ export default function AdminDashboard() {
                   if (error) { toast({ title: 'Erro', description: error.message, variant: 'destructive' }); return; }
                   toast({ title: `✅ ${nome} adicionada!` });
                   input.value = '';
-                  fetchData();
+                  // Data will refresh automatically via React Query
                 }}
                 className="h-10 px-4 gradient-primary text-white rounded-xl text-sm font-semibold flex items-center gap-1 active:scale-95">
                 <Plus size={14} /> Adicionar
