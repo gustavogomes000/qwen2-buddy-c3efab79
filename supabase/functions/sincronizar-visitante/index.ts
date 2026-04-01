@@ -102,14 +102,17 @@ Deno.serve(async (req) => {
         municipioId = hierSup.municipio_id;
       }
 
-      // Resolve municipio if still missing
-      if (!municipioId && validatedSuplenteId) {
-        const { data: sm } = await supabaseAdmin
-          .from('suplente_municipio')
-          .select('municipio_id')
-          .eq('suplente_id', validatedSuplenteId)
-          .maybeSingle();
-        if (sm) municipioId = sm.municipio_id;
+      // Resolve municipio if still missing — try both validated and original indicador_id
+      if (!municipioId) {
+        const smId = validatedSuplenteId || indicador_id;
+        if (smId) {
+          const { data: sm } = await supabaseAdmin
+            .from('suplente_municipio')
+            .select('municipio_id')
+            .eq('suplente_id', smId)
+            .maybeSingle();
+          if (sm) municipioId = sm.municipio_id;
+        }
       }
     } else if (indicador_id && indicador_tipo === 'lideranca') {
       const { data: usuario } = await supabaseAdmin
