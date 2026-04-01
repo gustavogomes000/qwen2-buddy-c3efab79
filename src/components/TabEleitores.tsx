@@ -59,6 +59,9 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selected, setSelected] = useState<EleitorRow | null>(null);
+  const [temMais, setTemMais] = useState(true);
+  const [carregandoMais, setCarregandoMais] = useState(false);
+  const paginaRef = useRef(0);
   const [saving, setSaving] = useState(false);
   const [pessoaExistenteId, setPessoaExistenteId] = useState<string | null>(null);
   const [cpfStatus, setCpfStatus] = useState<'idle' | 'validando' | 'confirmado'>('idle');

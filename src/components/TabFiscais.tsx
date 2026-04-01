@@ -433,13 +433,13 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
         </button>
       )}
       {loading ? (
-        <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="section-card animate-pulse"><div className="h-4 bg-muted rounded w-2/3" /></div>)}</div>
+        <SkeletonLista />
       ) : filtered.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground"><p className="text-sm">Nenhum fiscal encontrado</p></div>
       ) : (
         <div className="space-y-2">
           {filtered.map(f => (
-            <button key={f.id} onClick={() => { setSelected(f); setMode('detail'); }} className="w-full text-left bg-card rounded-xl border border-border p-3 flex items-center gap-3 active:scale-[0.98] transition-transform">
+            <button key={f.id} onClick={() => { fetchDetalhe(f.id); setMode('detail'); }} className="w-full text-left bg-card rounded-xl border border-border p-3 flex items-center gap-3 active:scale-[0.98] transition-transform">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="font-semibold text-foreground text-sm truncate">{f.pessoas?.nome || '—'}</span>
@@ -452,6 +452,12 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
               <ChevronRight size={16} className="text-muted-foreground shrink-0" />
             </button>
           ))}
+          {temMais && (
+            <button onClick={() => fetchData(false)} disabled={carregandoMais}
+              className="w-full py-3 text-sm text-primary font-medium flex items-center justify-center gap-2 active:scale-[0.97]">
+              {carregandoMais ? <Loader2 size={16} className="animate-spin" /> : 'Carregar mais'}
+            </button>
+          )}
         </div>
       )}
     </div>
