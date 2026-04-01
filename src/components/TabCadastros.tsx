@@ -81,8 +81,7 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
 
   const isSuperAdmin = tipoUsuario === 'super_admin';
 
-  const mapPessoa = useCallback((item: any, tipo: CadastroUnificado['tipo'], regiao: string | null, status: string | null) => ({
-    id: item.id, tipo,
+  const mapBase = (item: any) => ({
     nome: item.pessoas?.nome || '—',
     cpf: item.pessoas?.cpf || null,
     telefone: item.pessoas?.telefone || null,
@@ -93,35 +92,73 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
     zona_eleitoral: item.pessoas?.zona_eleitoral || null,
     secao_eleitoral: item.pessoas?.secao_eleitoral || null,
     colegio_eleitoral: item.pessoas?.colegio_eleitoral || null,
+    endereco_colegio: item.pessoas?.endereco_colegio || null,
     municipio_eleitoral: item.pessoas?.municipio_eleitoral || null,
+    uf_eleitoral: item.pessoas?.uf_eleitoral || null,
     titulo_eleitor: item.pessoas?.titulo_eleitor || null,
+    situacao_titulo: item.pessoas?.situacao_titulo || null,
     observacoes: item.observacoes || item.pessoas?.observacoes_gerais || null,
-    status,
-    regiao,
     cadastrado_por_nome: item.hierarquia_usuarios?.nome || null,
     criado_em: item.criado_em,
-  }), []);
+    // defaults
+    tipo_lideranca: null as string | null,
+    nivel: null as string | null,
+    bairros_influencia: null as string | null,
+    comunidades_influencia: null as string | null,
+    apoiadores_estimados: null as number | null,
+    meta_votos: null as number | null,
+    nivel_comprometimento: null as string | null,
+    origem_captacao: item.origem_captacao || null,
+    zona_fiscal: null as string | null,
+    secao_fiscal: null as string | null,
+    colegio_fiscal: null as string | null,
+    lideranca_nome: null as string | null,
+    compromisso_voto: null as string | null,
+    fiscal_nome: null as string | null,
+  });
 
   const cadastros = useMemo(() => {
     const results: CadastroUnificado[] = [];
     if (lidData) {
       for (const l of lidData as any[]) {
-        results.push(mapPessoa(l, 'lideranca', l.regiao_atuacao || l.zona_atuacao || null, l.status));
+        results.push({
+          ...mapBase(l), id: l.id, tipo: 'lideranca',
+          status: l.status, regiao: l.regiao_atuacao || l.zona_atuacao || null,
+          tipo_lideranca: l.tipo_lideranca || null,
+          nivel: l.nivel || null,
+          bairros_influencia: l.bairros_influencia || null,
+          comunidades_influencia: l.comunidades_influencia || null,
+          apoiadores_estimados: l.apoiadores_estimados || null,
+          meta_votos: l.meta_votos || null,
+          nivel_comprometimento: l.nivel_comprometimento || null,
+        });
       }
     }
     if (fisData) {
       for (const f of fisData as any[]) {
-        results.push(mapPessoa(f, 'fiscal', f.zona_fiscal || null, f.status));
+        results.push({
+          ...mapBase(f), id: f.id, tipo: 'fiscal',
+          status: f.status, regiao: null,
+          zona_fiscal: f.zona_fiscal || null,
+          secao_fiscal: f.secao_fiscal || null,
+          colegio_fiscal: f.colegio_eleitoral || null,
+        });
       }
     }
     if (eleData) {
       for (const e of eleData as any[]) {
-        results.push(mapPessoa(e, 'eleitor', null, e.compromisso_voto));
+        results.push({
+          ...mapBase(e), id: e.id, tipo: 'eleitor',
+          status: e.compromisso_voto, regiao: null,
+          compromisso_voto: e.compromisso_voto || null,
+          lideranca_nome: e.liderancas?.pessoas?.nome || null,
+          fiscal_nome: e.fiscais?.pessoas?.nome || null,
+        });
       }
     }
     results.sort((a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime());
     return results;
-  }, [lidData, fisData, eleData, mapPessoa]);
+  }, [lidData, fisData, eleData]);
 
   useEffect(() => {
     if (refreshKey > 0) invalidarCadastros();
