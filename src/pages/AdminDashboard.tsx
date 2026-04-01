@@ -100,7 +100,21 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!isAdmin) { navigate('/'); return; }
     fetchData();
+    fetchVisitas();
   }, [isAdmin, cidadeAtiva]);
+
+  const fetchVisitas = async () => {
+    const ontem = new Date(Date.now() - 86400000).toISOString();
+    const [{ count: cL }, { count: cF }, { count: cE }] = await Promise.all([
+      (supabase as any).from('liderancas').select('*', { count: 'exact', head: true })
+        .eq('origem_captacao', 'visita_comite').gte('criado_em', ontem),
+      (supabase as any).from('fiscais').select('*', { count: 'exact', head: true })
+        .eq('origem_captacao', 'visita_comite').gte('criado_em', ontem),
+      (supabase as any).from('possiveis_eleitores').select('*', { count: 'exact', head: true })
+        .eq('origem_captacao', 'visita_comite').gte('criado_em', ontem),
+    ]);
+    setTotalVisitas((cL ?? 0) + (cF ?? 0) + (cE ?? 0));
+  };
 
   const fetchData = async () => {
     setLoading(true);
