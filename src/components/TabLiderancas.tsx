@@ -292,7 +292,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
       setCpfStatus('idle');
       setCpfNomePessoa('');
       setMode('list');
-      fetchData();
+      fetchData(true);
       onSaved?.();
     } catch (err: any) {
       toast({ title: 'Erro ao salvar', description: err.message, variant: 'destructive' });
