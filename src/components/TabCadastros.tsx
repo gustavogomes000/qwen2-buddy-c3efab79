@@ -48,108 +48,64 @@ interface Props {
 export default function TabCadastros({ refreshKey, onSaved }: Props) {
   const { tipoUsuario, usuario, isAdmin, municipioId: authMunicipioId } = useAuth();
   const { cidadeAtiva, isTodasCidades, nomeMunicipioPorId } = useCidade();
-  const [loading, setLoading] = useState(true);
-  const [cadastros, setCadastros] = useState<CadastroUnificado[]>([]);
+  const { data: lidData, isLoading: lidLoading } = useLiderancas();
+  const { data: fisData, isLoading: fisLoading } = useFiscais();
+  const { data: eleData, isLoading: eleLoading } = useEleitores();
+  const invalidarCadastros = useInvalidarCadastros();
+
+  const loading = lidLoading || fisLoading || eleLoading;
   const [tipoFiltro, setTipoFiltro] = useState<TipoFiltro>('todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [exporting, setExporting] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [temMais, setTemMais] = useState(true);
-  const [carregandoMais, setCarregandoMais] = useState(false);
-  const paginaRef = useRef(0);
 
   const isSuperAdmin = tipoUsuario === 'super_admin';
 
-  const PAGE_SIZE = 20;
+  const mapPessoa = useCallback((item: any, tipo: CadastroUnificado['tipo'], regiao: string | null, status: string | null) => ({
+    id: item.id, tipo,
+    nome: item.pessoas?.nome || '—',
+    cpf: item.pessoas?.cpf || null,
+    telefone: item.pessoas?.telefone || null,
+    whatsapp: item.pessoas?.whatsapp || null,
+    email: item.pessoas?.email || null,
+    instagram: item.pessoas?.instagram || null,
+    facebook: item.pessoas?.facebook || null,
+    zona_eleitoral: item.pessoas?.zona_eleitoral || null,
+    secao_eleitoral: item.pessoas?.secao_eleitoral || null,
+    colegio_eleitoral: item.pessoas?.colegio_eleitoral || null,
+    municipio_eleitoral: item.pessoas?.municipio_eleitoral || null,
+    titulo_eleitor: item.pessoas?.titulo_eleitor || null,
+    observacoes: item.observacoes || item.pessoas?.observacoes_gerais || null,
+    status,
+    regiao,
+    cadastrado_por_nome: item.hierarquia_usuarios?.nome || null,
+    criado_em: item.criado_em,
+  }), []);
 
-  const fetchAll = useCallback(async (reset = true) => {
-    if (!usuario) return;
-    if (reset) { setLoading(true); paginaRef.current = 0; } else { setCarregandoMais(true); }
+  const cadastros = useMemo(() => {
     const results: CadastroUnificado[] = [];
-
-    const filtroMunicipioId = (tipoUsuario === 'super_admin' || tipoUsuario === 'coordenador')
-      ? (isTodasCidades ? null : cidadeAtiva?.id)
-      : authMunicipioId;
-
-    const isAdminUser = tipoUsuario === 'super_admin' || tipoUsuario === 'coordenador';
-
-    const from = paginaRef.current * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
-
-    let lidQuery = (supabase as any).from('liderancas')
-      .select('id, status, regiao_atuacao, zona_atuacao, criado_em, municipio_id, pessoas(nome, cpf, telefone, whatsapp, email, instagram, facebook, zona_eleitoral, secao_eleitoral, colegio_eleitoral, municipio_eleitoral, titulo_eleitor, observacoes_gerais), hierarquia_usuarios!liderancas_cadastrado_por_fkey(nome)')
-      .order('criado_em', { ascending: false }).range(from, to);
-    let fisQuery = (supabase as any).from('fiscais')
-      .select('id, status, zona_fiscal, criado_em, municipio_id, pessoas(nome, cpf, telefone, whatsapp, email, instagram, facebook, zona_eleitoral, secao_eleitoral, colegio_eleitoral, municipio_eleitoral, titulo_eleitor, observacoes_gerais), hierarquia_usuarios!fiscais_cadastrado_por_fkey(nome)')
-      .order('criado_em', { ascending: false }).range(from, to);
-    let eleQuery = (supabase as any).from('possiveis_eleitores')
-      .select('id, compromisso_voto, criado_em, municipio_id, pessoas(nome, cpf, telefone, whatsapp, email, instagram, facebook, zona_eleitoral, secao_eleitoral, colegio_eleitoral, municipio_eleitoral, titulo_eleitor, observacoes_gerais), hierarquia_usuarios!possiveis_eleitores_cadastrado_por_fkey(nome)')
-      .order('criado_em', { ascending: false }).range(from, to);
-
-    if (filtroMunicipioId) {
-      lidQuery = lidQuery.eq('municipio_id', filtroMunicipioId);
-      fisQuery = fisQuery.eq('municipio_id', filtroMunicipioId);
-      eleQuery = eleQuery.eq('municipio_id', filtroMunicipioId);
-    }
-    if (!isAdminUser) {
-      lidQuery = lidQuery.eq('cadastrado_por', usuario.id);
-      fisQuery = fisQuery.eq('cadastrado_por', usuario.id);
-      eleQuery = eleQuery.eq('cadastrado_por', usuario.id);
-    }
-
-    const [lidRes, fisRes, eleRes] = await Promise.all([lidQuery, fisQuery, eleQuery]);
-
-    const mapPessoa = (item: any, tipo: CadastroUnificado['tipo'], regiao: string | null, status: string | null) => ({
-      id: item.id, tipo,
-      nome: item.pessoas?.nome || '—',
-      cpf: item.pessoas?.cpf || null,
-      telefone: item.pessoas?.telefone || null,
-      whatsapp: item.pessoas?.whatsapp || null,
-      email: item.pessoas?.email || null,
-      instagram: item.pessoas?.instagram || null,
-      facebook: item.pessoas?.facebook || null,
-      zona_eleitoral: item.pessoas?.zona_eleitoral || null,
-      secao_eleitoral: item.pessoas?.secao_eleitoral || null,
-      colegio_eleitoral: item.pessoas?.colegio_eleitoral || null,
-      municipio_eleitoral: item.pessoas?.municipio_eleitoral || null,
-      titulo_eleitor: item.pessoas?.titulo_eleitor || null,
-      observacoes: item.observacoes || item.pessoas?.observacoes_gerais || null,
-      status,
-      regiao,
-      cadastrado_por_nome: item.hierarquia_usuarios?.nome || null,
-      criado_em: item.criado_em,
-    });
-
-    if (lidRes.data) {
-      for (const l of lidRes.data as any[]) {
+    if (lidData) {
+      for (const l of lidData as any[]) {
         results.push(mapPessoa(l, 'lideranca', l.regiao_atuacao || l.zona_atuacao || null, l.status));
       }
     }
-    if (fisRes.data) {
-      for (const f of fisRes.data as any[]) {
+    if (fisData) {
+      for (const f of fisData as any[]) {
         results.push(mapPessoa(f, 'fiscal', f.zona_fiscal || null, f.status));
       }
     }
-    if (eleRes.data) {
-      for (const e of eleRes.data as any[]) {
+    if (eleData) {
+      for (const e of eleData as any[]) {
         results.push(mapPessoa(e, 'eleitor', null, e.compromisso_voto));
       }
     }
-
     results.sort((a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime());
-    
-    if (reset) {
-      setCadastros(results);
-    } else {
-      setCadastros(prev => [...prev, ...results]);
-    }
-    paginaRef.current += 1;
-    setTemMais(results.length >= PAGE_SIZE);
-    setLoading(false);
-    setCarregandoMais(false);
-  }, [usuario, tipoUsuario, cidadeAtiva, isTodasCidades, authMunicipioId]);
+    return results;
+  }, [lidData, fisData, eleData, mapPessoa]);
 
-  useEffect(() => { fetchAll(true); }, [fetchAll, refreshKey]);
+  useEffect(() => {
+    if (refreshKey > 0) invalidarCadastros();
+  }, [refreshKey, invalidarCadastros]);
 
   const stats = useMemo(() => {
     const total = cadastros.length;
