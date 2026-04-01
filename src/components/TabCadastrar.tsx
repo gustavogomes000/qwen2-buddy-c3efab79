@@ -162,9 +162,9 @@ export default function TabCadastrar({ onSaved }: Props) {
         pessoaId = novaPessoa!.id;
       }
 
-      const suplenteId = getSuplementeId();
+      const suplenteId = ligSuplenteId || getSuplementeId();
 
-      const { error: lError } = await supabase.from('liderancas').insert({
+      const { error: lError } = await (supabase as any).from('liderancas').insert({
         pessoa_id: pessoaId, tipo_lideranca: form.tipo_lideranca || null,
         nivel: form.nivel || null, regiao_atuacao: form.regiao_atuacao || null,
         zona_atuacao: form.zona_atuacao || null, bairros_influencia: form.bairros_influencia || null,
@@ -177,6 +177,7 @@ export default function TabCadastrar({ onSaved }: Props) {
         observacoes: form.observacoes || null, 
         cadastrado_por: usuario?.id || null,
         suplente_id: suplenteId,
+        municipio_id: ligMunicipioId || null,
       });
       if (lError) throw lError;
 
