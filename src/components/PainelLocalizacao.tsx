@@ -146,7 +146,7 @@ export default function PainelLocalizacao() {
       if (since) locQuery = locQuery.gte('criado_em', since);
       if (!isAdmin) locQuery = locQuery.eq('usuario_id', currentUser.id);
 
-      const userQuery = supabase.from('hierarquia_usuarios').select('id, nome, tipo').neq('ativo', false);
+      const userQuery = supabase.from('hierarquia_usuarios').select('id, nome, tipo, suplente_id').neq('ativo', false);
       if (!isAdmin) userQuery.eq('id', currentUser.id);
 
       const [locRes, usrRes] = await Promise.all([locQuery, userQuery]);
