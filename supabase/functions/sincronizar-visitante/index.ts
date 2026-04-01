@@ -5,6 +5,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+function jsonResp(body: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -15,10 +22,7 @@ Deno.serve(async (req) => {
     const { tipo, nome, cpf, whatsapp, indicador_tipo, indicador_id } = body;
 
     if (!tipo || !nome) {
-      return new Response(
-        JSON.stringify({ erro: 'tipo e nome são obrigatórios' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonResp({ erro: 'tipo e nome são obrigatórios' }, 400);
     }
 
     const supabaseAdmin = createClient(
@@ -26,7 +30,88 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // 1. Buscar ou criar pessoa
+    // ── 0. Validate indicador exists ──────────────────────────
+    let validatedSuplenteId: string | null = null;
+    let validatedLiderancaId: string | null = null;
+    let cadastradoPor: string | null = null;
+    let municipioId: string | null = null;
+
+    if (indicador_id && indicador_tipo === 'suplente') {
+      // Check suplentes table
+      const { data: sup } = await supabaseAdmin
+        .from('suplentes')
+        .select('id')
+        .eq('id', indicador_id)
+        .maybeSingle();
+
+      if (!sup) {
+        return jsonResp({ erro: 'Indicador (suplente) não encontrado' }, 400);
+      }
+      validatedSuplenteId = sup.id;
+
+      // Resolve cadastrado_por + municipio from hierarquia
+      const { data: usuario } = await supabaseAdmin
+        .from('hierarquia_usuarios')
+        .select('id, municipio_id')
+        .eq('suplente_id', indicador_id)
+        .eq('ativo', true)
+        .maybeSingle();
+      if (usuario) {
+        cadastradoPor = usuario.id;
+        municipioId = usuario.municipio_id;
+      }
+      if (!municipioId) {
+        const { data: sm } = await supabaseAdmin
+          .from('suplente_municipio')
+          .select('municipio_id')
+          .eq('suplente_id', indicador_id)
+          .maybeSingle();
+        if (sm) municipioId = sm.municipio_id;
+      }
+    } else if (indicador_id && indicador_tipo === 'lideranca') {
+      // indicador_id may be hierarquia_usuarios.id or liderancas.id
+      // Try hierarquia first
+      const { data: usuario } = await supabaseAdmin
+        .from('hierarquia_usuarios')
+        .select('id, suplente_id, municipio_id')
+        .eq('id', indicador_id)
+        .eq('ativo', true)
+        .maybeSingle();
+
+      if (usuario) {
+        cadastradoPor = usuario.id;
+        municipioId = usuario.municipio_id;
+        // Resolve the lideranca record linked to this user
+        const { data: lid } = await supabaseAdmin
+          .from('liderancas')
+          .select('id, suplente_id')
+          .eq('cadastrado_por', usuario.id)
+          .maybeSingle();
+        if (lid) {
+          validatedLiderancaId = lid.id;
+          validatedSuplenteId = lid.suplente_id;
+        } else {
+          // The user itself IS the liderança reference
+          validatedSuplenteId = usuario.suplente_id;
+        }
+      } else {
+        // Try liderancas table directly
+        const { data: lid } = await supabaseAdmin
+          .from('liderancas')
+          .select('id, suplente_id, cadastrado_por, municipio_id')
+          .eq('id', indicador_id)
+          .maybeSingle();
+        if (!lid) {
+          return jsonResp({ erro: 'Indicador (liderança) não encontrado' }, 400);
+        }
+        validatedLiderancaId = lid.id;
+        validatedSuplenteId = lid.suplente_id;
+        cadastradoPor = lid.cadastrado_por;
+        municipioId = lid.municipio_id;
+      }
+    }
+
+    // ── 1. Find or create pessoa ──────────────────────────────
     let pessoaId: string;
     const cpfLimpo = cpf ? cpf.replace(/\D/g, '') : null;
 
@@ -39,8 +124,7 @@ Deno.serve(async (req) => {
 
       if (existente) {
         pessoaId = existente.id;
-        // Atualizar dados se disponíveis
-        const updates: Record<string, any> = {};
+        const updates: Record<string, string> = {};
         if (whatsapp) updates.whatsapp = whatsapp;
         if (Object.keys(updates).length > 0) {
           await supabaseAdmin.from('pessoas').update(updates).eq('id', pessoaId);
@@ -48,14 +132,13 @@ Deno.serve(async (req) => {
       } else {
         const { data: nova, error } = await supabaseAdmin
           .from('pessoas')
-          .insert({ nome, cpf: cpfLimpo, whatsapp: whatsapp || null })
+          .insert({ nome: nome.trim(), cpf: cpfLimpo, whatsapp: whatsapp || null })
           .select('id')
           .single();
         if (error) throw new Error(`Erro ao criar pessoa: ${error.message}`);
         pessoaId = nova.id;
       }
     } else {
-      // Sem CPF válido — buscar por nome exato
       const { data: porNome } = await supabaseAdmin
         .from('pessoas')
         .select('id')
@@ -75,49 +158,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 2. Resolver suplente_id e cadastrado_por do indicador
-    let suplenteId: string | null = null;
-    let cadastradoPor: string | null = null;
-    let municipioId: string | null = null;
-
-    if (indicador_tipo === 'suplente' && indicador_id) {
-      suplenteId = indicador_id;
-      // Buscar se há um usuário hierarquia vinculado a esse suplente
-      const { data: usuario } = await supabaseAdmin
-        .from('hierarquia_usuarios')
-        .select('id, municipio_id')
-        .eq('suplente_id', indicador_id)
-        .eq('ativo', true)
-        .maybeSingle();
-      if (usuario) {
-        cadastradoPor = usuario.id;
-        municipioId = usuario.municipio_id;
-      }
-      // Buscar municipio via suplente_municipio
-      if (!municipioId) {
-        const { data: sm } = await supabaseAdmin
-          .from('suplente_municipio')
-          .select('municipio_id')
-          .eq('suplente_id', indicador_id)
-          .maybeSingle();
-        if (sm) municipioId = sm.municipio_id;
-      }
-    } else if (indicador_tipo === 'lideranca' && indicador_id) {
-      // Pode ser ID da hierarquia ou ID da tabela liderancas
-      const { data: usuario } = await supabaseAdmin
-        .from('hierarquia_usuarios')
-        .select('id, suplente_id, municipio_id')
-        .eq('id', indicador_id)
-        .eq('ativo', true)
-        .maybeSingle();
-      if (usuario) {
-        cadastradoPor = usuario.id;
-        suplenteId = usuario.suplente_id;
-        municipioId = usuario.municipio_id;
-      }
-    }
-
-    // 3. Inserir no tipo correto
+    // ── 2. Insert into the correct table ──────────────────────
     if (tipo === 'lideranca') {
       const { data: existente } = await supabaseAdmin
         .from('liderancas')
@@ -125,17 +166,14 @@ Deno.serve(async (req) => {
         .eq('pessoa_id', pessoaId)
         .maybeSingle();
       if (existente) {
-        return new Response(
-          JSON.stringify({ acao: 'ja_existe', tipo: 'lideranca', id: existente.id }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return jsonResp({ acao: 'ja_existe', tipo: 'lideranca', id: existente.id });
       }
       const { data: novo, error } = await supabaseAdmin
         .from('liderancas')
         .insert({
           pessoa_id: pessoaId,
           cadastrado_por: cadastradoPor,
-          suplente_id: suplenteId,
+          suplente_id: validatedSuplenteId,
           municipio_id: municipioId,
           status: 'Ativa',
           origem_captacao: 'visita_comite',
@@ -143,10 +181,7 @@ Deno.serve(async (req) => {
         .select('id')
         .single();
       if (error) throw new Error(`Erro ao criar liderança: ${error.message}`);
-      return new Response(
-        JSON.stringify({ acao: 'criado', tipo: 'lideranca', id: novo.id, pessoa_id: pessoaId }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonResp({ acao: 'criado', tipo: 'lideranca', id: novo.id, pessoa_id: pessoaId });
     }
 
     if (tipo === 'fiscal') {
@@ -156,17 +191,15 @@ Deno.serve(async (req) => {
         .eq('pessoa_id', pessoaId)
         .maybeSingle();
       if (existente) {
-        return new Response(
-          JSON.stringify({ acao: 'ja_existe', tipo: 'fiscal', id: existente.id }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return jsonResp({ acao: 'ja_existe', tipo: 'fiscal', id: existente.id });
       }
       const { data: novo, error } = await supabaseAdmin
         .from('fiscais')
         .insert({
           pessoa_id: pessoaId,
           cadastrado_por: cadastradoPor,
-          suplente_id: suplenteId,
+          suplente_id: validatedSuplenteId,
+          lideranca_id: validatedLiderancaId,
           municipio_id: municipioId,
           status: 'Ativo',
           origem_captacao: 'visita_comite',
@@ -174,10 +207,7 @@ Deno.serve(async (req) => {
         .select('id')
         .single();
       if (error) throw new Error(`Erro ao criar fiscal: ${error.message}`);
-      return new Response(
-        JSON.stringify({ acao: 'criado', tipo: 'fiscal', id: novo.id, pessoa_id: pessoaId }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonResp({ acao: 'criado', tipo: 'fiscal', id: novo.id, pessoa_id: pessoaId });
     }
 
     if (tipo === 'eleitor') {
@@ -187,17 +217,15 @@ Deno.serve(async (req) => {
         .eq('pessoa_id', pessoaId)
         .maybeSingle();
       if (existente) {
-        return new Response(
-          JSON.stringify({ acao: 'ja_existe', tipo: 'eleitor', id: existente.id }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return jsonResp({ acao: 'ja_existe', tipo: 'eleitor', id: existente.id });
       }
       const { data: novo, error } = await supabaseAdmin
         .from('possiveis_eleitores')
         .insert({
           pessoa_id: pessoaId,
           cadastrado_por: cadastradoPor,
-          suplente_id: suplenteId,
+          suplente_id: validatedSuplenteId,
+          lideranca_id: validatedLiderancaId,
           municipio_id: municipioId,
           compromisso_voto: 'Indefinido',
           origem_captacao: 'visita_comite',
@@ -205,21 +233,15 @@ Deno.serve(async (req) => {
         .select('id')
         .single();
       if (error) throw new Error(`Erro ao criar eleitor: ${error.message}`);
-      return new Response(
-        JSON.stringify({ acao: 'criado', tipo: 'eleitor', id: novo.id, pessoa_id: pessoaId }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonResp({ acao: 'criado', tipo: 'eleitor', id: novo.id, pessoa_id: pessoaId });
     }
 
-    return new Response(
-      JSON.stringify({ erro: 'Tipo inválido. Use: lideranca, fiscal ou eleitor' }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return jsonResp({ erro: 'Tipo inválido. Use: lideranca, fiscal ou eleitor' }, 400);
   } catch (error) {
     console.error('Erro sincronizar-visitante:', error);
-    return new Response(
-      JSON.stringify({ erro: error instanceof Error ? error.message : 'Erro interno' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    return jsonResp(
+      { erro: error instanceof Error ? error.message : 'Erro interno' },
+      500
     );
   }
 });
