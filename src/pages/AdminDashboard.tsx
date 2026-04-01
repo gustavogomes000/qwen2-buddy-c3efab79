@@ -99,13 +99,26 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!isAdmin) { navigate('/'); return; }
     fetchData();
-  }, [isAdmin]);
+  }, [isAdmin, cidadeAtiva]);
 
   const fetchData = async () => {
+    setLoading(true);
+    const filtroMunicipioId = isTodasCidades ? null : cidadeAtiva?.id || null;
+
+    let lQuery = (supabase as any).from('liderancas').select('id, criado_em, cadastrado_por, suplente_id, status, regiao_atuacao, tipo_lideranca, municipio_id, pessoas(nome, cpf, telefone, whatsapp, zona_eleitoral, secao_eleitoral)');
+    let fQuery = (supabase as any).from('fiscais').select('id, criado_em, cadastrado_por, suplente_id, status, zona_fiscal, secao_fiscal, colegio_eleitoral, municipio_id, pessoas(nome, cpf, telefone, whatsapp, zona_eleitoral, secao_eleitoral)');
+    let eQuery = (supabase as any).from('possiveis_eleitores').select('id, criado_em, cadastrado_por, suplente_id, compromisso_voto, municipio_id, pessoas(nome, cpf, telefone, whatsapp, zona_eleitoral, secao_eleitoral)');
+
+    if (filtroMunicipioId) {
+      lQuery = lQuery.eq('municipio_id', filtroMunicipioId);
+      fQuery = fQuery.eq('municipio_id', filtroMunicipioId);
+      eQuery = eQuery.eq('municipio_id', filtroMunicipioId);
+    }
+
     const [lRes, fRes, eRes, uRes] = await Promise.all([
-      supabase.from('liderancas').select('id, criado_em, cadastrado_por, suplente_id, status, regiao_atuacao, tipo_lideranca, pessoas(nome, cpf, telefone, whatsapp, zona_eleitoral, secao_eleitoral)'),
-      supabase.from('fiscais').select('id, criado_em, cadastrado_por, suplente_id, status, zona_fiscal, secao_fiscal, colegio_eleitoral, pessoas(nome, cpf, telefone, whatsapp, zona_eleitoral, secao_eleitoral)'),
-      supabase.from('possiveis_eleitores').select('id, criado_em, cadastrado_por, suplente_id, compromisso_voto, pessoas(nome, cpf, telefone, whatsapp, zona_eleitoral, secao_eleitoral)'),
+      lQuery,
+      fQuery,
+      eQuery,
       supabase.from('hierarquia_usuarios').select('id, nome, tipo, suplente_id, ativo').eq('ativo', true),
     ]);
 
