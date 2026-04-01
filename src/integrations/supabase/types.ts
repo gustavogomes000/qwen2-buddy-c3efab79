@@ -427,6 +427,7 @@ export type Database = {
           lideranca_id: string | null
           municipio_id: string | null
           observacoes: string | null
+          origem_captacao: string | null
           pessoa_id: string
           secao_fiscal: string | null
           status: string | null
@@ -441,6 +442,7 @@ export type Database = {
           lideranca_id?: string | null
           municipio_id?: string | null
           observacoes?: string | null
+          origem_captacao?: string | null
           pessoa_id: string
           secao_fiscal?: string | null
           status?: string | null
@@ -455,6 +457,7 @@ export type Database = {
           lideranca_id?: string | null
           municipio_id?: string | null
           observacoes?: string | null
+          origem_captacao?: string | null
           pessoa_id?: string
           secao_fiscal?: string | null
           status?: string | null
@@ -1043,6 +1046,7 @@ export type Database = {
           lideranca_id: string | null
           municipio_id: string | null
           observacoes: string | null
+          origem_captacao: string | null
           pessoa_id: string
           suplente_id: string | null
         }
@@ -1055,6 +1059,7 @@ export type Database = {
           lideranca_id?: string | null
           municipio_id?: string | null
           observacoes?: string | null
+          origem_captacao?: string | null
           pessoa_id: string
           suplente_id?: string | null
         }
@@ -1067,6 +1072,7 @@ export type Database = {
           lideranca_id?: string | null
           municipio_id?: string | null
           observacoes?: string | null
+          origem_captacao?: string | null
           pessoa_id?: string
           suplente_id?: string | null
         }
