@@ -6,12 +6,12 @@ import { useMemo, useCallback } from 'react';
 
 /* ── Query keys ── */
 const keys = {
-  liderancas: (munId: string | null, userId: string | null, isAdmin: boolean) =>
-    ['liderancas', munId, isAdmin ? 'all' : userId] as const,
-  fiscais: (munId: string | null, userId: string | null, isAdmin: boolean) =>
-    ['fiscais', munId, isAdmin ? 'all' : userId] as const,
-  eleitores: (munId: string | null, userId: string | null, isAdmin: boolean) =>
-    ['eleitores', munId, isAdmin ? 'all' : userId] as const,
+  liderancas: (munId: string | null, scope: string) =>
+    ['liderancas', munId, scope] as const,
+  fiscais: (munId: string | null, scope: string) =>
+    ['fiscais', munId, scope] as const,
+  eleitores: (munId: string | null, scope: string) =>
+    ['eleitores', munId, scope] as const,
   usuarios: () => ['hierarquia_usuarios'] as const,
   contagens: (munId: string | null) => ['contagens', munId] as const,
 };
@@ -55,21 +55,55 @@ export function useContagens() {
         total: (l.count ?? 0) + (f.count ?? 0) + (e.count ?? 0),
       };
     },
-    staleTime: 2 * 60 * 1000, // 2 min
+    staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
+}
+
+/**
+ * Aplica filtros de escopo à query.
+ * scope='own' → nas abas regulares, mostra só a rede do usuário (por suplente_id ou cadastrado_por)
+ * scope='all' → no painel admin, mostra tudo (admin) ou filtro por cadastrado_por (não-admin)
+ */
+function applyScopeFilter(
+  q: any,
+  scope: 'own' | 'all',
+  isAdmin: boolean,
+  usuario: { id: string; suplente_id: string | null } | null,
+  table: 'liderancas' | 'fiscais' | 'possiveis_eleitores'
+) {
+  if (!usuario) return q;
+
+  if (scope === 'own') {
+    // Abas regulares: mostrar só da rede do usuário
+    if (isAdmin && usuario.suplente_id) {
+      // Admin com suplente_id vinculado → filtrar por suplente_id
+      q = q.eq('suplente_id', usuario.suplente_id);
+    } else if (!isAdmin) {
+      // Não-admin → só os que ele cadastrou (RLS já garante subordinados)
+      q = q.eq('cadastrado_por', usuario.id);
+    }
+    // Admin sem suplente_id (super_admin puro) → não filtra, vê tudo
+  } else {
+    // Painel admin: admins veem tudo, outros filtram
+    if (!isAdmin) {
+      q = q.eq('cadastrado_por', usuario.id);
+    }
+  }
+  return q;
 }
 
 /* ── Lideranças ── */
 const QUERY_LID = 'id, status, tipo_lideranca, zona_atuacao, apoiadores_estimados, cadastrado_por, criado_em, municipio_id, origem_captacao, regiao_atuacao, bairros_influencia, comunidades_influencia, meta_votos, nivel_comprometimento, observacoes, nivel, suplente_id, pessoas(nome, cpf, telefone, whatsapp, email, instagram, facebook, titulo_eleitor, zona_eleitoral, secao_eleitoral, municipio_eleitoral, uf_eleitoral, colegio_eleitoral, endereco_colegio, situacao_titulo), hierarquia_usuarios!liderancas_cadastrado_por_fkey(nome)';
 
-export function useLiderancas() {
+export function useLiderancas(scope: 'own' | 'all' = 'own') {
   const { usuario, tipoUsuario } = useAuth();
   const filtroMunicipioId = useFiltroMunicipio();
   const isAdmin = tipoUsuario === 'super_admin' || tipoUsuario === 'coordenador';
+  const scopeKey = scope === 'all' ? 'all' : (isAdmin && usuario?.suplente_id ? `sup-${usuario.suplente_id}` : usuario?.id || 'none');
 
   return useQuery({
-    queryKey: keys.liderancas(filtroMunicipioId, usuario?.id || null, isAdmin),
+    queryKey: keys.liderancas(filtroMunicipioId, scopeKey),
     queryFn: async () => {
       let q = (supabase as any)
         .from('liderancas')
@@ -78,14 +112,14 @@ export function useLiderancas() {
         .limit(500);
 
       if (filtroMunicipioId) q = q.eq('municipio_id', filtroMunicipioId);
-      if (!isAdmin && usuario) q = q.eq('cadastrado_por', usuario.id);
+      q = applyScopeFilter(q, scope, isAdmin, usuario, 'liderancas');
 
       const { data, error } = await q;
       if (error) throw error;
       return data || [];
     },
     enabled: !!usuario,
-    staleTime: 60 * 1000, // 1 min - show cached data instantly
+    staleTime: 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -93,13 +127,14 @@ export function useLiderancas() {
 /* ── Fiscais ── */
 const QUERY_FISC = 'id, status, colegio_eleitoral, zona_fiscal, secao_fiscal, cadastrado_por, criado_em, municipio_id, origem_captacao, suplente_id, lideranca_id, observacoes, pessoas(nome, cpf, telefone, whatsapp, email, instagram, facebook, titulo_eleitor, zona_eleitoral, secao_eleitoral, municipio_eleitoral, uf_eleitoral, colegio_eleitoral, endereco_colegio, situacao_titulo), hierarquia_usuarios!fiscais_cadastrado_por_fkey(nome)';
 
-export function useFiscais() {
+export function useFiscais(scope: 'own' | 'all' = 'own') {
   const { usuario, tipoUsuario } = useAuth();
   const filtroMunicipioId = useFiltroMunicipio();
   const isAdmin = tipoUsuario === 'super_admin' || tipoUsuario === 'coordenador';
+  const scopeKey = scope === 'all' ? 'all' : (isAdmin && usuario?.suplente_id ? `sup-${usuario.suplente_id}` : usuario?.id || 'none');
 
   return useQuery({
-    queryKey: keys.fiscais(filtroMunicipioId, usuario?.id || null, isAdmin),
+    queryKey: keys.fiscais(filtroMunicipioId, scopeKey),
     queryFn: async () => {
       let q = (supabase as any)
         .from('fiscais')
@@ -108,7 +143,7 @@ export function useFiscais() {
         .limit(500);
 
       if (filtroMunicipioId) q = q.eq('municipio_id', filtroMunicipioId);
-      if (!isAdmin && usuario) q = q.eq('cadastrado_por', usuario.id);
+      q = applyScopeFilter(q, scope, isAdmin, usuario, 'fiscais');
 
       const { data, error } = await q;
       if (error) throw error;
@@ -123,13 +158,14 @@ export function useFiscais() {
 /* ── Eleitores ── */
 const QUERY_ELE = 'id, compromisso_voto, lideranca_id, fiscal_id, cadastrado_por, criado_em, municipio_id, origem_captacao, suplente_id, observacoes, pessoas(nome, cpf, telefone, whatsapp, email, instagram, facebook, titulo_eleitor, zona_eleitoral, secao_eleitoral, municipio_eleitoral, uf_eleitoral, colegio_eleitoral, endereco_colegio, situacao_titulo), liderancas:lideranca_id(id, pessoas(nome)), fiscais:fiscal_id(id, pessoas(nome)), hierarquia_usuarios!possiveis_eleitores_cadastrado_por_fkey(nome)';
 
-export function useEleitores() {
+export function useEleitores(scope: 'own' | 'all' = 'own') {
   const { usuario, tipoUsuario } = useAuth();
   const filtroMunicipioId = useFiltroMunicipio();
   const isAdmin = tipoUsuario === 'super_admin' || tipoUsuario === 'coordenador';
+  const scopeKey = scope === 'all' ? 'all' : (isAdmin && usuario?.suplente_id ? `sup-${usuario.suplente_id}` : usuario?.id || 'none');
 
   return useQuery({
-    queryKey: keys.eleitores(filtroMunicipioId, usuario?.id || null, isAdmin),
+    queryKey: keys.eleitores(filtroMunicipioId, scopeKey),
     queryFn: async () => {
       let q = (supabase as any)
         .from('possiveis_eleitores')
@@ -138,7 +174,7 @@ export function useEleitores() {
         .limit(500);
 
       if (filtroMunicipioId) q = q.eq('municipio_id', filtroMunicipioId);
-      if (!isAdmin && usuario) q = q.eq('cadastrado_por', usuario.id);
+      q = applyScopeFilter(q, scope, isAdmin, usuario, 'possiveis_eleitores');
 
       const { data, error } = await q;
       if (error) throw error;
