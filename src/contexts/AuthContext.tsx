@@ -104,14 +104,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let initialized = false;
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchUsuario(session.user.id);
-        startLocationTracking();
-        registerBackgroundSync();
+      try {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          await fetchUsuario(session.user.id);
+          startLocationTracking();
+          registerBackgroundSync();
+        }
+      } catch (err) {
+        console.error('Erro na inicialização:', err);
+      } finally {
+        setLoading(false);
+        initialized = true;
       }
-      setLoading(false);
-      initialized = true;
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
