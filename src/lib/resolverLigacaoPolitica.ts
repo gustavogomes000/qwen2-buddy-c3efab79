@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { cachedInvoke } from '@/lib/cacheEdgeFunctions';
 import { resolverMunicipioId, buscarNomeMunicipio } from './resolverMunicipio';
 
 interface HierarquiaUsuario {
