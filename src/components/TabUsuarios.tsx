@@ -78,6 +78,7 @@ export default function TabUsuarios() {
   const [showEditSenha, setShowEditSenha] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editCidade, setEditCidade] = useState<string>('');
 
   // Modules view
   const [viewingModules, setViewingModules] = useState<HierarchyUser | null>(null);
