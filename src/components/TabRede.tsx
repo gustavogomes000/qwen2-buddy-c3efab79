@@ -16,6 +16,7 @@ interface LiderancaItem {
   id: string;
   status: string;
   tipo_lideranca: string | null;
+  origem_captacao: string | null;
   pessoas: { nome: string; telefone: string | null; whatsapp: string | null } | null;
 }
 
