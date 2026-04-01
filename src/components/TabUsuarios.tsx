@@ -208,6 +208,7 @@ export default function TabUsuarios() {
     setEditSenha('');
     setShowEditSenha(false);
     setConfirmDelete(false);
+    setEditCidade(user.municipio_id || '');
   };
 
   const handleEdit = async () => {
