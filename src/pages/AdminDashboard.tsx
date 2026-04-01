@@ -78,6 +78,7 @@ type VistaAtiva = 'resumo' | 'ranking' | 'usuarios' | 'registros';
 
 export default function AdminDashboard() {
   const { isAdmin } = useAuth();
+  const { municipios, isTodasCidades, cidadeAtiva, setCidadeAtiva } = useCidade();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
