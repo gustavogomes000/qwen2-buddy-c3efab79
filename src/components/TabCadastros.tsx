@@ -246,14 +246,12 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
         />
       </div>
 
-      {/* Export - super_admin only */}
-      {isSuperAdmin && (
-        <button onClick={handleExport} disabled={exporting}
-          className="w-full h-9 flex items-center justify-center gap-2 bg-card border border-border rounded-xl text-xs font-medium text-foreground active:scale-[0.97] transition-all disabled:opacity-50">
-          {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-          Exportar {tipoFiltro === 'todos' ? 'Todos' : tipoConfig[tipoFiltro].label + 's'} (CSV)
-        </button>
-      )}
+      {/* Export */}
+      <button onClick={handleExport} disabled={exporting}
+        className="w-full h-9 flex items-center justify-center gap-2 bg-card border border-border rounded-xl text-xs font-medium text-foreground active:scale-[0.97] transition-all disabled:opacity-50">
+        {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+        Exportar {tipoFiltro === 'todos' ? 'Todos' : tipoConfig[tipoFiltro].label + 's'} (CSV)
+      </button>
 
       {/* Count */}
       <p className="text-xs text-muted-foreground">{filtered.length} registro{filtered.length !== 1 ? 's' : ''}</p>
