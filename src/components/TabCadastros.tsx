@@ -412,10 +412,17 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
           );
         })}
 
-        {filtered.length === 0 && (
+        {filtered.length === 0 && !loading && (
           <div className="text-center py-8">
             <p className="text-sm text-muted-foreground">Nenhum cadastro encontrado</p>
           </div>
+        )}
+
+        {temMais && (
+          <button onClick={() => fetchAll(false)} disabled={carregandoMais}
+            className="w-full py-3 text-sm text-primary font-medium flex items-center justify-center gap-2 active:scale-[0.97]">
+            {carregandoMais ? <Loader2 size={16} className="animate-spin" /> : 'Carregar mais'}
+          </button>
         )}
       </div>
     </div>
