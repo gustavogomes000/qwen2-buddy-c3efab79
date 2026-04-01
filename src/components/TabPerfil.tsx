@@ -301,6 +301,10 @@ export default function TabPerfil() {
       toast({ title: 'Senha deve ter ao menos 4 caracteres', variant: 'destructive' });
       return;
     }
+    if (!createCidade) {
+      toast({ title: 'Selecione a cidade do usuário', variant: 'destructive' });
+      return;
+    }
 
     setSaving(true);
     try {
