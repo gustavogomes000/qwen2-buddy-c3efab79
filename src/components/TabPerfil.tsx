@@ -206,7 +206,7 @@ export default function TabPerfil() {
     try {
       const usrRes = await supabase
         .from('hierarquia_usuarios')
-        .select('id, nome, tipo, criado_em, suplente_id, auth_user_id')
+        .select('id, nome, tipo, criado_em, suplente_id, auth_user_id, municipio_id')
         .eq('ativo', true)
         .order('nome')
         .abortSignal(controller.signal);
