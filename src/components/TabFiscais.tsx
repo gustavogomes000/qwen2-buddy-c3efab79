@@ -380,6 +380,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
         {/* Dados de Fiscalização */}
         <div className="section-card">
           <h2 className="section-title">🔍 Dados de Fiscalização</h2>
+          <div className="space-y-1"><label className="text-xs font-medium text-muted-foreground">Colégio eleitoral</label><input type="text" value={form.colegio_eleitoral} onChange={e => update('colegio_eleitoral', e.target.value)} placeholder="Nome da escola / local" className={inputCls} /></div>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1"><label className="text-xs font-medium text-muted-foreground">Zona fiscal</label><input type="text" value={form.zona_fiscal} onChange={e => update('zona_fiscal', e.target.value)} className={inputCls} /></div>
             <div className="space-y-1"><label className="text-xs font-medium text-muted-foreground">Seção fiscal</label><input type="text" value={form.secao_fiscal} onChange={e => update('secao_fiscal', e.target.value)} className={inputCls} /></div>
