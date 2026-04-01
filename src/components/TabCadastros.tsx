@@ -7,7 +7,7 @@ import { Search, Users, Shield, Target, Phone, MapPin, Loader2, Download, UserCh
 import { exportAllCadastros } from '@/lib/exportXlsx';
 import { formatCPF } from '@/lib/cpf';
 import { toast } from '@/hooks/use-toast';
-import StatusBadge from '@/components/StatusBadge';
+
 import SkeletonLista from '@/components/SkeletonLista';
 
 type TipoFiltro = 'todos' | 'lideranca' | 'fiscal' | 'eleitor';
@@ -286,7 +286,7 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">
-                      {c.status && <StatusBadge status={c.status} />}
+                      
                       {c.telefone && (
                         <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
                           <Phone size={9} /> {c.telefone}

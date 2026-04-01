@@ -9,7 +9,7 @@ import { formatCPF, cleanCPF, validateCPF } from '@/lib/cpf';
 import { checkCpfDuplicateByUser } from '@/lib/cpfDuplicateCheck';
 import { resolverLigacaoPolitica } from '@/lib/resolverLigacaoPolitica';
 import { toast } from '@/hooks/use-toast';
-import StatusBadge from '@/components/StatusBadge';
+
 import CampoLigacaoPolitica from '@/components/CampoLigacaoPolitica';
 import SkeletonLista from '@/components/SkeletonLista';
 
@@ -258,7 +258,6 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
               <h2 className="text-lg font-bold text-foreground">{p.nome}</h2>
               <p className="text-sm text-muted-foreground">Fiscal · Z{f.zona_fiscal || '—'} S{f.secao_fiscal || '—'}</p>
             </div>
-            <StatusBadge status={f.status} />
           </div>
           <div className="flex gap-2 pt-2">
             {p.whatsapp && <a href={`https://wa.me/55${p.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener" className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg text-xs font-medium"><MessageCircle size={14} /> WhatsApp</a>}
@@ -413,7 +412,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="font-semibold text-foreground text-sm truncate">{f.pessoas?.nome || '—'}</span>
-                  <StatusBadge status={f.status} />
+                  
                   {(f as any).origem_captacao === 'visita_comite' && (
                     <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-500/15 text-blue-600 dark:text-blue-400">Visita</span>
                   )}

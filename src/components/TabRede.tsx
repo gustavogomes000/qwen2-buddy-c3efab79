@@ -3,7 +3,7 @@ import { Search, ChevronRight, ArrowLeft, Users, Shield, Eye, User, Phone, Messa
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { maskCPF } from '@/lib/cpf';
-import StatusBadge from '@/components/StatusBadge';
+
 
 interface SuplenteItem {
   id: string;
@@ -253,7 +253,7 @@ export default function TabRede() {
                 </p>
               )}
             </div>
-            {tipo === 'eleitor' ? compromissoBadge(selectedRecord.compromisso_voto) : <StatusBadge status={selectedRecord.status} />}
+            {tipo === 'eleitor' && compromissoBadge(selectedRecord.compromisso_voto)}
           </div>
           <div className="flex gap-2 pt-2">
             {p?.whatsapp && <a href={`https://wa.me/55${p.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener" className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg text-xs font-medium"><MessageCircle size={14} /> WhatsApp</a>}
@@ -408,7 +408,7 @@ export default function TabRede() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-semibold text-foreground truncate">{l.pessoas?.nome || '—'}</span>
-                          <StatusBadge status={l.status} />
+                          
                           {l.origem_captacao === 'visita_comite' && (
                             <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-500/15 text-blue-600 dark:text-blue-400">Visita</span>
                           )}
@@ -439,7 +439,7 @@ export default function TabRede() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-semibold text-foreground truncate">{f.pessoas?.nome || '—'}</span>
-                          <StatusBadge status={f.status} />
+                          
                           {f.origem_captacao === 'visita_comite' && (
                             <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-500/15 text-blue-600 dark:text-blue-400">Visita</span>
                           )}
