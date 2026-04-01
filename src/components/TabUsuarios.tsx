@@ -6,7 +6,7 @@ import { toast } from '@/hooks/use-toast';
 import ModulosUsuario from '@/components/ModulosUsuario';
 import {
   Loader2, UserPlus, Users, User, CheckCircle2, Search, Eye, EyeOff,
-  ChevronRight, ArrowLeft, Shield, Pencil, Trash2, KeyRound, Save, Link2
+  ChevronRight, ArrowLeft, Shield, Pencil, Trash2, KeyRound, Save, Link2, MapPin
 } from 'lucide-react';
 
 interface SuplenteExterno {
