@@ -268,11 +268,11 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
     fetchData(true);
   };
 
-  const filtered = data.filter(e => {
+  const filtered = useMemo(() => data.filter(e => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return (e.pessoas?.nome?.toLowerCase() || '').includes(q) || (e.pessoas?.cpf || '').includes(q);
-  });
+  }), [data, searchQuery]);
 
   const inputCls = "w-full h-11 px-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30";
   const selectCls = inputCls;
