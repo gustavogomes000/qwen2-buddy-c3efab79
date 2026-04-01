@@ -291,15 +291,20 @@ export default function AdminDashboard() {
           <button onClick={() => navigate('/')} className="p-1.5 rounded-xl hover:bg-muted active:scale-95 transition-all">
             <ArrowLeft size={20} className="text-foreground" />
           </button>
-          <div className="flex-1">
-            <h1 className="text-lg font-bold text-foreground">Painel Admin</h1>
-            <p className="text-[10px] text-muted-foreground">Visão completa da rede</p>
-          </div>
-          <div className="text-right">
-            <p className="text-lg font-bold text-primary">{totais.total}</p>
-            <p className="text-[9px] text-muted-foreground uppercase tracking-wider">cadastros</p>
-          </div>
-        </div>
+           <div className="flex-1">
+             <h1 className="text-lg font-bold text-foreground">Painel Admin</h1>
+             <p className="text-[10px] text-muted-foreground">Visão completa da rede</p>
+           </div>
+           <div className="text-right">
+             <p className="text-lg font-bold text-primary">{totais.total}</p>
+             <p className="text-[9px] text-muted-foreground uppercase tracking-wider">cadastros</p>
+           </div>
+         </div>
+         {municipios.length > 1 && (
+           <div className="max-w-3xl mx-auto px-4 pb-2">
+             <SeletorCidade />
+           </div>
+         )}
       </header>
 
       <div className="max-w-3xl mx-auto px-4 py-4 space-y-4">
