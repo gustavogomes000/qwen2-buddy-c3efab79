@@ -439,7 +439,16 @@ export default function AdminDashboard() {
         )}
 
         {/* ══════════ RANKING ══════════ */}
-        {vistaAtiva === 'ranking' && (
+        {vistaAtiva === 'ranking' && (() => {
+          const filtered = rankingUsuarios.filter(u => {
+            if (tipoFiltro === 'todos') return true;
+            if (tipoFiltro === 'lideranca') return u.l > 0;
+            if (tipoFiltro === 'fiscal') return u.f > 0;
+            return u.e > 0;
+          });
+          const maxTotal = filtered.length > 0 ? filtered[0].total : 1;
+
+          return (
           <div className="space-y-3">
             <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
               {(Object.keys(tipoFiltroLabels) as TipoFiltro[]).map(t => (
@@ -450,40 +459,72 @@ export default function AdminDashboard() {
               ))}
             </div>
 
-            {rankingUsuarios.length === 0 ? (
+            {filtered.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-6">Nenhum cadastro no período</p>
             ) : (
-              <div className="space-y-1.5">
-                {rankingUsuarios
-                  .filter(u => {
-                    if (tipoFiltro === 'todos') return true;
-                    if (tipoFiltro === 'lideranca') return u.l > 0;
-                    if (tipoFiltro === 'fiscal') return u.f > 0;
-                    return u.e > 0;
-                  })
-                  .map((u, i) => (
-                  <div key={u.id} className={`flex items-center gap-2 p-3 rounded-xl border transition-all ${
-                    i === 0 ? 'border-primary/40 bg-primary/5' : 'border-border bg-card'
-                  }`}>
-                    <span className="text-lg w-8 text-center shrink-0">{getMedalEmoji(i)}</span>
-                    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <span className="text-sm font-bold text-primary">{u.nome.charAt(0)}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground truncate">{u.nome}</p>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[9px] text-muted-foreground">{tipoLabel(u.tipo)}</span>
-                        {u.municipio_id && <span className="text-[9px] text-muted-foreground flex items-center gap-0.5"><MapPin size={8} />{nomeMunicipioPorId(u.municipio_id)}</span>}
+              <div className="space-y-2">
+                {/* Top 3 destaque */}
+                {filtered.length >= 3 && (
+                  <div className="grid grid-cols-3 gap-2 mb-2">
+                    {filtered.slice(0, 3).map((u, i) => {
+                      const sizes = [
+                        { ring: 'ring-2 ring-yellow-400', bg: 'bg-yellow-400/10', avatar: 'w-14 h-14', text: 'text-yellow-500' },
+                        { ring: 'ring-2 ring-gray-400', bg: 'bg-gray-300/10', avatar: 'w-12 h-12', text: 'text-gray-400' },
+                        { ring: 'ring-2 ring-amber-600', bg: 'bg-amber-600/10', avatar: 'w-11 h-11', text: 'text-amber-600' },
+                      ];
+                      const s = sizes[i];
+                      return (
+                        <div key={u.id} className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border border-border ${s.bg}`}>
+                          <span className="text-xl">{getMedalEmoji(i)}</span>
+                          <div className={`${s.avatar} rounded-full ${s.ring} bg-primary/10 flex items-center justify-center`}>
+                            <span className="text-base font-bold text-primary">{u.nome.charAt(0)}</span>
+                          </div>
+                          <p className="text-xs font-bold text-foreground text-center truncate w-full">{u.nome.split(' ')[0]}</p>
+                          <p className="text-2xl font-black text-primary leading-none">{u.total}</p>
+                          <div className="flex flex-wrap gap-0.5 justify-center">
+                            {u.l > 0 && <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-primary/15 text-primary">L{u.l}</span>}
+                            {u.f > 0 && <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-accent text-accent-foreground">F{u.f}</span>}
+                            {u.e > 0 && <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-secondary text-secondary-foreground">E{u.e}</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Restante do ranking com barras */}
+                {filtered.slice(filtered.length >= 3 ? 3 : 0).map((u, i) => {
+                  const pos = filtered.length >= 3 ? i + 3 : i;
+                  const pct = Math.round((u.total / maxTotal) * 100);
+                  return (
+                    <div key={u.id} className="relative p-3 rounded-xl border border-border bg-card overflow-hidden">
+                      {/* Barra de progresso de fundo */}
+                      <div
+                        className="absolute inset-y-0 left-0 bg-primary/[0.06] rounded-xl transition-all duration-500"
+                        style={{ width: `${pct}%` }}
+                      />
+                      <div className="relative flex items-center gap-2.5">
+                        <span className="text-sm font-bold text-muted-foreground w-7 text-center shrink-0">{pos + 1}º</span>
+                        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                          <span className="text-sm font-bold text-primary">{u.nome.charAt(0)}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-foreground truncate">{u.nome}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{tipoLabel(u.tipo)}</span>
+                            {u.municipio_id && <span className="text-[9px] text-muted-foreground flex items-center gap-0.5"><MapPin size={8} />{nomeMunicipioPorId(u.municipio_id)}</span>}
+                          </div>
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          {u.l > 0 && <span className="text-[10px] font-bold px-1.5 py-1 rounded-lg bg-primary/15 text-primary">L{u.l}</span>}
+                          {u.f > 0 && <span className="text-[10px] font-bold px-1.5 py-1 rounded-lg bg-accent text-accent-foreground">F{u.f}</span>}
+                          {u.e > 0 && <span className="text-[10px] font-bold px-1.5 py-1 rounded-lg bg-secondary text-secondary-foreground">E{u.e}</span>}
+                        </div>
+                        <p className="text-xl font-black text-primary shrink-0 min-w-[2rem] text-right">{u.total}</p>
                       </div>
                     </div>
-                    <div className="flex gap-1 shrink-0">
-                      {u.l > 0 && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary">L{u.l}</span>}
-                      {u.f > 0 && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-accent text-accent-foreground">F{u.f}</span>}
-                      {u.e > 0 && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground">E{u.e}</span>}
-                    </div>
-                    <p className="text-lg font-bold text-primary shrink-0">{u.total}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
@@ -493,7 +534,8 @@ export default function AdminDashboard() {
               Exportar (CSV)
             </button>
           </div>
-        )}
+          );
+        })()}
 
         {/* ══════════ REGISTROS ══════════ */}
         {vistaAtiva === 'registros' && (
