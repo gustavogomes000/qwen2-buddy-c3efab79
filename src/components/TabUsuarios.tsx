@@ -140,6 +140,8 @@ export default function TabUsuarios() {
     setLinkedSuplenteId(sup.id);
     setLinkSearch('');
     setSelectedModulos(new Set());
+    setCidadeSelecionada('');
+    setCidadeErro('');
   };
 
   const openCreateAvulso = () => {
