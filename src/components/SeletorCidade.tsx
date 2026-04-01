@@ -4,7 +4,7 @@ import { useCidade } from '@/contexts/CidadeContext';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Contagens {
-  [municipioId: string]: { suplentes: number; liderancas: number; eleitores: number };
+  [municipioId: string]: { liderancas: number; fiscais: number; eleitores: number };
 }
 
 export default function SeletorCidade() {
@@ -17,20 +17,18 @@ export default function SeletorCidade() {
     (async () => {
       const counts: Contagens = {};
 
-      const [lidRes, eleRes, supMunRes] = await Promise.all([
-        supabase.from('liderancas').select('id, suplente_id'),
-        supabase.from('possiveis_eleitores').select('id, suplente_id'),
-        (supabase as any).from('suplente_municipio').select('suplente_id, municipio_id'),
+      // Use municipio_id directly on tables instead of old suplente_id lookup
+      const [lidRes, fisRes, eleRes] = await Promise.all([
+        (supabase as any).from('liderancas').select('id, municipio_id'),
+        (supabase as any).from('fiscais').select('id, municipio_id'),
+        (supabase as any).from('possiveis_eleitores').select('id, municipio_id'),
       ]);
 
-      const supMunData = (supMunRes.data || []) as { suplente_id: string; municipio_id: string }[];
-
       for (const m of municipios) {
-        const supIds = supMunData.filter(s => s.municipio_id === m.id).map(s => s.suplente_id);
         counts[m.id] = {
-          suplentes: supIds.length,
-          liderancas: (lidRes.data || []).filter((l: any) => supIds.includes(l.suplente_id)).length,
-          eleitores: (eleRes.data || []).filter((e: any) => supIds.includes(e.suplente_id)).length,
+          liderancas: (lidRes.data || []).filter((l: any) => l.municipio_id === m.id).length,
+          fiscais: (fisRes.data || []).filter((f: any) => f.municipio_id === m.id).length,
+          eleitores: (eleRes.data || []).filter((e: any) => e.municipio_id === m.id).length,
         };
       }
 
@@ -85,8 +83,8 @@ export default function SeletorCidade() {
 
               {municipios.map(m => {
                 const selected = cidadeAtiva?.id === m.id;
-                const c = contagens[m.id] || { suplentes: 0, liderancas: 0, eleitores: 0 };
-                const temCadastros = c.suplentes > 0 || c.liderancas > 0 || c.eleitores > 0;
+                const c = contagens[m.id] || { liderancas: 0, fiscais: 0, eleitores: 0 };
+                const temCadastros = c.liderancas > 0 || c.fiscais > 0 || c.eleitores > 0;
 
                 return (
                   <button
@@ -104,10 +102,10 @@ export default function SeletorCidade() {
                       {temCadastros ? (
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                            <Users size={9} /> {c.suplentes} sup.
+                            <Users size={9} /> {c.liderancas} lid.
                           </span>
                           <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                            <Shield size={9} /> {c.liderancas} lid.
+                            <Shield size={9} /> {c.fiscais} fisc.
                           </span>
                           <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
                             <Target size={9} /> {c.eleitores} eleit.

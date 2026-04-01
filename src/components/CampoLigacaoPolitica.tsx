@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { User, Users, Lock, Search, Loader2, X } from 'lucide-react';
+import { User, Users, UserPlus, Lock, Search, Loader2, X, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { resolverMunicipioId } from '@/lib/resolverMunicipio';
+import { toast } from '@/hooks/use-toast';
 
 interface SuplenteResult {
   id: string;
@@ -42,7 +43,7 @@ export default function CampoLigacaoPolitica({
   erro,
   cidadeAtivaId,
 }: Props) {
-  const [aba, setAba] = useState<'suplente' | 'lideranca'>('suplente');
+  const [aba, setAba] = useState<'suplente' | 'lideranca' | 'nova'>('suplente');
   const [buscaSuplente, setBuscaSuplente] = useState('');
   const [buscaLideranca, setBuscaLideranca] = useState('');
   const [suplentes, setSuplentes] = useState<SuplenteResult[]>([]);
@@ -53,6 +54,12 @@ export default function CampoLigacaoPolitica({
   const [lidNomeSelecionado, setLidNomeSelecionado] = useState<string | null>(null);
   const debounceSupRef = useRef<NodeJS.Timeout | null>(null);
   const debounceLidRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Nova Liderança inline form
+  const [novaLidNome, setNovaLidNome] = useState('');
+  const [novaLidTelefone, setNovaLidTelefone] = useState('');
+  const [novaLidRegiao, setNovaLidRegiao] = useState('');
+  const [salvandoNova, setSalvandoNova] = useState(false);
 
   // Buscar suplentes com debounce
   const buscarSuplentes = useCallback(async (q: string) => {
@@ -65,7 +72,6 @@ export default function CampoLigacaoPolitica({
           const lower = q.toLowerCase();
           filtered = filtered.filter((s: any) => s.nome?.toLowerCase().includes(lower));
         }
-        // Se tiver cidade ativa, filtrar por município via suplente_municipio
         if (cidadeAtivaId) {
           const { data: supMun } = await (supabase as any)
             .from('suplente_municipio')
@@ -139,7 +145,7 @@ export default function CampoLigacaoPolitica({
     setSupNomeSelecionado(sup.nome);
     setLidNomeSelecionado(null);
     onSuplenteChange(String(sup.id), sup.nome, munId);
-    onLiderancaChange(null, null, null, null); // limpa liderança
+    onLiderancaChange(null, null, null, null);
   };
 
   const selecionarLideranca = async (lid: LiderancaResult) => {
@@ -150,7 +156,7 @@ export default function CampoLigacaoPolitica({
     setLidNomeSelecionado(lid.nome);
     setSupNomeSelecionado(null);
     onLiderancaChange(lid.id, lid.nome, lid.suplente_id || null, munId);
-    onSuplenteChange(null, null, null); // limpa suplente
+    onSuplenteChange(null, null, null);
   };
 
   const limpar = () => {
@@ -158,6 +164,52 @@ export default function CampoLigacaoPolitica({
     setLidNomeSelecionado(null);
     onSuplenteChange(null, null, null);
     onLiderancaChange(null, null, null, null);
+  };
+
+  // Salvar nova liderança inline
+  const salvarNovaLideranca = async () => {
+    if (!novaLidNome.trim()) {
+      toast({ title: 'Informe o nome da liderança', variant: 'destructive' });
+      return;
+    }
+    setSalvandoNova(true);
+    try {
+      // Criar pessoa
+      const { data: novaPessoa, error: pessoaError } = await supabase.from('pessoas').insert({
+        nome: novaLidNome.trim(),
+        telefone: novaLidTelefone.trim() || null,
+      }).select('id').single();
+      if (pessoaError) throw pessoaError;
+
+      // Criar liderança
+      const { data: novaLid, error: lidError } = await (supabase as any).from('liderancas').insert({
+        pessoa_id: novaPessoa.id,
+        regiao_atuacao: novaLidRegiao.trim() || null,
+        status: 'Ativa',
+      }).select('id').single();
+      if (lidError) throw lidError;
+
+      // Selecionar a nova liderança
+      setLidNomeSelecionado(novaLidNome.trim());
+      setSupNomeSelecionado(null);
+      onLiderancaChange(novaLid.id, novaLidNome.trim(), null, null);
+      onSuplenteChange(null, null, null);
+
+      // Limpar form
+      setNovaLidNome('');
+      setNovaLidTelefone('');
+      setNovaLidRegiao('');
+      setAba('suplente');
+
+      toast({ title: '✅ Nova liderança criada e selecionada!' });
+
+      // Refresh liderancas list
+      buscarLiderancas('');
+    } catch (err: any) {
+      toast({ title: 'Erro ao criar liderança', description: err.message, variant: 'destructive' });
+    } finally {
+      setSalvandoNova(false);
+    }
   };
 
   // Bloqueado → exibir campo fixo
@@ -179,6 +231,8 @@ export default function CampoLigacaoPolitica({
   // Editável com tabs
   const temSelecao = !!suplenteIdSelecionado || !!liderancaIdSelecionada || !!supNomeSelecionado || !!lidNomeSelecionado;
 
+  const inputCls = "w-full h-9 px-3 bg-card border border-border rounded-lg text-xs text-foreground outline-none focus:ring-2 focus:ring-primary/30";
+
   return (
     <div className="section-card">
       <h3 className="section-title">🔗 Ligação Política {obrigatorio && <span className="text-primary">*</span>}</h3>
@@ -186,6 +240,7 @@ export default function CampoLigacaoPolitica({
       {/* Seleção atual */}
       {temSelecao && (
         <div className="flex items-center gap-2 p-2.5 mb-2 rounded-xl bg-primary/5 border border-primary/20">
+          <Check size={14} className="text-primary shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold text-primary truncate">
               {supNomeSelecionado || lidNomeSelecionado || 'Selecionado'}
@@ -200,23 +255,31 @@ export default function CampoLigacaoPolitica({
         </div>
       )}
 
-      {/* Tabs */}
+      {/* Tabs - 3 abas */}
       <div className="flex gap-1 mb-2">
         <button
           onClick={() => setAba('suplente')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] font-semibold transition-all ${
+          className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-[10px] font-semibold transition-all ${
             aba === 'suplente' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
           }`}
         >
-          <User size={12} /> Suplente
+          <User size={11} /> Suplente
         </button>
         <button
           onClick={() => setAba('lideranca')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] font-semibold transition-all ${
+          className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-[10px] font-semibold transition-all ${
             aba === 'lideranca' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
           }`}
         >
-          <Users size={12} /> Liderança
+          <Users size={11} /> Liderança
+        </button>
+        <button
+          onClick={() => setAba('nova')}
+          className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-[10px] font-semibold transition-all ${
+            aba === 'nova' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+          }`}
+        >
+          <UserPlus size={11} /> Nova
         </button>
       </div>
 
@@ -257,7 +320,7 @@ export default function CampoLigacaoPolitica({
         </div>
       )}
 
-      {/* Tab: Liderança */}
+      {/* Tab: Liderança Existente */}
       {aba === 'lideranca' && (
         <div className="space-y-1.5">
           <div className="relative">
@@ -265,7 +328,7 @@ export default function CampoLigacaoPolitica({
             <input
               value={buscaLideranca}
               onChange={e => handleBuscaLideranca(e.target.value)}
-              placeholder="Buscar liderança..."
+              placeholder="Buscar liderança existente..."
               className="w-full h-9 pl-8 pr-3 bg-card border border-border rounded-lg text-xs text-foreground outline-none focus:ring-2 focus:ring-primary/30"
             />
             {loadingLid && <Loader2 size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin text-muted-foreground" />}
@@ -289,6 +352,48 @@ export default function CampoLigacaoPolitica({
               <p className="text-[10px] text-muted-foreground text-center py-3">Nenhuma liderança encontrada</p>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Tab: Nova Liderança */}
+      {aba === 'nova' && (
+        <div className="space-y-2">
+          <p className="text-[10px] text-muted-foreground">Crie uma nova liderança rapidamente e vincule ao cadastro.</p>
+          <div className="space-y-1">
+            <label className="text-[10px] font-medium text-muted-foreground">Nome <span className="text-primary">*</span></label>
+            <input
+              value={novaLidNome}
+              onChange={e => setNovaLidNome(e.target.value)}
+              placeholder="Nome da liderança"
+              className={inputCls}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-medium text-muted-foreground">Telefone</label>
+            <input
+              value={novaLidTelefone}
+              onChange={e => setNovaLidTelefone(e.target.value)}
+              placeholder="(00) 00000-0000"
+              className={inputCls}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-medium text-muted-foreground">Região de atuação</label>
+            <input
+              value={novaLidRegiao}
+              onChange={e => setNovaLidRegiao(e.target.value)}
+              placeholder="Bairro, comunidade..."
+              className={inputCls}
+            />
+          </div>
+          <button
+            onClick={salvarNovaLideranca}
+            disabled={salvandoNova || !novaLidNome.trim()}
+            className="w-full h-9 bg-primary text-primary-foreground rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-[0.97] transition-all disabled:opacity-50"
+          >
+            {salvandoNova ? <Loader2 size={12} className="animate-spin" /> : <UserPlus size={12} />}
+            Criar e Vincular
+          </button>
         </div>
       )}
 
