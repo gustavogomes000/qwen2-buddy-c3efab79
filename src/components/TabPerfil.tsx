@@ -356,6 +356,7 @@ export default function TabPerfil() {
     setEditSenha('');
     setShowEditSenha(false);
     setConfirmDelete(false);
+    setEditCidade(u.municipio_id || '');
     setView('edit');
   };
 
