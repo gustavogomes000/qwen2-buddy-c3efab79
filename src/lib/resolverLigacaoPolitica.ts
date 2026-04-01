@@ -2,6 +2,24 @@ import { supabase } from '@/integrations/supabase/client';
 import { cachedInvoke } from '@/lib/cacheEdgeFunctions';
 import { resolverMunicipioId, buscarNomeMunicipio } from './resolverMunicipio';
 
+/** Ensure an external suplente exists in the local suplentes table */
+async function sincronizarSuplenteLocal(suplenteId: string) {
+  try {
+    const data = await cachedInvoke<any[]>('buscar-suplentes');
+    if (Array.isArray(data)) {
+      const sup = data.find((s: any) => String(s.id) === String(suplenteId));
+      if (sup) {
+        await (supabase as any).from('suplentes').upsert({
+          id: String(sup.id),
+          nome: sup.nome,
+          partido: sup.partido || null,
+          regiao_atuacao: sup.regiao_atuacao || null,
+        }, { onConflict: 'id' });
+      }
+    }
+  } catch {}
+}
+
 interface HierarquiaUsuario {
   id: string;
   tipo: string;
