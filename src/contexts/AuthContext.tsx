@@ -162,9 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
       clearTimeout(safetyTimeout);
-      if (servicesTimer) clearTimeout(servicesTimer);
       subscription.unsubscribe();
-      stopLocationTracking();
     };
   }, []);
 
