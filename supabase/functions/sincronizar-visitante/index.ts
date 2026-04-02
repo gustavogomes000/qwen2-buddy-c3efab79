@@ -208,19 +208,42 @@ Deno.serve(async (req) => {
             }
           }
         }
-      } else if (indicadorTipoNormalizado === 'lideranca') {
-        const { data: lid } = await supabaseAdmin
-          .from('liderancas')
-          .select('id, suplente_id, cadastrado_por, municipio_id')
-          .eq('id', indicador_id)
-          .maybeSingle();
-        if (lid) {
-          validatedLiderancaId = lid.id;
-          if (lid.suplente_id) {
-            validatedSuplenteId = await getLocalSuplenteId(supabaseAdmin, lid.suplente_id);
+      } else {
+        // ID não encontrado na hierarquia — resolver por nome
+        console.log(`[sincronizar-visitante] ID ${indicador_id} não encontrado em hierarquia para tipo=${indicadorTipoNormalizado}, tentando por nome: ${indicador_nome}`);
+        
+        const usuarioPorNome = await resolverHierarquiaPorNome(supabaseAdmin, indicador_nome, indicadorTipoNormalizado);
+        if (usuarioPorNome) {
+          cadastradoPor = usuarioPorNome.id;
+          municipioId = usuarioPorNome.municipio_id;
+          if (usuarioPorNome.suplente_id) {
+            validatedSuplenteId = await getLocalSuplenteId(supabaseAdmin, usuarioPorNome.suplente_id);
           }
-          cadastradoPor = lid.cadastrado_por;
-          municipioId = lid.municipio_id;
+          console.log(`[sincronizar-visitante] ✅ Resolvido por nome: ${usuarioPorNome.nome} -> ${cadastradoPor}`);
+        } else {
+          // Criar usuário sombra
+          const sombra = await garantirUsuarioSombra(supabaseAdmin, indicador_nome, indicadorTipoNormalizado, null);
+          if (sombra) {
+            cadastradoPor = sombra.id;
+            municipioId = sombra.municipio_id;
+            console.log(`[sincronizar-visitante] ✅ Usuário sombra criado: ${sombra.nome} -> ${cadastradoPor}`);
+          }
+        }
+
+        // Se é lideranca, tentar vincular
+        if (indicadorTipoNormalizado === 'lideranca' && cadastradoPor) {
+          const { data: lid } = await supabaseAdmin
+            .from('liderancas')
+            .select('id, suplente_id, municipio_id')
+            .eq('cadastrado_por', cadastradoPor)
+            .maybeSingle();
+          if (lid) {
+            validatedLiderancaId = lid.id;
+            if (lid.suplente_id) {
+              validatedSuplenteId = await getLocalSuplenteId(supabaseAdmin, lid.suplente_id);
+            }
+            municipioId = municipioId || lid.municipio_id;
+          }
         }
       }
 
