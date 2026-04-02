@@ -214,9 +214,14 @@ export default function PainelLocalizacao() {
     return () => window.removeEventListener(getLiveTrackingEventName(), handler as EventListener);
   }, []);
 
-  // Reverse geocode visible locations (lazy, max 5 at a time)
+  // Reverse geocode only for the expanded user (lazy, max 3 at a time)
   useEffect(() => {
-    const toGeocode = locations.filter(l => !addresses[`${l.latitude.toFixed(4)},${l.longitude.toFixed(4)}`]).slice(0, 5);
+    if (!expandedUser) return;
+    const group = userGroups.find(g => g.usuario_id === expandedUser);
+    if (!group) return;
+    const toGeocode = group.locations
+      .filter(l => !addresses[`${l.latitude.toFixed(4)},${l.longitude.toFixed(4)}`])
+      .slice(0, 3);
     if (!toGeocode.length) return;
     let cancelled = false;
     (async () => {
@@ -226,12 +231,12 @@ export default function PainelLocalizacao() {
         const key = `${loc.latitude.toFixed(4)},${loc.longitude.toFixed(4)}`;
         const addr = await reverseGeocode(loc.latitude, loc.longitude);
         if (addr) newAddrs[key] = addr;
-        await new Promise(r => setTimeout(r, 1100)); // Nominatim rate limit
+        await new Promise(r => setTimeout(r, 1100));
       }
       if (!cancelled) setAddresses(prev => ({ ...prev, ...newAddrs }));
     })();
     return () => { cancelled = true; };
-  }, [locations, addresses]);
+  }, [expandedUser, userGroups, addresses]);
 
   const handleDateFilter = (f: DateFilter) => { setDateFilter(f); fetchData(f); };
   const handleInterval = async (m: CaptureIntervalMinutes) => { setCaptureIntervalState(m); await setCaptureIntervalMinutes(m); };
