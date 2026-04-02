@@ -31,6 +31,8 @@ const bodySchema = z.object({
   lideranca_id: z.string().uuid().optional().nullable(),
   cadastrado_por_id: z.string().optional().nullable(),
   cadastrado_por_fonte: z.enum(['externo', 'local']).optional().nullable(),
+  origem: z.string().optional().nullable(),
+  observacoes: z.string().optional().nullable(),
 });
 
 function jsonResp(body: Record<string, unknown>, status = 200) {
