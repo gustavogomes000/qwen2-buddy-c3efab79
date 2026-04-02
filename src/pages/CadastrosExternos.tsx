@@ -47,21 +47,20 @@ export default function CadastrosExternos() {
   const [loading, setLoading] = useState(true);
 
   const [dados, setDados] = useState<Record<TipoAba, RegistroBase[]>>({
-    liderancas: [], fiscais: [], eleitores: [],
+    liderancas: [], eleitores: [],
   });
   const [contadores, setContadores] = useState<Record<TipoAba, number>>({
-    liderancas: 0, fiscais: 0, eleitores: 0,
+    liderancas: 0, eleitores: 0,
   });
   const [pagina, setPagina] = useState<Record<TipoAba, number>>({
-    liderancas: 0, fiscais: 0, eleitores: 0,
+    liderancas: 0, eleitores: 0,
   });
   const [temMais, setTemMais] = useState<Record<TipoAba, boolean>>({
-    liderancas: true, fiscais: true, eleitores: true,
+    liderancas: true, eleitores: true,
   });
 
   const tabelaMap: Record<TipoAba, string> = {
     liderancas: 'liderancas',
-    fiscais: 'fiscais',
     eleitores: 'possiveis_eleitores',
   };
 
