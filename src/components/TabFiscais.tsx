@@ -550,7 +550,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
               <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                 {f.pessoas?.whatsapp && <span className="flex items-center gap-0.5"><Phone size={9} /> {f.pessoas.whatsapp}</span>}
                 {f.zona_fiscal && <span>Zona {f.zona_fiscal}</span>}
-                {f.origem_captacao === 'visita_comite' && <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-600 rounded-full text-[9px] font-semibold">Visita</span>}
+                
               </div>
               {isAdmin && f.hierarquia_usuarios && (
                 <p className="text-[10px] text-muted-foreground/60 mt-0.5">Por: {f.hierarquia_usuarios.nome}</p>

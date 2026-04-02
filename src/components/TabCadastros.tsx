@@ -350,7 +350,6 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
                         <div>
                           <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Outros</p>
                           <div className="grid grid-cols-2 gap-1.5">
-                            <Field label="Origem" value={c.origem_captacao} />
                             <Field label="Cadastrado por" value={c.cadastrado_por_nome} />
                           </div>
                           {c.observacoes && (

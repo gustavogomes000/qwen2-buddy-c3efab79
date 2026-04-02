@@ -506,9 +506,6 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="font-semibold text-foreground text-sm truncate">{e.pessoas?.nome || '—'}</span>
                   {compromissoBadge(e.compromisso_voto)}
-                  {(e as any).origem_captacao === 'visita_comite' && (
-                    <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-500/15 text-blue-600 dark:text-blue-400">Visita</span>
-                  )}
                 </div>
                 <p className="text-xs text-muted-foreground truncate">
                   {e.liderancas?.pessoas?.nome ? `Líder: ${e.liderancas.pessoas.nome}` : ''}

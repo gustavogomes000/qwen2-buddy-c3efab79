@@ -215,9 +215,6 @@ export default function TabRede() {
               <h2 className="text-lg font-bold text-foreground">{p?.nome || '—'}</h2>
               <p className="text-sm text-muted-foreground">
                 {tipo === 'lideranca' ? 'Liderança' : 'Eleitor'}
-                {selectedRecord.origem_captacao === 'visita_comite' && (
-                  <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-500/15 text-blue-600">Visita</span>
-                )}
               </p>
               {selectedRecord.hierarquia_usuarios?.nome && (
                 <p className="text-[10px] text-primary/70 mt-1">
@@ -370,9 +367,6 @@ export default function TabRede() {
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-semibold text-foreground truncate">{l.pessoas?.nome || '—'}</span>
                           
-                          {l.origem_captacao === 'visita_comite' && (
-                            <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-500/15 text-blue-600 dark:text-blue-400">Visita</span>
-                          )}
                         </div>
                         <p className="text-[10px] text-muted-foreground">
                           {[l.pessoas?.cpf ? maskCPF(l.pessoas.cpf) : null, l.pessoas?.telefone].filter(Boolean).join(' · ') || l.tipo_lideranca || '—'}
@@ -402,9 +396,6 @@ export default function TabRede() {
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-semibold text-foreground truncate">{e.pessoas?.nome || '—'}</span>
                           {compromissoBadge(e.compromisso_voto)}
-                          {e.origem_captacao === 'visita_comite' && (
-                            <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-500/15 text-blue-600 dark:text-blue-400">Visita</span>
-                          )}
                         </div>
                         <p className="text-[10px] text-muted-foreground">
                           {[e.pessoas?.cpf ? maskCPF(e.pessoas.cpf) : null, e.pessoas?.telefone].filter(Boolean).join(' · ') || '—'}

@@ -8,7 +8,7 @@ import { useLiderancas, useEleitores, useUsuarios, useFiscaisAdmin } from '@/hoo
 import {
   ArrowLeft, Users, Target, Search, X, Shield,
   ChevronDown, ChevronUp, Loader2, Download, Trophy,
-  BarChart3, UserCog, Eye, Building2, Plus, MapPin, Tag
+  BarChart3, UserCog, Eye, Building2, Plus, MapPin
 } from 'lucide-react';
 import { exportAllCadastros, exportCadastrosFiltered } from '@/lib/exportXlsx';
 import SeletorCidade from '@/components/SeletorCidade';
@@ -176,13 +176,13 @@ export default function AdminDashboard() {
 
   /* ── Registros list ── */
   const allRegistros = useMemo(() => {
-    let result: { tipo: string; pessoa: Pessoa | null; criado_em: string; cadastrado_por: string | null; extra: string; origem: string | null }[] = [];
+    let result: { tipo: string; pessoa: Pessoa | null; criado_em: string; cadastrado_por: string | null; extra: string }[] = [];
     if (tipoFiltro === 'todos' || tipoFiltro === 'lideranca')
-      filteredL.forEach(r => result.push({ tipo: 'lideranca', pessoa: r.pessoas, criado_em: r.criado_em, cadastrado_por: r.cadastrado_por, extra: r.status || '', origem: r.origem_captacao }));
+      filteredL.forEach(r => result.push({ tipo: 'lideranca', pessoa: r.pessoas, criado_em: r.criado_em, cadastrado_por: r.cadastrado_por, extra: r.status || '' }));
     if (tipoFiltro === 'todos' || tipoFiltro === 'eleitor')
-      filteredE.forEach(r => result.push({ tipo: 'eleitor', pessoa: r.pessoas, criado_em: r.criado_em, cadastrado_por: r.cadastrado_por, extra: r.compromisso_voto || '', origem: r.origem_captacao }));
+      filteredE.forEach(r => result.push({ tipo: 'eleitor', pessoa: r.pessoas, criado_em: r.criado_em, cadastrado_por: r.cadastrado_por, extra: r.compromisso_voto || '' }));
     if (tipoFiltro === 'todos' || tipoFiltro === 'fiscal')
-      filteredF.forEach(r => result.push({ tipo: 'fiscal', pessoa: r.pessoas, criado_em: r.criado_em || '', cadastrado_por: r.cadastrado_por, extra: r.status || '', origem: r.origem_captacao }));
+      filteredF.forEach(r => result.push({ tipo: 'fiscal', pessoa: r.pessoas, criado_em: r.criado_em || '', cadastrado_por: r.cadastrado_por, extra: r.status || '' }));
     if (searchTerm) {
       const s = searchTerm.toLowerCase();
       result = result.filter(r => r.pessoa?.nome?.toLowerCase().includes(s) || r.pessoa?.cpf?.includes(s));
@@ -389,14 +389,9 @@ export default function AdminDashboard() {
                               return (
                               <div key={r.id} className="p-3 rounded-xl bg-muted/50 border border-border/50 space-y-2">
                                 <div className="flex items-start justify-between">
-                                  <div className="flex items-center gap-2">
+                                   <div className="flex items-center gap-2">
                                     <p className="text-sm font-semibold text-foreground">{p.nome || '—'}</p>
-                                    {r.origem_captacao === 'visita_comite' && (
-                                      <span className="text-[8px] px-1.5 py-0.5 rounded-full font-medium bg-primary/10 text-primary flex items-center gap-0.5">
-                                        <Tag size={7} /> Visita
-                                      </span>
-                                    )}
-                                  </div>
+                                   </div>
                                   <span className="text-[10px] text-muted-foreground shrink-0">{new Date(r.criado_em).toLocaleDateString('pt-BR')}</span>
                                 </div>
 
@@ -627,11 +622,6 @@ export default function AdminDashboard() {
                                       <div className="flex items-start justify-between">
                                         <div className="flex items-center gap-2">
                                           <p className="text-sm font-semibold text-foreground">{p.nome || '—'}</p>
-                                          {r.origem_captacao === 'visita_comite' && (
-                                            <span className="text-[8px] px-1.5 py-0.5 rounded-full font-medium bg-primary/10 text-primary flex items-center gap-0.5">
-                                              <Tag size={7} /> Visita
-                                            </span>
-                                          )}
                                         </div>
                                         <span className="text-[10px] text-muted-foreground shrink-0">{new Date(r.criado_em).toLocaleDateString('pt-BR')}</span>
                                       </div>
@@ -739,9 +729,6 @@ export default function AdminDashboard() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-semibold text-foreground truncate">{r.pessoa?.nome || '—'}</p>
-                      {r.origem === 'visita_comite' && (
-                        <span className="text-[8px] px-1.5 py-0.5 rounded-full font-medium bg-primary/10 text-primary">Visita</span>
-                      )}
                     </div>
                     <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
                       <span>{r.pessoa?.cpf || 'Sem CPF'}</span>
@@ -900,11 +887,6 @@ export default function AdminDashboard() {
                             r._tipo === 'lideranca' ? 'bg-primary/15 text-primary' : r._tipo === 'fiscal' ? 'bg-amber-500/15 text-amber-600' : 'bg-secondary text-secondary-foreground'
                           }`}>{r._tipo === 'lideranca' ? 'Liderança' : r._tipo === 'fiscal' ? 'Fiscal' : 'Eleitor'}</span>
                           <p className="text-sm font-semibold text-foreground">{p.nome || '—'}</p>
-                          {r.origem_captacao === 'visita_comite' && (
-                            <span className="text-[8px] px-1.5 py-0.5 rounded-full font-medium bg-primary/10 text-primary flex items-center gap-0.5">
-                              <Tag size={7} /> Visita
-                            </span>
-                          )}
                         </div>
                         <span className="text-[10px] text-muted-foreground shrink-0">{new Date(r.criado_em).toLocaleDateString('pt-BR')}</span>
                       </div>
