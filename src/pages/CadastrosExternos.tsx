@@ -110,7 +110,7 @@ export default function CadastrosExternos() {
       const dataLimite = getDataLimite(periodo);
 
       // Contadores de todas as abas
-      const contagemPromises = (['liderancas', 'fiscais', 'eleitores'] as TipoAba[]).map(async (aba) => {
+      const contagemPromises = (['liderancas', 'eleitores'] as TipoAba[]).map(async (aba) => {
         let q = (supabase as any)
           .from(tabelaMap[aba])
           .select('*', { count: 'exact', head: true })
@@ -121,7 +121,7 @@ export default function CadastrosExternos() {
       });
 
       const contagens = await Promise.all(contagemPromises);
-      const novosContadores: Record<TipoAba, number> = { liderancas: 0, fiscais: 0, eleitores: 0 };
+      const novosContadores: Record<TipoAba, number> = { liderancas: 0, eleitores: 0 };
       contagens.forEach(c => { novosContadores[c.aba] = c.count; });
       setContadores(novosContadores);
 
