@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, UserCircle, BarChart3, MapPin, Shield, Target, List } from 'lucide-react';
+import { Users, UserCircle, BarChart3, MapPin, Target, List } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
