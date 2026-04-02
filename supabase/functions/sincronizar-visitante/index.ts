@@ -14,26 +14,36 @@ function jsonResp(body: Record<string, unknown>, status = 200) {
 
 async function getLocalSuplenteId(supabaseAdmin: any, suplenteId: string | null) {
   if (!suplenteId) return null;
-
   const { data } = await supabaseAdmin
     .from('suplentes')
     .select('id')
     .eq('id', suplenteId)
     .maybeSingle();
-
   return data?.id ?? null;
 }
 
 async function getMunicipioFromSuplente(supabaseAdmin: any, suplenteId: string | null) {
   if (!suplenteId) return null;
-
   const { data } = await supabaseAdmin
     .from('suplente_municipio')
     .select('municipio_id')
     .eq('suplente_id', suplenteId)
     .maybeSingle();
-
   return data?.municipio_id ?? null;
+}
+
+/**
+ * Fallback: busca primeiro admin ativo para garantir que cadastrado_por nunca fique null.
+ */
+async function resolverAdminFallback(supabaseAdmin: any): Promise<string | null> {
+  const { data } = await supabaseAdmin
+    .from('hierarquia_usuarios')
+    .select('id')
+    .in('tipo', ['super_admin', 'coordenador'])
+    .eq('ativo', true)
+    .limit(1)
+    .maybeSingle();
+  return data?.id ?? null;
 }
 
 Deno.serve(async (req) => {
@@ -43,19 +53,17 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { tipo, nome, cpf, whatsapp, indicador_tipo, indicador_id } = body;
+    const { tipo, nome, cpf, whatsapp, indicador_tipo, indicador_id, indicador_nome } = body;
 
     if (!tipo || !nome) {
       return jsonResp({ erro: 'tipo e nome são obrigatórios' }, 400);
     }
 
-    // Client LOCAL — onde ficam pessoas, liderancas, fiscais, possiveis_eleitores, hierarquia_usuarios
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Client EXTERNO — onde ficam os suplentes
     const externalUrl = Deno.env.get('EXTERNAL_SUPABASE_URL') || Deno.env.get('SUPABASE_URL')!;
     const externalKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_KEY') || Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const externalClient = createClient(externalUrl, externalKey);
@@ -66,14 +74,12 @@ Deno.serve(async (req) => {
     let cadastradoPor: string | null = null;
     let municipioId: string | null = null;
 
-    const indicadorTipoNormalizado = typeof indicador_tipo === 'string'
-      ? indicador_tipo
-      : null;
-
+    const indicadorTipoNormalizado = typeof indicador_tipo === 'string' ? indicador_tipo : null;
     const tiposHierarquia = new Set(['super_admin', 'coordenador', 'lideranca', 'fiscal']);
 
+    console.log(`[sincronizar-visitante] Indicador: tipo=${indicadorTipoNormalizado}, id=${indicador_id}, nome=${indicador_nome}`);
+
     if (indicador_id && indicadorTipoNormalizado === 'suplente') {
-      // Buscar suplente no banco EXTERNO (onde os suplentes vivem)
       const { data: sup } = await externalClient
         .from('suplentes')
         .select('id, nome')
@@ -85,10 +91,8 @@ Deno.serve(async (req) => {
           { id: sup.id, nome: sup.nome },
           { onConflict: 'id' }
         );
-
         validatedSuplenteId = sup.id;
 
-        // Resolve cadastrado_por from hierarquia local
         const { data: usuario } = await supabaseAdmin
           .from('hierarquia_usuarios')
           .select('id, municipio_id')
@@ -101,7 +105,6 @@ Deno.serve(async (req) => {
           municipioId = usuario.municipio_id;
         }
       } else {
-        // Talvez indicador_id seja um usuário local vinculado ao suplente
         const { data: hierSup } = await supabaseAdmin
           .from('hierarquia_usuarios')
           .select('id, suplente_id, municipio_id')
@@ -110,15 +113,13 @@ Deno.serve(async (req) => {
           .eq('ativo', true)
           .maybeSingle();
 
-        if (!hierSup) {
-          return jsonResp({ erro: 'Indicador (suplente) não encontrado' }, 400);
+        if (hierSup) {
+          if (hierSup.suplente_id) {
+            validatedSuplenteId = await getLocalSuplenteId(supabaseAdmin, hierSup.suplente_id);
+          }
+          cadastradoPor = hierSup.id;
+          municipioId = hierSup.municipio_id;
         }
-
-        if (hierSup.suplente_id) {
-          validatedSuplenteId = await getLocalSuplenteId(supabaseAdmin, hierSup.suplente_id);
-        }
-        cadastradoPor = hierSup.id;
-        municipioId = hierSup.municipio_id;
       }
 
       if (!municipioId) {
@@ -160,17 +161,14 @@ Deno.serve(async (req) => {
           .select('id, suplente_id, cadastrado_por, municipio_id')
           .eq('id', indicador_id)
           .maybeSingle();
-        if (!lid) {
-          return jsonResp({ erro: 'Indicador (liderança) não encontrado' }, 400);
+        if (lid) {
+          validatedLiderancaId = lid.id;
+          if (lid.suplente_id) {
+            validatedSuplenteId = await getLocalSuplenteId(supabaseAdmin, lid.suplente_id);
+          }
+          cadastradoPor = lid.cadastrado_por;
+          municipioId = lid.municipio_id;
         }
-        validatedLiderancaId = lid.id;
-        if (lid.suplente_id) {
-          validatedSuplenteId = await getLocalSuplenteId(supabaseAdmin, lid.suplente_id);
-        }
-        cadastradoPor = lid.cadastrado_por;
-        municipioId = lid.municipio_id;
-      } else {
-        return jsonResp({ erro: `Indicador (${indicadorTipoNormalizado}) não encontrado` }, 400);
       }
 
       if (!municipioId) {
@@ -183,14 +181,12 @@ Deno.serve(async (req) => {
         .eq('id', indicador_id)
         .maybeSingle();
 
-      if (!lideranca) {
-        return jsonResp({ erro: 'Indicador (liderança cadastrada) não encontrado' }, 400);
+      if (lideranca) {
+        validatedLiderancaId = lideranca.id;
+        validatedSuplenteId = await getLocalSuplenteId(supabaseAdmin, lideranca.suplente_id);
+        cadastradoPor = lideranca.cadastrado_por;
+        municipioId = lideranca.municipio_id || await getMunicipioFromSuplente(supabaseAdmin, validatedSuplenteId);
       }
-
-      validatedLiderancaId = lideranca.id;
-      validatedSuplenteId = await getLocalSuplenteId(supabaseAdmin, lideranca.suplente_id);
-      cadastradoPor = lideranca.cadastrado_por;
-      municipioId = lideranca.municipio_id || await getMunicipioFromSuplente(supabaseAdmin, validatedSuplenteId);
     } else if (indicador_id && indicadorTipoNormalizado === 'fiscal_cadastrado') {
       const { data: fiscal } = await supabaseAdmin
         .from('fiscais')
@@ -198,14 +194,12 @@ Deno.serve(async (req) => {
         .eq('id', indicador_id)
         .maybeSingle();
 
-      if (!fiscal) {
-        return jsonResp({ erro: 'Indicador (fiscal cadastrado) não encontrado' }, 400);
+      if (fiscal) {
+        validatedSuplenteId = await getLocalSuplenteId(supabaseAdmin, fiscal.suplente_id);
+        validatedLiderancaId = fiscal.lideranca_id ?? null;
+        cadastradoPor = fiscal.cadastrado_por;
+        municipioId = fiscal.municipio_id || await getMunicipioFromSuplente(supabaseAdmin, validatedSuplenteId);
       }
-
-      validatedSuplenteId = await getLocalSuplenteId(supabaseAdmin, fiscal.suplente_id);
-      validatedLiderancaId = fiscal.lideranca_id ?? null;
-      cadastradoPor = fiscal.cadastrado_por;
-      municipioId = fiscal.municipio_id || await getMunicipioFromSuplente(supabaseAdmin, validatedSuplenteId);
     } else if (indicador_id && indicadorTipoNormalizado === 'eleitor_cadastrado') {
       const { data: eleitor } = await supabaseAdmin
         .from('possiveis_eleitores')
@@ -213,17 +207,22 @@ Deno.serve(async (req) => {
         .eq('id', indicador_id)
         .maybeSingle();
 
-      if (!eleitor) {
-        return jsonResp({ erro: 'Indicador (eleitor cadastrado) não encontrado' }, 400);
+      if (eleitor) {
+        validatedSuplenteId = await getLocalSuplenteId(supabaseAdmin, eleitor.suplente_id);
+        validatedLiderancaId = eleitor.lideranca_id ?? null;
+        cadastradoPor = eleitor.cadastrado_por;
+        municipioId = eleitor.municipio_id || await getMunicipioFromSuplente(supabaseAdmin, validatedSuplenteId);
       }
-
-      validatedSuplenteId = await getLocalSuplenteId(supabaseAdmin, eleitor.suplente_id);
-      validatedLiderancaId = eleitor.lideranca_id ?? null;
-      cadastradoPor = eleitor.cadastrado_por;
-      municipioId = eleitor.municipio_id || await getMunicipioFromSuplente(supabaseAdmin, validatedSuplenteId);
-    } else if (indicador_id && indicadorTipoNormalizado) {
-      return jsonResp({ erro: `indicador_tipo não suportado: ${indicadorTipoNormalizado}` }, 400);
     }
+
+    // ── FALLBACK CRÍTICO: cadastrado_por NUNCA pode ser null ──
+    if (!cadastradoPor) {
+      console.warn(`[sincronizar-visitante] cadastrado_por é null! Buscando fallback admin...`);
+      cadastradoPor = await resolverAdminFallback(supabaseAdmin);
+      console.log(`[sincronizar-visitante] Fallback admin: cadastrado_por=${cadastradoPor}`);
+    }
+
+    console.log(`[sincronizar-visitante] FINAL: cadastrado_por=${cadastradoPor}, suplente=${validatedSuplenteId}, municipio=${municipioId}, tipo=${tipo}`);
 
     // ── 1. Find or create pessoa ──────────────────────────────
     let pessoaId: string;
@@ -288,6 +287,7 @@ Deno.serve(async (req) => {
           pessoa_id: pessoaId,
           cadastrado_por: cadastradoPor,
           suplente_id: validatedSuplenteId,
+          lider_principal_id: validatedLiderancaId,
           municipio_id: municipioId,
           status: 'Ativa',
           origem_captacao: 'visita_comite',
@@ -295,6 +295,7 @@ Deno.serve(async (req) => {
         .select('id')
         .single();
       if (error) throw new Error(`Erro ao criar liderança: ${error.message}`);
+      console.log(`[sincronizar-visitante] ✅ Liderança criada: id=${novo.id}, cadastrado_por=${cadastradoPor}`);
       return jsonResp({ acao: 'criado', tipo: 'lideranca', id: novo.id, pessoa_id: pessoaId });
     }
 
@@ -321,6 +322,7 @@ Deno.serve(async (req) => {
         .select('id')
         .single();
       if (error) throw new Error(`Erro ao criar fiscal: ${error.message}`);
+      console.log(`[sincronizar-visitante] ✅ Fiscal criado: id=${novo.id}, cadastrado_por=${cadastradoPor}`);
       return jsonResp({ acao: 'criado', tipo: 'fiscal', id: novo.id, pessoa_id: pessoaId });
     }
 
@@ -347,6 +349,7 @@ Deno.serve(async (req) => {
         .select('id')
         .single();
       if (error) throw new Error(`Erro ao criar eleitor: ${error.message}`);
+      console.log(`[sincronizar-visitante] ✅ Eleitor criado: id=${novo.id}, cadastrado_por=${cadastradoPor}`);
       return jsonResp({ acao: 'criado', tipo: 'eleitor', id: novo.id, pessoa_id: pessoaId });
     }
 
