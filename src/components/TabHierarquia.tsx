@@ -142,10 +142,9 @@ export default function TabHierarquia() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {[
             { label: 'Lideranças', value: totalL, color: 'text-blue-500', icon: Users },
-            { label: 'Fiscais', value: totalF, color: 'text-purple-500', icon: Shield },
             { label: 'Eleitores', value: totalE, color: 'text-amber-500', icon: Eye },
           ].map(s => (
             <div key={s.label} className="bg-card rounded-xl border border-border p-2.5 text-center">
