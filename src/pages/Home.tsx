@@ -90,7 +90,7 @@ export default function Home() {
             {visitedTabs.has('fiscais') && activeTab === 'fiscais' && <TabFiscais refreshKey={refreshKey} onSaved={handleSaved} />}
             {visitedTabs.has('eleitores') && activeTab === 'eleitores' && <TabEleitores refreshKey={refreshKey} onSaved={handleSaved} />}
             {visitedTabs.has('cadastros') && activeTab === 'cadastros' && <TabCadastros refreshKey={refreshKey} onSaved={handleSaved} />}
-            {activeTab === 'rastreamento' && <PainelLocalizacao />}
+            
             {activeTab === 'perfil' && <TabPerfil />}
           </Suspense>
         </div>
