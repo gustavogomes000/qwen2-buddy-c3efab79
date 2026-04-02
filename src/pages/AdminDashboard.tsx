@@ -66,7 +66,7 @@ interface HierarquiaUsuario {
 /* ── constants ── */
 type Periodo = 'hoje' | 'semana' | 'mes' | 'total';
 type TipoFiltro = 'todos' | 'lideranca' | 'eleitor' | 'fiscal';
-type VistaAtiva = 'usuarios' | 'ranking' | 'registros' | 'cidades' | 'externas';
+type VistaAtiva = 'usuarios' | 'ranking' | 'registros' | 'cidades';
 type TipoUsuarioFiltro = 'todos' | 'suplente' | 'lideranca' | 'coordenador';
 
 const periodoLabels: Record<Periodo, string> = { hoje: 'Hoje', semana: 'Semana', mes: 'Mês', total: 'Total' };
