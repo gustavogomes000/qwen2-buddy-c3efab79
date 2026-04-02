@@ -12,6 +12,7 @@ const bodySchema = z.object({
   tipo: z.enum(['super_admin', 'coordenador', 'suplente', 'lideranca', 'fiscal']).optional().default('suplente'),
   superior_id: z.string().uuid().nullable().optional(),
   suplente_id: z.string().uuid().nullable().optional(),
+  municipio_id: z.string().uuid().nullable().optional(),
 });
 
 Deno.serve(async (req) => {
