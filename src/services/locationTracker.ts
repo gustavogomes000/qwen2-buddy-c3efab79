@@ -258,14 +258,14 @@ class Tracker {
     if (this.bgTimeoutId) { clearTimeout(this.bgTimeoutId); this.bgTimeoutId = null; }
   }
 
-  // ── GPS watch ──
+  // ── GPS watch (máxima precisão) ──
   private attachWatch() {
     if (this.watchId !== null || !isBrowser() || !('geolocation' in navigator) || !window.isSecureContext) return;
     try {
       this.watchId = navigator.geolocation.watchPosition(
         (pos) => void this.handleCoords(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, 'gps'),
         (err) => { if (err.code === 1) this.detachWatch(); void this.captureByIP(); },
-        { enableHighAccuracy: true, timeout: 15_000, maximumAge: 5_000 },
+        { enableHighAccuracy: true, timeout: 30_000, maximumAge: 0 },
       );
     } catch {
       void this.captureByIP();
@@ -279,16 +279,34 @@ class Tracker {
     }
   }
 
-  // ── Capture once (GPS → fallback IP) ──
+  // ── Capture once (GPS com múltiplas tentativas → fallback IP) ──
   private async captureOnce(force = false) {
     if (!this.running) return;
     if (!isBrowser() || !('geolocation' in navigator) || !window.isSecureContext) {
       return this.captureByIP(force);
     }
+
+    // Tentar GPS com maximumAge=0 para leitura fresca do chip GPS
     try {
       const pos = await new Promise<GeolocationPosition>((ok, fail) =>
-        navigator.geolocation.getCurrentPosition(ok, fail, { enableHighAccuracy: true, timeout: 12_000, maximumAge: 1_000 }),
+        navigator.geolocation.getCurrentPosition(ok, fail, { enableHighAccuracy: true, timeout: 20_000, maximumAge: 0 }),
       );
+
+      // Se precisão > 100m, tentar uma segunda leitura (o GPS pode ainda estar aquecendo)
+      if (pos.coords.accuracy > 100) {
+        try {
+          const pos2 = await new Promise<GeolocationPosition>((ok, fail) =>
+            navigator.geolocation.getCurrentPosition(ok, fail, { enableHighAccuracy: true, timeout: 15_000, maximumAge: 0 }),
+          );
+          // Usar a leitura com melhor precisão
+          const best = pos2.coords.accuracy < pos.coords.accuracy ? pos2 : pos;
+          await this.handleCoords(best.coords.latitude, best.coords.longitude, best.coords.accuracy, 'gps', force);
+          return;
+        } catch {
+          // Se a segunda falhar, usar a primeira
+        }
+      }
+
       await this.handleCoords(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, 'gps', force);
     } catch {
       await this.captureByIP(force);
@@ -320,16 +338,22 @@ class Tracker {
     if (!this.running || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
     const now = Date.now();
-    const moved = this.lastLat === null || distM(this.lastLat, this.lastLng!, lat, lng) >= 20;
-    const elapsed = now - this.lastPersistAt >= 30_000;
+    const moved = this.lastLat === null || distM(this.lastLat, this.lastLng!, lat, lng) >= 10;
+    const elapsed = now - this.lastPersistAt >= 20_000;
 
     if (!force && !moved && !elapsed) return;
+
+    // Filtro de qualidade: se temos GPS e precisão > 500m, descartar (provável cache ruim)
+    if (fonte === 'gps' && accuracy !== null && accuracy > 500) {
+      console.info(`[tracker] descartando leitura GPS com precisão ruim: ${accuracy}m`);
+      return;
+    }
 
     const userId = await this.getUserId();
     if (!userId) return;
 
     const battery = await this.getBattery();
-    const emMovimento = this.lastLat !== null && distM(this.lastLat, this.lastLng!, lat, lng) >= 10;
+    const emMovimento = this.lastLat !== null && distM(this.lastLat, this.lastLng!, lat, lng) >= 5;
 
     // Mark background captures
     const actualFonte = this.isBackground ? `${fonte}_bg` : fonte;
