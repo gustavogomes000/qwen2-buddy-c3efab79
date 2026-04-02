@@ -322,10 +322,9 @@ export default function TabRede() {
         </div>
 
         {/* Resumo */}
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {[
             { icon: Users, label: 'Lideranças', value: totalL, color: 'text-blue-500' },
-            { icon: Shield, label: 'Fiscais', value: totalF, color: 'text-purple-500' },
             { icon: Eye, label: 'Eleitores', value: totalE, color: 'text-amber-500' },
             { icon: Eye, label: 'Confirm.', value: confirmados, color: 'text-emerald-500' },
           ].map(({ icon: Icon, label, value, color }) => (
