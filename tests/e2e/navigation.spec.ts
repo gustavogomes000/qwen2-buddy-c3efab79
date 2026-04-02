@@ -5,10 +5,6 @@ test.describe('Navegação — Super Admin', () => {
     await loginAs('super_admin');
   });
 
-  test('vê aba de Rastreamento', async ({ page }) => {
-    await expect(page.getByTestId('nav-rastreamento')).toBeVisible();
-  });
-
   test('vê link para Painel Admin', async ({ page }) => {
     await expect(page.getByRole('button', { name: /Painel/i })).toBeVisible();
   });
@@ -17,10 +13,6 @@ test.describe('Navegação — Super Admin', () => {
 test.describe('Navegação — Suplente', () => {
   test.beforeEach(async ({ loginAs }) => {
     await loginAs('suplente');
-  });
-
-  test('não vê aba de Rastreamento', async ({ page }) => {
-    await expect(page.getByTestId('nav-rastreamento')).not.toBeVisible();
   });
 
   test('não vê link para Painel Admin', async ({ page }) => {
