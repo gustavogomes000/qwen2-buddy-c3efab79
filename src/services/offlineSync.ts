@@ -80,25 +80,30 @@ async function syncSingleRegistration(item: OfflineRegistration) {
 
 // Auto-sync setup
 let syncInterval: ReturnType<typeof setInterval> | null = null;
+let onlineHandler: (() => void) | null = null;
 
 export function startAutoSync() {
+  // Prevent duplicate listeners
+  if (syncInterval) return;
+
   // Sync immediately if online
   if (navigator.onLine) {
     syncOfflineData();
   }
 
-  // Sync when coming back online
-  window.addEventListener('online', () => {
-    console.log('[OfflineSync] Back online, syncing...');
-    syncOfflineData();
-  });
+  // Sync when coming back online (single handler)
+  if (!onlineHandler) {
+    onlineHandler = () => {
+      console.log('[OfflineSync] Back online, syncing...');
+      syncOfflineData();
+    };
+    window.addEventListener('online', onlineHandler);
+  }
 
   // Periodic sync every 30 seconds
-  if (!syncInterval) {
-    syncInterval = setInterval(() => {
-      if (navigator.onLine) syncOfflineData();
-    }, 30_000);
-  }
+  syncInterval = setInterval(() => {
+    if (navigator.onLine) syncOfflineData();
+  }, 30_000);
 }
 
 export function stopAutoSync() {
