@@ -176,13 +176,13 @@ export default function AdminDashboard() {
 
   /* ── Registros list ── */
   const allRegistros = useMemo(() => {
-    let result: { tipo: string; pessoa: Pessoa | null; criado_em: string; cadastrado_por: string | null; extra: string; origem: string | null }[] = [];
+    let result: { tipo: string; pessoa: Pessoa | null; criado_em: string; cadastrado_por: string | null; extra: string }[] = [];
     if (tipoFiltro === 'todos' || tipoFiltro === 'lideranca')
-      filteredL.forEach(r => result.push({ tipo: 'lideranca', pessoa: r.pessoas, criado_em: r.criado_em, cadastrado_por: r.cadastrado_por, extra: r.status || '', origem: r.origem_captacao }));
+      filteredL.forEach(r => result.push({ tipo: 'lideranca', pessoa: r.pessoas, criado_em: r.criado_em, cadastrado_por: r.cadastrado_por, extra: r.status || '' }));
     if (tipoFiltro === 'todos' || tipoFiltro === 'eleitor')
-      filteredE.forEach(r => result.push({ tipo: 'eleitor', pessoa: r.pessoas, criado_em: r.criado_em, cadastrado_por: r.cadastrado_por, extra: r.compromisso_voto || '', origem: r.origem_captacao }));
+      filteredE.forEach(r => result.push({ tipo: 'eleitor', pessoa: r.pessoas, criado_em: r.criado_em, cadastrado_por: r.cadastrado_por, extra: r.compromisso_voto || '' }));
     if (tipoFiltro === 'todos' || tipoFiltro === 'fiscal')
-      filteredF.forEach(r => result.push({ tipo: 'fiscal', pessoa: r.pessoas, criado_em: r.criado_em || '', cadastrado_por: r.cadastrado_por, extra: r.status || '', origem: r.origem_captacao }));
+      filteredF.forEach(r => result.push({ tipo: 'fiscal', pessoa: r.pessoas, criado_em: r.criado_em || '', cadastrado_por: r.cadastrado_por, extra: r.status || '' }));
     if (searchTerm) {
       const s = searchTerm.toLowerCase();
       result = result.filter(r => r.pessoa?.nome?.toLowerCase().includes(s) || r.pessoa?.cpf?.includes(s));
