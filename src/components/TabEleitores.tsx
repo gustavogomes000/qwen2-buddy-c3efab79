@@ -472,7 +472,7 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
       )}
       <div className="relative">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Buscar por nome, CPF ou WhatsApp..." className="w-full h-11 pl-9 pr-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30" />
+        <input data-testid="input-busca-eleitor" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Buscar por nome, CPF ou WhatsApp..." className="w-full h-11 pl-9 pr-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30" />
       </div>
       <div className="grid grid-cols-3 gap-2">
         {[
