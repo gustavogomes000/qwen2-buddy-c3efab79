@@ -178,11 +178,6 @@ function CityBadges({ c }: { c: ContagemCidade }) {
           <Users size={9} /> {c.liderancas}
         </span>
       )}
-      {c.fiscais > 0 && (
-        <span className="inline-flex items-center gap-0.5 text-[10px] text-accent-foreground bg-accent px-1.5 py-0.5 rounded-full font-medium">
-          <Shield size={9} /> {c.fiscais}
-        </span>
-      )}
       {c.eleitores > 0 && (
         <span className="inline-flex items-center gap-0.5 text-[10px] text-secondary-foreground bg-secondary px-1.5 py-0.5 rounded-full font-medium">
           <Target size={9} /> {c.eleitores}
