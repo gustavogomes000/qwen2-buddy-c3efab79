@@ -141,7 +141,7 @@ export default function PainelLocalizacao() {
 
       let locQuery = supabase.from('localizacoes_usuarios')
         .select('id, usuario_id, latitude, longitude, precisao, fonte, bateria_nivel, em_movimento, criado_em')
-        .order('criado_em', { ascending: false }).limit(300);
+        .order('criado_em', { ascending: false }).limit(200);
 
       const since = getDateFilterISO(activeFilter);
       if (since) locQuery = locQuery.gte('criado_em', since);
@@ -155,33 +155,38 @@ export default function PainelLocalizacao() {
       if (locRes.error) throw locRes.error;
       if (usrRes.error) throw usrRes.error;
 
-      // Also get local IndexedDB records
-      let idbRecords: LocationRecord[] = [];
-      try {
-        const raw = await idbGetAll(200);
-        idbRecords = raw.map(r => normalize(r)).filter((r): r is LocationRecord => r !== null);
-      } catch {}
-
-      // Merge: Supabase records + IDB records (dedup by timestamp proximity)
       const supaRecords = (locRes.data || []).map(normalize).filter((r): r is LocationRecord => r !== null);
-      const merged = [...supaRecords];
-      for (const idb of idbRecords) {
-        const isDup = merged.some(m =>
-          m.usuario_id === idb.usuario_id &&
-          Math.abs(new Date(m.criado_em).getTime() - new Date(idb.criado_em).getTime()) < 30_000
-        );
-        if (!isDup) merged.push(idb);
-      }
-
-      merged.sort((a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime());
-      setLocations(merged.slice(0, 300));
+      
+      // Merge IDB records in background (non-blocking)
+      setLocations(supaRecords.slice(0, 200));
       setUsuarios(usrRes.data || []);
+      setLoading(false);
+
+      // Async merge with IndexedDB after initial render
+      try {
+        const raw = await idbGetAll(100);
+        const idbRecords = raw.map(r => normalize(r)).filter((r): r is LocationRecord => r !== null);
+        if (idbRecords.length > 0) {
+          setLocations(prev => {
+            const merged = [...prev];
+            for (const idb of idbRecords) {
+              const isDup = merged.some(m =>
+                m.usuario_id === idb.usuario_id &&
+                Math.abs(new Date(m.criado_em).getTime() - new Date(idb.criado_em).getTime()) < 30_000
+              );
+              if (!isDup) merged.push(idb);
+            }
+            merged.sort((a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime());
+            return merged.slice(0, 200);
+          });
+        }
+      } catch {}
+      return;
     } catch (e: any) {
       console.error('[Painel] fetch error', e);
       setError('Não foi possível carregar os dados.');
-      // Fallback: show IndexedDB data only
       try {
-        const raw = await idbGetAll(200);
+        const raw = await idbGetAll(100);
         const records = raw.map(r => normalize(r)).filter((r): r is LocationRecord => r !== null);
         setLocations(records);
       } catch {}
