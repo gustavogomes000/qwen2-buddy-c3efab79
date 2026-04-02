@@ -12,7 +12,7 @@ const bodySchema = z.object({
   indicador_tipo: z.enum([
     'suplente', 'lideranca', 'coordenador', 'super_admin', 'fiscal',
     'eleitor_cadastrado', 'lideranca_cadastrada', 'fiscal_cadastrado', 'recepcao'
-  ]),
+  ]).optional().default('recepcao'),
   indicador_nome: z.string().optional().nullable(),
   nome: z.string().trim().min(2).max(120),
   cpf: z.string().optional().nullable(),
