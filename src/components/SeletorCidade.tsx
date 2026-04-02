@@ -38,7 +38,7 @@ export default function SeletorCidade() {
       if (cancelled) return;
 
       for (const m of municipios) {
-        counts[m.id] = { liderancas: 0, fiscais: 0, eleitores: 0, usuarios: 0 };
+        counts[m.id] = { liderancas: 0, eleitores: 0, usuarios: 0 };
       }
 
       for (const r of results) {
