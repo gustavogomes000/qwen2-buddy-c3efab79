@@ -10,7 +10,7 @@ import {
   ChevronDown, ChevronUp, Loader2, Download, Trophy,
   BarChart3, UserCog, Eye, Building2, Plus, MapPin, Tag, ExternalLink
 } from 'lucide-react';
-import { exportAllCadastros } from '@/lib/exportXlsx';
+import { exportAllCadastros, exportCadastrosFiltered } from '@/lib/exportXlsx';
 import SeletorCidade from '@/components/SeletorCidade';
 import TabLiderancasExternas from '@/components/TabLiderancasExternas';
 
