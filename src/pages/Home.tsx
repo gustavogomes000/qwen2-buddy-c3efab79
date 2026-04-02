@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, lazy, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCidade } from '@/contexts/CidadeContext';
 import BottomNav, { type TabId } from '@/components/BottomNav';
@@ -6,8 +6,10 @@ import TabLiderancas from '@/components/TabLiderancas';
 import TabEleitores from '@/components/TabEleitores';
 import TabCadastros from '@/components/TabCadastros';
 import TabPerfil from '@/components/TabPerfil';
-import PainelLocalizacao from '@/components/PainelLocalizacao';
 import SeletorCidade from '@/components/SeletorCidade';
+import { Loader2 } from 'lucide-react';
+
+const PainelLocalizacao = lazy(() => import('@/components/PainelLocalizacao'));
 
 export default function Home() {
   const { isAdmin, tipoUsuario } = useAuth();
