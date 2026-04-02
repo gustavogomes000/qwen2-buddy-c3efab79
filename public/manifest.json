@@ -2,7 +2,7 @@
   "name": "Rede Política – Dra. Fernanda Sarelli",
   "short_name": "Rede Sarelli",
   "description": "Sistema de cadastros de campanha política",
-  "start_url": "https://www.drafernandasarelli.com.br/",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#fdf2f8",

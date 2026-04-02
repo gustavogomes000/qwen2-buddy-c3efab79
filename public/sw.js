@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rede-sarelli-v5';
+const CACHE_NAME = 'rede-sarelli-v6';
 const STATIC_ASSETS = ['/'];
 
 // ── Install — cache mínimo, ativação instantânea ────────────────────────────
