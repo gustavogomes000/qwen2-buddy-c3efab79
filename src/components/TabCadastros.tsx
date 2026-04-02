@@ -196,11 +196,10 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
   return (
     <div className="space-y-3 pb-24">
       {/* Stats grid */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         {[
           { label: 'Total', value: stats.total, active: tipoFiltro === 'todos', onClick: () => setTipoFiltro('todos'), dotClass: 'bg-foreground' },
           { label: 'Lideranças', value: stats.liderancas, active: tipoFiltro === 'lideranca', onClick: () => setTipoFiltro(tipoFiltro === 'lideranca' ? 'todos' : 'lideranca'), dotClass: 'bg-purple-500' },
-          { label: 'Fiscais', value: stats.fiscais, active: tipoFiltro === 'fiscal', onClick: () => setTipoFiltro(tipoFiltro === 'fiscal' ? 'todos' : 'fiscal'), dotClass: 'bg-emerald-500' },
           { label: 'Eleitores', value: stats.eleitores, active: tipoFiltro === 'eleitor', onClick: () => setTipoFiltro(tipoFiltro === 'eleitor' ? 'todos' : 'eleitor'), dotClass: 'bg-blue-500' },
         ].map(s => (
           <button

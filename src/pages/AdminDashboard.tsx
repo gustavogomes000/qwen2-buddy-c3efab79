@@ -191,6 +191,17 @@ export default function AdminDashboard() {
     };
   }, [expandedUser, filteredL, filteredE]);
 
+  /* ── Popup user data ── */
+  const popupUserData = useMemo(() => {
+    if (!popupUser) return null;
+    const u = usuarios.find(u => u.id === popupUser);
+    return {
+      usuario: u,
+      liderancas: filteredL.filter(r => r.cadastrado_por === popupUser),
+      eleitores: filteredE.filter(r => r.cadastrado_por === popupUser),
+    };
+  }, [popupUser, filteredL, filteredE, usuarios]);
+
   const vistaLabels: { id: VistaAtiva; icon: typeof BarChart3; label: string }[] = [
     { id: 'ranking', icon: Trophy, label: 'Ranking' },
     { id: 'usuarios', icon: UserCog, label: 'Usuários' },
