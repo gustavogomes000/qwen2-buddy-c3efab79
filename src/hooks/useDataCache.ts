@@ -40,17 +40,15 @@ export function useContagens() {
         return q;
       };
 
-      const [l, f, e] = await Promise.all([
+      const [l, e] = await Promise.all([
         buildQuery('liderancas'),
-        buildQuery('fiscais'),
         buildQuery('possiveis_eleitores'),
       ]);
 
       return {
         liderancas: l.count ?? 0,
-        fiscais: f.count ?? 0,
         eleitores: e.count ?? 0,
-        total: (l.count ?? 0) + (f.count ?? 0) + (e.count ?? 0),
+        total: (l.count ?? 0) + (e.count ?? 0),
       };
     },
     staleTime: 2 * 60 * 1000,
