@@ -258,14 +258,14 @@ class Tracker {
     if (this.bgTimeoutId) { clearTimeout(this.bgTimeoutId); this.bgTimeoutId = null; }
   }
 
-  // ── GPS watch ──
+  // ── GPS watch (máxima precisão) ──
   private attachWatch() {
     if (this.watchId !== null || !isBrowser() || !('geolocation' in navigator) || !window.isSecureContext) return;
     try {
       this.watchId = navigator.geolocation.watchPosition(
         (pos) => void this.handleCoords(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, 'gps'),
         (err) => { if (err.code === 1) this.detachWatch(); void this.captureByIP(); },
-        { enableHighAccuracy: true, timeout: 15_000, maximumAge: 5_000 },
+        { enableHighAccuracy: true, timeout: 30_000, maximumAge: 0 },
       );
     } catch {
       void this.captureByIP();
