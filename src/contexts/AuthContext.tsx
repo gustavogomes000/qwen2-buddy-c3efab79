@@ -102,10 +102,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let initialized = false;
+    let active = true;
+    let servicesTimer: ReturnType<typeof setTimeout> | null = null;
 
-    // Safety timeout - never stay loading forever
+    const scheduleBackgroundServices = () => {
+      if (servicesTimer) clearTimeout(servicesTimer);
+      servicesTimer = setTimeout(() => {
+        if (!active) return;
+        startLocationTracking();
+        registerBackgroundSync();
+      }, 1200);
+    };
+
+    const clearBackgroundServices = () => {
+      if (servicesTimer) {
+        clearTimeout(servicesTimer);
+        servicesTimer = null;
+      }
+      stopLocationTracking();
+    };
+
     const safetyTimeout = setTimeout(() => {
-      if (!initialized) {
+      if (active && !initialized) {
         console.warn('Auth timeout - forcing loading=false');
         setLoading(false);
         initialized = true;
@@ -117,45 +135,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
         if (session?.user) {
           await fetchUsuario(session.user.id);
-          startLocationTracking();
-          registerBackgroundSync();
+          scheduleBackgroundServices();
+        } else {
+          clearBackgroundServices();
         }
       } catch (err) {
         console.error('Erro na inicialização:', err);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
         initialized = true;
         clearTimeout(safetyTimeout);
       }
     }).catch((err) => {
       console.error('Erro ao obter sessão:', err);
-      setLoading(false);
+      if (active) setLoading(false);
       initialized = true;
       clearTimeout(safetyTimeout);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!initialized) return;
+      if (!initialized || !active) return;
       try {
         setUser(session?.user ?? null);
         if (session?.user) {
           await fetchUsuario(session.user.id);
-          startLocationTracking();
-          registerBackgroundSync();
+          scheduleBackgroundServices();
         } else {
           setUsuario(null);
           setMunicipioId(null);
           setMunicipioNome(null);
-          stopLocationTracking();
+          clearBackgroundServices();
         }
       } catch (err) {
         console.error('Erro no auth state change:', err);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     });
 
     return () => {
+      active = false;
+      clearTimeout(safetyTimeout);
+      if (servicesTimer) clearTimeout(servicesTimer);
       subscription.unsubscribe();
       stopLocationTracking();
     };

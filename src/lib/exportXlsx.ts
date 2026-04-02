@@ -1,5 +1,4 @@
 import { supabase } from '@/integrations/supabase/client';
-import * as XLSX from 'xlsx';
 
 interface ExportRow {
   tipo: string;
@@ -37,6 +36,7 @@ function formatDate(d: string | null): string {
 }
 
 export async function exportAllCadastros(tipo?: 'lideranca' | 'eleitor') {
+  const XLSX = await import('xlsx');
   const agentesMap: Record<string, string> = {};
   const { data: agentes } = await supabase.from('hierarquia_usuarios').select('id, nome');
   agentes?.forEach(a => { agentesMap[a.id] = a.nome; });
@@ -61,7 +61,6 @@ export async function exportAllCadastros(tipo?: 'lideranca' | 'eleitor') {
     });
   }
 
-
   if (!tipo || tipo === 'eleitor') {
     const { data } = await supabase.from('possiveis_eleitores').select('*, pessoas(*)');
     data?.forEach((e: any) => {
@@ -80,7 +79,6 @@ export async function exportAllCadastros(tipo?: 'lideranca' | 'eleitor') {
     });
   }
 
-  // Build Excel workbook
   const wsData = [headers, ...rows.map(r => [
     r.tipo, r.nome, r.cpf, r.telefone, r.whatsapp, r.email,
     r.instagram, r.facebook, r.titulo_eleitor, r.zona_eleitoral,
@@ -90,8 +88,6 @@ export async function exportAllCadastros(tipo?: 'lideranca' | 'eleitor') {
   ])];
 
   const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-  // Auto-size columns
   const colWidths = headers.map((h, i) => {
     let max = h.length;
     rows.forEach(r => {
