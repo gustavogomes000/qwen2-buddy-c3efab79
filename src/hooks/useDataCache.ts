@@ -182,8 +182,26 @@ export function useInvalidarCadastros() {
   const qc = useQueryClient();
   return useCallback(() => {
     qc.invalidateQueries({ queryKey: ['liderancas'] });
-    
     qc.invalidateQueries({ queryKey: ['eleitores'] });
+    qc.invalidateQueries({ queryKey: ['fiscais'] });
     qc.invalidateQueries({ queryKey: ['contagens'] });
   }, [qc]);
+}
+
+/* ── Realtime: invalidação instantânea ao receber INSERT/UPDATE/DELETE ── */
+export function useRealtimeSync() {
+  const invalidar = useInvalidarCadastros();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('cadastros-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'liderancas' }, () => invalidar())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'possiveis_eleitores' }, () => invalidar())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fiscais' }, () => invalidar())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [invalidar]);
 }
