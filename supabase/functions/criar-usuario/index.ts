@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { nome, senha, tipo, superior_id, suplente_id } = parsed.data;
+    const { nome, senha, tipo, superior_id, suplente_id, municipio_id } = parsed.data;
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
