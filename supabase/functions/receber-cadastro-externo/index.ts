@@ -131,11 +131,12 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const indId = body.indicador_id ?? body.cadastrado_por_id;
+    const indId = body.indicador_id ?? body.cadastrado_por_id ?? null;
     const indTipo = body.indicador_tipo ?? (body.cadastrado_por_fonte === 'externo' ? 'suplente' : 'coordenador');
 
+    // Se não tem indId (ex: recepcao), pular direto pro fallback
     if (!indId) {
-      return jsonResp({ erro: 'indicador_id é obrigatório' }, 400);
+      console.log(`[receber-cadastro-externo] Sem indicador_id, tipo=${indTipo}. Usando fallback admin.`);
     }
 
     console.log(`[receber-cadastro-externo] Indicador: tipo=${indTipo}, id=${indId}, nome=${body.indicador_nome}`);
