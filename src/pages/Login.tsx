@@ -42,7 +42,7 @@ export default function Login() {
         <ConstellationBg />
       </Suspense>
 
-      <div className="w-full max-w-[560px] mx-auto px-5 pt-6 pb-6 sm:py-0 relative z-10 flex flex-col items-center">
+      <div className="w-full max-w-[560px] mx-auto px-5 pt-6 pb-10 sm:py-0 relative z-10 flex flex-col items-center">
         {/* Photo */}
         <div
           className="w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] rounded-full overflow-hidden mb-2"
