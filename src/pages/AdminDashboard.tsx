@@ -223,7 +223,7 @@ export default function AdminDashboard() {
       eleitores: filteredE.filter(r => r.cadastrado_por === popupUser),
       fiscais: filteredF.filter(r => r.cadastrado_por === popupUser),
     };
-  }, [popupUser, filteredL, filteredE, usuarios]);
+  }, [popupUser, filteredL, filteredE, filteredF, usuarios]);
 
   const vistaLabels: { id: VistaAtiva; icon: typeof BarChart3; label: string }[] = [
     { id: 'ranking', icon: Trophy, label: 'Ranking' },
@@ -882,6 +882,12 @@ export default function AdminDashboard() {
                 .sort((a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime())
                 .map((r: any) => {
                   const p = r.pessoas || {};
+                  const Field = ({ label, value }: { label: string; value: any }) => (
+                    <div className="text-[10px] bg-background rounded px-2 py-1">
+                      <span className="text-muted-foreground">{label}:</span>{' '}
+                      <span className={value ? 'text-foreground' : 'text-muted-foreground/50 italic'}>{value || '—'}</span>
+                    </div>
+                  );
                   return (
                     <div key={r.id} className="p-3 rounded-xl bg-muted/50 border border-border/50 space-y-2">
                       <div className="flex items-start justify-between">
@@ -899,55 +905,48 @@ export default function AdminDashboard() {
                         <span className="text-[10px] text-muted-foreground shrink-0">{new Date(r.criado_em).toLocaleDateString('pt-BR')}</span>
                       </div>
 
+                      {/* Contato */}
                       <div className="grid grid-cols-2 gap-1">
-                        {[
-                          { label: 'CPF', value: p.cpf },
-                          { label: 'WhatsApp', value: p.whatsapp },
-                          { label: 'Telefone', value: p.telefone },
-                          { label: 'E-mail', value: p.email },
-                          { label: 'Rede social', value: p.instagram || p.facebook },
-                        ].filter(f => f.value).map(f => (
-                          <div key={f.label} className="text-[10px] bg-background rounded px-2 py-1">
-                            <span className="text-muted-foreground">{f.label}:</span>{' '}
-                            <span className="text-foreground">{f.value}</span>
-                          </div>
-                        ))}
+                        <Field label="CPF" value={p.cpf} />
+                        <Field label="WhatsApp" value={p.whatsapp} />
+                        <Field label="Telefone" value={p.telefone} />
+                        <Field label="E-mail" value={p.email} />
+                        <Field label="Rede social" value={p.instagram || p.facebook} />
                       </div>
 
+                      {/* Dados Eleitorais */}
                       <div className="grid grid-cols-2 gap-1">
-                        {[
-                          { label: 'Título', value: p.titulo_eleitor },
-                          { label: 'Zona / Seção', value: (p.zona_eleitoral || p.secao_eleitoral) ? `${p.zona_eleitoral || '—'} / ${p.secao_eleitoral || '—'}` : null },
-                          { label: 'Município', value: p.municipio_eleitoral },
-                          { label: 'Colégio', value: p.colegio_eleitoral },
-                        ].filter(f => f.value).map(f => (
-                          <div key={f.label} className="text-[10px] bg-background rounded px-2 py-1">
-                            <span className="text-muted-foreground">{f.label}:</span>{' '}
-                            <span className="text-foreground">{f.value}</span>
-                          </div>
-                        ))}
+                        <Field label="Título" value={p.titulo_eleitor} />
+                        <Field label="Zona / Seção" value={`${p.zona_eleitoral || '—'} / ${p.secao_eleitoral || '—'}`} />
+                        <Field label="Município / UF" value={`${p.municipio_eleitoral || '—'} / ${p.uf_eleitoral || '—'}`} />
+                        <Field label="Colégio" value={p.colegio_eleitoral} />
+                        <Field label="End. Colégio" value={p.endereco_colegio} />
                       </div>
 
-                      {r._tipo === 'lideranca' && (r.regiao_atuacao || r.nivel_comprometimento || r.apoiadores_estimados || r.meta_votos) && (
+                      {/* Dados específicos */}
+                      {r._tipo === 'lideranca' && (
                         <div className="grid grid-cols-2 gap-1">
-                          {r.regiao_atuacao && <div className="text-[10px] bg-background rounded px-2 py-1"><span className="text-muted-foreground">Região:</span> <span className="text-foreground">{r.regiao_atuacao}</span></div>}
-                          {r.nivel_comprometimento && <div className="text-[10px] bg-background rounded px-2 py-1"><span className="text-muted-foreground">Comprometimento:</span> <span className="text-foreground">{r.nivel_comprometimento}</span></div>}
-                          {r.apoiadores_estimados && <div className="text-[10px] bg-background rounded px-2 py-1"><span className="text-muted-foreground">Apoiadores:</span> <span className="text-foreground">{r.apoiadores_estimados}</span></div>}
-                          {r.meta_votos && <div className="text-[10px] bg-background rounded px-2 py-1"><span className="text-muted-foreground">Meta votos:</span> <span className="text-foreground">{r.meta_votos}</span></div>}
+                          <Field label="Região" value={r.regiao_atuacao} />
+                          <Field label="Comprometimento" value={r.nivel_comprometimento} />
+                          <Field label="Apoiadores" value={r.apoiadores_estimados} />
+                          <Field label="Meta votos" value={r.meta_votos} />
+                        </div>
+                      )}
+                      {r._tipo === 'eleitor' && (
+                        <div className="grid grid-cols-2 gap-1">
+                          <Field label="Compromisso" value={r.compromisso_voto} />
+                        </div>
+                      )}
+                      {r._tipo === 'fiscal' && (
+                        <div className="grid grid-cols-2 gap-1">
+                          <Field label="Zona fiscal" value={r.zona_fiscal} />
+                          <Field label="Seção fiscal" value={r.secao_fiscal} />
+                          <Field label="Colégio" value={r.colegio_eleitoral} />
                         </div>
                       )}
 
-                      {r._tipo === 'eleitor' && r.compromisso_voto && (
-                        <div className="text-[10px] bg-background rounded px-2 py-1">
-                          <span className="text-muted-foreground">Compromisso:</span> <span className="text-foreground">{r.compromisso_voto}</span>
-                        </div>
-                      )}
-
-                      {r.observacoes && (
-                        <div className="text-[10px] bg-background rounded px-2 py-1">
-                          <span className="text-muted-foreground">Obs:</span> <span className="text-foreground">{r.observacoes}</span>
-                        </div>
-                      )}
+                      {/* Observações */}
+                      {r.observacoes && <Field label="Observações" value={r.observacoes} />}
                     </div>
                   );
                 })}
