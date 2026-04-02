@@ -1,8 +1,8 @@
 import { useState, lazy, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import fernandaImg from '@/assets/fernanda-sarelli.jpg';
-import logoSarelli from '@/assets/logo-sarelli.png';
+import fernandaImg from '@/assets/fernanda-sarelli.webp';
+import logoSarelli from '@/assets/logo-sarelli.webp';
 
 const ConstellationBg = lazy(() => import('@/components/ConstellationBg'));
 
