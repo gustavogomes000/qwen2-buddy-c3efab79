@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Users, UserCircle, BarChart3, MapPin, Target, List, Search } from 'lucide-react';
+import { Users, UserCircle, BarChart3, MapPin, Target, List, Search, WifiOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { getPendingCount } from '@/lib/offlineQueue';
+import { onSyncStatusChange } from '@/services/offlineSync';
 
 export type TabId = 'liderancas' | 'fiscais' | 'eleitores' | 'cadastros' | 'rastreamento' | 'perfil';
 
