@@ -8,11 +8,9 @@ const corsHeaders = {
 
 const bodySchema = z.object({
   tipo: z.enum(['lideranca', 'fiscal', 'eleitor']),
-  // Quem indicou/cadastrou
   indicador_id: z.string().uuid(),
   indicador_tipo: z.enum(['suplente', 'lideranca', 'coordenador', 'super_admin', 'fiscal', 'eleitor_cadastrado', 'lideranca_cadastrada', 'fiscal_cadastrado']),
   indicador_nome: z.string().optional().nullable(),
-  // Dados da pessoa sendo cadastrada
   nome: z.string().trim().min(2).max(120),
   cpf: z.string().optional().nullable(),
   telefone: z.string().optional().nullable(),
@@ -28,10 +26,44 @@ const bodySchema = z.object({
   secao_fiscal: z.string().optional().nullable(),
   compromisso_voto: z.string().optional().nullable(),
   lideranca_id: z.string().uuid().optional().nullable(),
-  // Compatibilidade legada
   cadastrado_por_id: z.string().optional().nullable(),
   cadastrado_por_fonte: z.enum(['externo', 'local']).optional().nullable(),
 });
+
+function jsonResp(body: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
+/**
+ * Tenta encontrar um hierarquia_usuarios vinculado a uma pessoa_id.
+ * Usado como fallback para resolver cadastrado_por quando o indicador
+ * é um cadastro (lideranca_cadastrada, fiscal_cadastrado, eleitor_cadastrado).
+ */
+async function resolverUsuarioPorPessoa(supabaseAdmin: any, pessoaId: string | null): Promise<string | null> {
+  if (!pessoaId) return null;
+  // Verificar se essa pessoa tem um usuário no sistema
+  // Não há link direto pessoa→hierarquia, mas podemos buscar lideranças do mesmo pessoa_id
+  // e pegar o cadastrado_por delas
+  return null;
+}
+
+/**
+ * Busca o primeiro admin/coordenador ativo como fallback para cadastrado_por.
+ * Garante que o registro nunca fique sem dono (invisível via RLS).
+ */
+async function resolverAdminFallback(supabaseAdmin: any): Promise<string | null> {
+  const { data } = await supabaseAdmin
+    .from('hierarquia_usuarios')
+    .select('id')
+    .in('tipo', ['super_admin', 'coordenador'])
+    .eq('ativo', true)
+    .limit(1)
+    .maybeSingle();
+  return data?.id ?? null;
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -42,19 +74,13 @@ Deno.serve(async (req) => {
     const TOKEN_SECRETO = Deno.env.get('CADASTRO_EXTERNO_TOKEN');
     const tokenRecebido = req.headers.get('x-api-token');
     if (!tokenRecebido || tokenRecebido !== TOKEN_SECRETO) {
-      return new Response(
-        JSON.stringify({ erro: 'Token inválido ou ausente' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonResp({ erro: 'Token inválido ou ausente' }, 401);
     }
 
     const rawBody = await req.json();
     const parsed = bodySchema.safeParse(rawBody);
     if (!parsed.success) {
-      return new Response(
-        JSON.stringify({ erro: 'Dados inválidos', detalhes: parsed.error.flatten().fieldErrors }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonResp({ erro: 'Dados inválidos', detalhes: parsed.error.flatten().fieldErrors }, 400);
     }
     const body = parsed.data;
 
@@ -67,22 +93,21 @@ Deno.serve(async (req) => {
     let cadastradoPorId: string | null = null;
     let suplenteId: string | null = null;
     let municipioId: string | null = null;
+    let liderancaIdVinculada: string | null = null;
 
     const indId = body.indicador_id ?? body.cadastrado_por_id;
     const indTipo = body.indicador_tipo ?? (body.cadastrado_por_fonte === 'externo' ? 'suplente' : 'coordenador');
 
     if (!indId) {
-      return new Response(
-        JSON.stringify({ erro: 'indicador_id é obrigatório' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonResp({ erro: 'indicador_id é obrigatório' }, 400);
     }
+
+    console.log(`[receber-cadastro-externo] Indicador: tipo=${indTipo}, id=${indId}, nome=${body.indicador_nome}`);
 
     // Tipos que são usuários diretos do sistema (hierarquia_usuarios)
     const tiposHierarquia = ['super_admin', 'coordenador', 'lideranca', 'fiscal'];
 
     if (tiposHierarquia.includes(indTipo)) {
-      // O indicador_id É um hierarquia_usuarios.id
       const { data: usuario } = await supabaseAdmin
         .from('hierarquia_usuarios')
         .select('id, suplente_id, municipio_id')
@@ -94,9 +119,11 @@ Deno.serve(async (req) => {
         cadastradoPorId = usuario.id;
         suplenteId = usuario.suplente_id;
         municipioId = usuario.municipio_id;
+        console.log(`[receber-cadastro-externo] Hierarquia resolvida: cadastrado_por=${cadastradoPorId}, suplente=${suplenteId}, municipio=${municipioId}`);
+      } else {
+        console.warn(`[receber-cadastro-externo] Hierarquia NÃO encontrada para id=${indId}, tipo=${indTipo}`);
       }
     } else if (indTipo === 'suplente') {
-      // O indicador_id é um suplente (banco externo ou local)
       // Espelhar suplente localmente se necessário
       if (body.indicador_nome) {
         await supabaseAdmin.from('suplentes').upsert(
@@ -104,12 +131,14 @@ Deno.serve(async (req) => {
           { onConflict: 'id' }
         );
       }
-      // Tentar encontrar usuário vinculado ao suplente
+      // Encontrar usuário vinculado ao suplente
       const { data: usuarioVinculado } = await supabaseAdmin
         .from('hierarquia_usuarios')
         .select('id, suplente_id, municipio_id')
         .eq('suplente_id', indId)
         .eq('ativo', true)
+        .order('tipo')
+        .limit(1)
         .maybeSingle();
 
       if (usuarioVinculado) {
@@ -125,24 +154,25 @@ Deno.serve(async (req) => {
           .maybeSingle();
         municipioId = sm?.municipio_id ?? null;
       }
+      console.log(`[receber-cadastro-externo] Suplente resolvido: cadastrado_por=${cadastradoPorId}, suplente=${suplenteId}, municipio=${municipioId}`);
     } else if (indTipo === 'lideranca_cadastrada') {
-      // O indicador_id é um liderancas.id
       const { data: lid } = await supabaseAdmin
         .from('liderancas')
-        .select('id, cadastrado_por, suplente_id, municipio_id')
+        .select('id, cadastrado_por, suplente_id, municipio_id, pessoa_id')
         .eq('id', indId)
         .maybeSingle();
 
       if (lid) {
+        liderancaIdVinculada = lid.id;
         cadastradoPorId = lid.cadastrado_por;
         suplenteId = lid.suplente_id;
         municipioId = lid.municipio_id;
       }
+      console.log(`[receber-cadastro-externo] Liderança cadastrada resolvida: cadastrado_por=${cadastradoPorId}, suplente=${suplenteId}`);
     } else if (indTipo === 'fiscal_cadastrado') {
-      // O indicador_id é um fiscais.id
       const { data: fisc } = await supabaseAdmin
         .from('fiscais')
-        .select('id, cadastrado_por, suplente_id, municipio_id')
+        .select('id, cadastrado_por, suplente_id, municipio_id, lideranca_id')
         .eq('id', indId)
         .maybeSingle();
 
@@ -150,12 +180,13 @@ Deno.serve(async (req) => {
         cadastradoPorId = fisc.cadastrado_por;
         suplenteId = fisc.suplente_id;
         municipioId = fisc.municipio_id;
+        liderancaIdVinculada = fisc.lideranca_id;
       }
+      console.log(`[receber-cadastro-externo] Fiscal cadastrado resolvido: cadastrado_por=${cadastradoPorId}, suplente=${suplenteId}`);
     } else if (indTipo === 'eleitor_cadastrado') {
-      // O indicador_id é um possiveis_eleitores.id
       const { data: el } = await supabaseAdmin
         .from('possiveis_eleitores')
-        .select('id, cadastrado_por, suplente_id, municipio_id')
+        .select('id, cadastrado_por, suplente_id, municipio_id, lideranca_id')
         .eq('id', indId)
         .maybeSingle();
 
@@ -163,8 +194,30 @@ Deno.serve(async (req) => {
         cadastradoPorId = el.cadastrado_por;
         suplenteId = el.suplente_id;
         municipioId = el.municipio_id;
+        liderancaIdVinculada = el.lideranca_id;
       }
+      console.log(`[receber-cadastro-externo] Eleitor cadastrado resolvido: cadastrado_por=${cadastradoPorId}, suplente=${suplenteId}`);
     }
+
+    // ── FALLBACK CRÍTICO: garantir que cadastrado_por NUNCA fique null ──
+    // Se não resolveu cadastrado_por, buscar admin como fallback
+    if (!cadastradoPorId) {
+      console.warn(`[receber-cadastro-externo] cadastrado_por é null! Buscando fallback admin...`);
+      cadastradoPorId = await resolverAdminFallback(supabaseAdmin);
+      console.log(`[receber-cadastro-externo] Fallback admin: cadastrado_por=${cadastradoPorId}`);
+    }
+
+    // ── Resolver municipio via suplente se ainda não tem ──
+    if (!municipioId && suplenteId) {
+      const { data: sm } = await supabaseAdmin
+        .from('suplente_municipio')
+        .select('municipio_id')
+        .eq('suplente_id', suplenteId)
+        .maybeSingle();
+      municipioId = sm?.municipio_id ?? null;
+    }
+
+    console.log(`[receber-cadastro-externo] FINAL: cadastrado_por=${cadastradoPorId}, suplente=${suplenteId}, municipio=${municipioId}, tipo_cadastro=${body.tipo}`);
 
     // ── Upsert pessoa ──
     let pessoaId: string;
@@ -179,12 +232,15 @@ Deno.serve(async (req) => {
 
       if (pessoaExistente) {
         pessoaId = pessoaExistente.id;
-        await supabaseAdmin.from('pessoas').update({
-          telefone: body.telefone || undefined,
-          whatsapp: body.whatsapp || undefined,
-          zona_eleitoral: body.zona_eleitoral || undefined,
-          secao_eleitoral: body.secao_eleitoral || undefined,
-        }).eq('id', pessoaId);
+        const updates: Record<string, string | null> = {};
+        if (body.telefone) updates.telefone = body.telefone;
+        if (body.whatsapp) updates.whatsapp = body.whatsapp;
+        if (body.email) updates.email = body.email;
+        if (body.zona_eleitoral) updates.zona_eleitoral = body.zona_eleitoral;
+        if (body.secao_eleitoral) updates.secao_eleitoral = body.secao_eleitoral;
+        if (Object.keys(updates).length > 0) {
+          await supabaseAdmin.from('pessoas').update(updates).eq('id', pessoaId);
+        }
       } else {
         const { data: nova, error } = await supabaseAdmin
           .from('pessoas')
@@ -206,18 +262,29 @@ Deno.serve(async (req) => {
         pessoaId = nova!.id;
       }
     } else {
-      const { data: nova, error } = await supabaseAdmin
+      // Sem CPF: buscar por nome exato para evitar duplicatas
+      const { data: porNome } = await supabaseAdmin
         .from('pessoas')
-        .insert({
-          nome: body.nome,
-          telefone: body.telefone,
-          whatsapp: body.whatsapp,
-          email: body.email,
-        })
         .select('id')
-        .single();
-      if (error) throw new Error(`Erro ao criar pessoa: ${error.message}`);
-      pessoaId = nova!.id;
+        .ilike('nome', body.nome.trim())
+        .maybeSingle();
+
+      if (porNome) {
+        pessoaId = porNome.id;
+      } else {
+        const { data: nova, error } = await supabaseAdmin
+          .from('pessoas')
+          .insert({
+            nome: body.nome,
+            telefone: body.telefone,
+            whatsapp: body.whatsapp,
+            email: body.email,
+          })
+          .select('id')
+          .single();
+        if (error) throw new Error(`Erro ao criar pessoa: ${error.message}`);
+        pessoaId = nova!.id;
+      }
     }
 
     // ── Inserir no tipo correto ──
@@ -225,10 +292,7 @@ Deno.serve(async (req) => {
       const { data: existente } = await supabaseAdmin
         .from('liderancas').select('id').eq('pessoa_id', pessoaId).maybeSingle();
       if (existente) {
-        return new Response(
-          JSON.stringify({ aviso: 'Pessoa já cadastrada como liderança', id: existente.id }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return jsonResp({ aviso: 'Pessoa já cadastrada como liderança', id: existente.id }, 200);
       }
       const { data: novo, error } = await supabaseAdmin
         .from('liderancas')
@@ -243,20 +307,15 @@ Deno.serve(async (req) => {
         })
         .select('id').single();
       if (error) throw new Error(`Erro ao criar liderança: ${error.message}`);
-      return new Response(
-        JSON.stringify({ sucesso: true, tipo: 'lideranca', id: novo!.id, pessoa_id: pessoaId }),
-        { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.log(`[receber-cadastro-externo] ✅ Liderança criada: id=${novo!.id}, pessoa=${pessoaId}, cadastrado_por=${cadastradoPorId}`);
+      return jsonResp({ sucesso: true, tipo: 'lideranca', id: novo!.id, pessoa_id: pessoaId }, 201);
     }
 
     if (body.tipo === 'fiscal') {
       const { data: existente } = await supabaseAdmin
         .from('fiscais').select('id').eq('pessoa_id', pessoaId).maybeSingle();
       if (existente) {
-        return new Response(
-          JSON.stringify({ aviso: 'Pessoa já cadastrada como fiscal', id: existente.id }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return jsonResp({ aviso: 'Pessoa já cadastrada como fiscal', id: existente.id }, 200);
       }
       const { data: novo, error } = await supabaseAdmin
         .from('fiscais')
@@ -264,6 +323,7 @@ Deno.serve(async (req) => {
           pessoa_id: pessoaId,
           cadastrado_por: cadastradoPorId,
           suplente_id: suplenteId,
+          lideranca_id: liderancaIdVinculada || body.lideranca_id,
           municipio_id: municipioId,
           status: 'Ativo',
           zona_fiscal: body.zona_fiscal,
@@ -272,20 +332,15 @@ Deno.serve(async (req) => {
         } as any)
         .select('id').single();
       if (error) throw new Error(`Erro ao criar fiscal: ${error.message}`);
-      return new Response(
-        JSON.stringify({ sucesso: true, tipo: 'fiscal', id: novo!.id, pessoa_id: pessoaId }),
-        { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.log(`[receber-cadastro-externo] ✅ Fiscal criado: id=${novo!.id}, pessoa=${pessoaId}, cadastrado_por=${cadastradoPorId}`);
+      return jsonResp({ sucesso: true, tipo: 'fiscal', id: novo!.id, pessoa_id: pessoaId }, 201);
     }
 
     if (body.tipo === 'eleitor') {
       const { data: existente } = await supabaseAdmin
         .from('possiveis_eleitores').select('id').eq('pessoa_id', pessoaId).maybeSingle();
       if (existente) {
-        return new Response(
-          JSON.stringify({ aviso: 'Pessoa já cadastrada como eleitor', id: existente.id }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return jsonResp({ aviso: 'Pessoa já cadastrada como eleitor', id: existente.id }, 200);
       }
       const { data: novo, error } = await supabaseAdmin
         .from('possiveis_eleitores')
@@ -293,28 +348,23 @@ Deno.serve(async (req) => {
           pessoa_id: pessoaId,
           cadastrado_por: cadastradoPorId,
           suplente_id: suplenteId,
+          lideranca_id: liderancaIdVinculada || body.lideranca_id,
           municipio_id: municipioId,
-          lideranca_id: body.lideranca_id,
           compromisso_voto: body.compromisso_voto ?? 'Indefinido',
           origem_captacao: 'visita_comite',
         } as any)
         .select('id').single();
       if (error) throw new Error(`Erro ao criar eleitor: ${error.message}`);
-      return new Response(
-        JSON.stringify({ sucesso: true, tipo: 'eleitor', id: novo!.id, pessoa_id: pessoaId }),
-        { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.log(`[receber-cadastro-externo] ✅ Eleitor criado: id=${novo!.id}, pessoa=${pessoaId}, cadastrado_por=${cadastradoPorId}`);
+      return jsonResp({ sucesso: true, tipo: 'eleitor', id: novo!.id, pessoa_id: pessoaId }, 201);
     }
 
-    return new Response(
-      JSON.stringify({ erro: 'Tipo inválido' }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return jsonResp({ erro: 'Tipo inválido' }, 400);
   } catch (error) {
     console.error('Erro em receber-cadastro-externo:', error);
-    return new Response(
-      JSON.stringify({ erro: error instanceof Error ? error.message : 'Erro interno do servidor' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    return jsonResp(
+      { erro: error instanceof Error ? error.message : 'Erro interno do servidor' },
+      500
     );
   }
 });
