@@ -15,9 +15,9 @@ import CadastrosExternos from "./pages/CadastrosExternos";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60 * 1000,
+      staleTime: 3_000,
       gcTime: 10 * 60 * 1000,
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
       retry: 1,
     },
   },

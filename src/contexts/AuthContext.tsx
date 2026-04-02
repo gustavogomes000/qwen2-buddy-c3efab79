@@ -128,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
         initialized = true;
       }
-    }, 8000);
+    }, 4000);
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       try {
