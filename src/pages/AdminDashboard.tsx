@@ -482,6 +482,7 @@ export default function AdminDashboard() {
                             <span className="text-base font-bold text-primary">{u.nome.charAt(0)}</span>
                           </div>
                           <p className="text-xs font-bold text-foreground text-center truncate w-full">{u.nome.split(' ')[0]}</p>
+                          <span className="text-[8px] px-1.5 py-0.5 rounded-full font-medium bg-primary/10 text-primary">{tipoLabel(u.tipo)}</span>
                           <p className="text-2xl font-black text-primary leading-none">{u.total}</p>
                           <div className="flex flex-wrap gap-0.5 justify-center">
                             {u.l > 0 && <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-primary/15 text-primary">L{u.l}</span>}
