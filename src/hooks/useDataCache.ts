@@ -114,7 +114,7 @@ export function useLiderancas(scope: 'own' | 'all' = 'own') {
         .limit(scope === 'all' && isAdmin ? 2000 : 500);
 
       // Para scope 'own', não filtra por município - mostra tudo que o usuário cadastrou
-      if (scope === 'all' && filtroMunicipioId) q = q.eq('municipio_id', filtroMunicipioId);
+      if (scope === 'all' && filtroMunicipioId) q = q.or(`municipio_id.eq.${filtroMunicipioId},municipio_id.is.null`);
       q = applyScopeFilter(q, scope, isAdmin, usuario, 'liderancas');
 
       const { data, error } = await q;
