@@ -36,7 +36,7 @@ function formatDate(d: string | null): string {
   return new Date(d).toLocaleDateString('pt-BR');
 }
 
-export async function exportAllCadastros(tipo?: 'lideranca' | 'fiscal' | 'eleitor') {
+export async function exportAllCadastros(tipo?: 'lideranca' | 'eleitor') {
   const agentesMap: Record<string, string> = {};
   const { data: agentes } = await supabase.from('hierarquia_usuarios').select('id, nome');
   agentes?.forEach(a => { agentesMap[a.id] = a.nome; });
