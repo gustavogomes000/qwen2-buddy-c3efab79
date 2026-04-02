@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getPendingCount } from '@/lib/offlineQueue';
 import { onSyncStatusChange } from '@/services/offlineSync';
 
-export type TabId = 'liderancas' | 'fiscais' | 'eleitores' | 'cadastros' | 'rastreamento' | 'perfil';
+export type TabId = 'liderancas' | 'fiscais' | 'eleitores' | 'cadastros' | 'perfil';
 
 interface Props {
   active: TabId;
