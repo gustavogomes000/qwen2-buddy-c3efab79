@@ -75,12 +75,21 @@ function applyScopeFilter(
   if (!usuario) return q;
 
   if (scope === 'own') {
-    // Abas regulares: mostrar SOMENTE o que o próprio usuário cadastrou
-    q = q.eq('cadastrado_por', usuario.id);
+    // Abas regulares: mostrar o que o usuário cadastrou OU que veio vinculado via suplente_id
+    if (usuario.suplente_id) {
+      // Usuário tem suplente: mostrar cadastrado_por OU suplente_id match
+      q = q.or(`cadastrado_por.eq.${usuario.id},suplente_id.eq.${usuario.suplente_id}`);
+    } else {
+      q = q.eq('cadastrado_por', usuario.id);
+    }
   } else {
     // Painel admin: admins veem tudo, outros filtram
     if (!isAdmin) {
-      q = q.eq('cadastrado_por', usuario.id);
+      if (usuario.suplente_id) {
+        q = q.or(`cadastrado_por.eq.${usuario.id},suplente_id.eq.${usuario.suplente_id}`);
+      } else {
+        q = q.eq('cadastrado_por', usuario.id);
+      }
     }
   }
   return q;
@@ -102,7 +111,7 @@ export function useLiderancas(scope: 'own' | 'all' = 'own') {
         .from('liderancas')
         .select(QUERY_LID)
         .order('criado_em', { ascending: false })
-        .limit(500);
+        .limit(scope === 'all' && isAdmin ? 2000 : 500);
 
       // Para scope 'own', não filtra por município - mostra tudo que o usuário cadastrou
       if (scope === 'all' && filtroMunicipioId) q = q.eq('municipio_id', filtroMunicipioId);
@@ -134,7 +143,7 @@ export function useFiscais(scope: 'own' | 'all' = 'own') {
         .from('fiscais')
         .select(QUERY_FISC)
         .order('criado_em', { ascending: false })
-        .limit(500);
+        .limit(scope === 'all' && isAdmin ? 2000 : 500);
 
       if (scope === 'all' && filtroMunicipioId) q = q.eq('municipio_id', filtroMunicipioId);
       q = applyScopeFilter(q, scope, isAdmin, usuario, 'fiscais');
@@ -165,7 +174,7 @@ export function useEleitores(scope: 'own' | 'all' = 'own') {
         .from('possiveis_eleitores')
         .select(QUERY_ELE)
         .order('criado_em', { ascending: false })
-        .limit(500);
+        .limit(scope === 'all' && isAdmin ? 2000 : 500);
 
       if (scope === 'all' && filtroMunicipioId) q = q.eq('municipio_id', filtroMunicipioId);
       q = applyScopeFilter(q, scope, isAdmin, usuario, 'possiveis_eleitores');
