@@ -68,11 +68,10 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
   const { tipoUsuario, usuario, isAdmin, municipioId: authMunicipioId } = useAuth();
   const { cidadeAtiva, isTodasCidades, nomeMunicipioPorId } = useCidade();
   const { data: lidData, isLoading: lidLoading } = useLiderancas();
-  const { data: fisData, isLoading: fisLoading } = useFiscais();
   const { data: eleData, isLoading: eleLoading } = useEleitores();
   const invalidarCadastros = useInvalidarCadastros();
 
-  const loading = lidLoading || fisLoading || eleLoading;
+  const loading = lidLoading || eleLoading;
   const [tipoFiltro, setTipoFiltro] = useState<TipoFiltro>('todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [exporting, setExporting] = useState(false);
