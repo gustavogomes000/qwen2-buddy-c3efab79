@@ -118,8 +118,6 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
   useEffect(() => {
     supabase.from('liderancas').select('id, pessoas(nome)').eq('status', 'Ativa')
       .then(({ data }) => { if (data) setLiderancas(data.map((l: any) => ({ id: l.id, nome: l.pessoas?.nome || '—' }))); });
-    supabase.from('fiscais').select('id, pessoas(nome)').eq('status', 'Ativo')
-      .then(({ data }) => { if (data) setFiscais(data.map((f: any) => ({ id: f.id, nome: f.pessoas?.nome || '—' }))); });
   }, []);
 
   const validarCPF = useCallback(async (cpfClean: string) => {
