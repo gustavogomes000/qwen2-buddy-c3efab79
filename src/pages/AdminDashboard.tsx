@@ -343,10 +343,11 @@ export default function AdminDashboard() {
                   {isExpanded && userCadastros && (
                     <div className="border-t border-border px-3 pb-3 pt-2 space-y-2">
                       {/* Counts */}
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-3 gap-2">
                         {[
                           { key: 'lideranca', label: 'Lideranças', count: userCadastros.liderancas.length, icon: Users },
                           { key: 'eleitor', label: 'Eleitores', count: userCadastros.eleitores.length, icon: Target },
+                          { key: 'fiscal', label: 'Fiscais', count: userCadastros.fiscais.length, icon: Shield },
                         ].map(({ key, label, count, icon: Icon }) => (
                           <button key={key}
                             onClick={() => setExpandedTipo(expandedTipo === key ? null : key)}
@@ -366,6 +367,7 @@ export default function AdminDashboard() {
                         <div className="space-y-1.5 max-h-[400px] overflow-y-auto">
                           {(() => {
                             const records = expandedTipo === 'lideranca' ? userCadastros.liderancas
+                              : expandedTipo === 'fiscal' ? userCadastros.fiscais
                               : userCadastros.eleitores;
                             if (records.length === 0) return <p className="text-xs text-muted-foreground text-center py-4">Nenhum registro</p>;
                             return records.map((r: any) => {
