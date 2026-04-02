@@ -887,11 +887,6 @@ export default function AdminDashboard() {
                             r._tipo === 'lideranca' ? 'bg-primary/15 text-primary' : r._tipo === 'fiscal' ? 'bg-amber-500/15 text-amber-600' : 'bg-secondary text-secondary-foreground'
                           }`}>{r._tipo === 'lideranca' ? 'Liderança' : r._tipo === 'fiscal' ? 'Fiscal' : 'Eleitor'}</span>
                           <p className="text-sm font-semibold text-foreground">{p.nome || '—'}</p>
-                          {r.origem_captacao === 'visita_comite' && (
-                            <span className="text-[8px] px-1.5 py-0.5 rounded-full font-medium bg-primary/10 text-primary flex items-center gap-0.5">
-                              <Tag size={7} /> Visita
-                            </span>
-                          )}
                         </div>
                         <span className="text-[10px] text-muted-foreground shrink-0">{new Date(r.criado_em).toLocaleDateString('pt-BR')}</span>
                       </div>
