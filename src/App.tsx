@@ -57,7 +57,9 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <CidadeProvider>
-            <AppRoutes />
+            <ErrorBoundary>
+              <AppRoutes />
+            </ErrorBoundary>
           </CidadeProvider>
         </AuthProvider>
       </BrowserRouter>
