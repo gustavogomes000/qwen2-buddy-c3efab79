@@ -30,7 +30,6 @@ export default function SeletorCidade() {
 
       const queries = municipios.flatMap(m => [
         (supabase as any).from('liderancas').select('*', { count: 'exact', head: true }).eq('municipio_id', m.id).then((r: any) => ({ mId: m.id, tipo: 'liderancas' as const, count: r.count ?? 0 })),
-        (supabase as any).from('fiscais').select('*', { count: 'exact', head: true }).eq('municipio_id', m.id).then((r: any) => ({ mId: m.id, tipo: 'fiscais' as const, count: r.count ?? 0 })),
         (supabase as any).from('possiveis_eleitores').select('*', { count: 'exact', head: true }).eq('municipio_id', m.id).then((r: any) => ({ mId: m.id, tipo: 'eleitores' as const, count: r.count ?? 0 })),
         (supabase as any).from('hierarquia_usuarios').select('*', { count: 'exact', head: true }).eq('municipio_id', m.id).eq('ativo', true).then((r: any) => ({ mId: m.id, tipo: 'usuarios' as const, count: r.count ?? 0 })),
       ]);
