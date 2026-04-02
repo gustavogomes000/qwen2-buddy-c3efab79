@@ -141,49 +141,74 @@ export default function TabCadastrar({ onSaved }: Props) {
     }
 
     setSaving(true);
+
+    const pessoaData = {
+      cpf: form.cpf || null, nome: form.nome, telefone: form.telefone || null,
+      whatsapp: form.whatsapp || null, email: form.email || null,
+      instagram: form.instagram || null, facebook: form.facebook || null,
+      titulo_eleitor: form.titulo_eleitor || null, zona_eleitoral: form.zona_eleitoral || null,
+      secao_eleitoral: form.secao_eleitoral || null, municipio_eleitoral: form.municipio_eleitoral || null,
+      uf_eleitoral: form.uf_eleitoral || null, colegio_eleitoral: form.colegio_eleitoral || null,
+      endereco_colegio: form.endereco_colegio || null, situacao_titulo: form.situacao_titulo || null,
+    };
+
+    const suplenteId = ligSuplenteId || getSuplementeId();
+
+    const registroData = {
+      tipo_lideranca: form.tipo_lideranca || null,
+      nivel: form.nivel || null, regiao_atuacao: form.regiao_atuacao || null,
+      zona_atuacao: form.zona_atuacao || null, bairros_influencia: form.bairros_influencia || null,
+      comunidades_influencia: form.comunidades_influencia || null,
+      lider_principal_id: form.lider_principal_id || null,
+      origem_captacao: form.origem_captacao || null,
+      apoiadores_estimados: form.apoiadores_estimados ? parseInt(form.apoiadores_estimados) : null,
+      meta_votos: form.meta_votos ? parseInt(form.meta_votos) : null,
+      status: form.status, nivel_comprometimento: form.nivel_comprometimento || null,
+      observacoes: form.observacoes || null, 
+      cadastrado_por: usuario?.id || null,
+      suplente_id: suplenteId,
+      municipio_id: ligMunicipioId || null,
+    };
+
+    // Se offline, salvar na fila local
+    if (!navigator.onLine) {
+      try {
+        await addToOfflineQueue({
+          type: 'lideranca',
+          pessoa: pessoaData,
+          registro: registroData,
+          pessoaExistenteId: pessoaExistenteId,
+        });
+        toast({ title: '📱 Salvo offline!', description: 'Será enviado automaticamente quando voltar a internet.' });
+        setForm({ ...emptyForm });
+        setPessoaExistenteId(null);
+        setCpfStatus('idle');
+        setCpfNomePessoa('');
+        onSaved();
+      } catch (err: any) {
+        toast({ title: 'Erro ao salvar offline', description: err.message, variant: 'destructive' });
+      } finally { setSaving(false); }
+      return;
+    }
+
+    // Online: salvar normalmente
     try {
       let pessoaId: string;
       if (pessoaExistenteId) {
         pessoaId = pessoaExistenteId;
         await supabase.from('pessoas').update({
-          nome: form.nome, telefone: form.telefone || null, whatsapp: form.whatsapp || null,
-          email: form.email || null, instagram: form.instagram || null, facebook: form.facebook || null,
-          titulo_eleitor: form.titulo_eleitor || null, zona_eleitoral: form.zona_eleitoral || null,
-          secao_eleitoral: form.secao_eleitoral || null, municipio_eleitoral: form.municipio_eleitoral || null,
-          uf_eleitoral: form.uf_eleitoral || null, colegio_eleitoral: form.colegio_eleitoral || null,
-          endereco_colegio: form.endereco_colegio || null, situacao_titulo: form.situacao_titulo || null,
+          ...pessoaData,
           atualizado_em: new Date().toISOString(),
         }).eq('id', pessoaId);
       } else {
-        const { data: novaPessoa, error } = await supabase.from('pessoas').insert({
-          cpf: form.cpf || null, nome: form.nome, telefone: form.telefone || null,
-          whatsapp: form.whatsapp || null, email: form.email || null,
-          instagram: form.instagram || null, facebook: form.facebook || null,
-          titulo_eleitor: form.titulo_eleitor || null, zona_eleitoral: form.zona_eleitoral || null,
-          secao_eleitoral: form.secao_eleitoral || null, municipio_eleitoral: form.municipio_eleitoral || null,
-          uf_eleitoral: form.uf_eleitoral || null, colegio_eleitoral: form.colegio_eleitoral || null,
-          endereco_colegio: form.endereco_colegio || null, situacao_titulo: form.situacao_titulo || null,
-        }).select('id').single();
+        const { data: novaPessoa, error } = await supabase.from('pessoas').insert(pessoaData as any).select('id').single();
         if (error) throw error;
         pessoaId = novaPessoa!.id;
       }
 
-      const suplenteId = ligSuplenteId || getSuplementeId();
-
       const { error: lError } = await (supabase as any).from('liderancas').insert({
-        pessoa_id: pessoaId, tipo_lideranca: form.tipo_lideranca || null,
-        nivel: form.nivel || null, regiao_atuacao: form.regiao_atuacao || null,
-        zona_atuacao: form.zona_atuacao || null, bairros_influencia: form.bairros_influencia || null,
-        comunidades_influencia: form.comunidades_influencia || null,
-        lider_principal_id: form.lider_principal_id || null,
-        origem_captacao: form.origem_captacao || null,
-        apoiadores_estimados: form.apoiadores_estimados ? parseInt(form.apoiadores_estimados) : null,
-        meta_votos: form.meta_votos ? parseInt(form.meta_votos) : null,
-        status: form.status, nivel_comprometimento: form.nivel_comprometimento || null,
-        observacoes: form.observacoes || null, 
-        cadastrado_por: usuario?.id || null,
-        suplente_id: suplenteId,
-        municipio_id: ligMunicipioId || null,
+        ...registroData,
+        pessoa_id: pessoaId,
       });
       if (lError) throw lError;
 
