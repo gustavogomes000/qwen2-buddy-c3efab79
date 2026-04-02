@@ -729,9 +729,6 @@ export default function AdminDashboard() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-semibold text-foreground truncate">{r.pessoa?.nome || '—'}</p>
-                      {r.origem === 'visita_comite' && (
-                        <span className="text-[8px] px-1.5 py-0.5 rounded-full font-medium bg-primary/10 text-primary">Visita</span>
-                      )}
                     </div>
                     <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
                       <span>{r.pessoa?.cpf || 'Sem CPF'}</span>
