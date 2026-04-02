@@ -154,9 +154,8 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
   const stats = useMemo(() => {
     const total = cadastros.length;
     const liderancas = cadastros.filter(c => c.tipo === 'lideranca').length;
-    const fiscais = cadastros.filter(c => c.tipo === 'fiscal').length;
     const eleitores = cadastros.filter(c => c.tipo === 'eleitor').length;
-    return { total, liderancas, fiscais, eleitores };
+    return { total, liderancas, eleitores };
   }, [cadastros]);
 
   const filtered = useMemo(() => {
