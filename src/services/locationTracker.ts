@@ -338,10 +338,16 @@ class Tracker {
     if (!this.running || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
     const now = Date.now();
-    const moved = this.lastLat === null || distM(this.lastLat, this.lastLng!, lat, lng) >= 20;
-    const elapsed = now - this.lastPersistAt >= 30_000;
+    const moved = this.lastLat === null || distM(this.lastLat, this.lastLng!, lat, lng) >= 10;
+    const elapsed = now - this.lastPersistAt >= 20_000;
 
     if (!force && !moved && !elapsed) return;
+
+    // Filtro de qualidade: se temos GPS e precisão > 500m, descartar (provável cache ruim)
+    if (fonte === 'gps' && accuracy !== null && accuracy > 500) {
+      console.info(`[tracker] descartando leitura GPS com precisão ruim: ${accuracy}m`);
+      return;
+    }
 
     const userId = await this.getUserId();
     if (!userId) return;
