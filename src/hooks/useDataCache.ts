@@ -102,7 +102,7 @@ export function useLiderancas(scope: 'own' | 'all' = 'own') {
         .from('liderancas')
         .select(QUERY_LID)
         .order('criado_em', { ascending: false })
-        .limit(500);
+        .limit(scope === 'all' && isAdmin ? 2000 : 500);
 
       // Para scope 'own', não filtra por município - mostra tudo que o usuário cadastrou
       if (scope === 'all' && filtroMunicipioId) q = q.eq('municipio_id', filtroMunicipioId);
