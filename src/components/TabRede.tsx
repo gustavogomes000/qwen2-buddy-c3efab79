@@ -214,7 +214,7 @@ export default function TabRede() {
             <div>
               <h2 className="text-lg font-bold text-foreground">{p?.nome || '—'}</h2>
               <p className="text-sm text-muted-foreground">
-                {tipo === 'lideranca' ? 'Liderança' : tipo === 'fiscal' ? 'Fiscal' : 'Eleitor'}
+                {tipo === 'lideranca' ? 'Liderança' : 'Eleitor'}
                 {selectedRecord.origem_captacao === 'visita_comite' && (
                   <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-500/15 text-blue-600">Visita</span>
                 )}
