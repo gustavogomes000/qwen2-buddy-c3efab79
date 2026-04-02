@@ -118,9 +118,9 @@ export function useLiderancas(scope: 'own' | 'all' = 'own') {
       return data || [];
     },
     enabled: !!usuario,
-    staleTime: 60 * 1000,
+    staleTime: 3_000,
     gcTime: 10 * 60 * 1000,
-    refetchInterval: scope === 'all' ? 15000 : 5000,
+    refetchInterval: scope === 'all' ? 10000 : 5000,
     refetchIntervalInBackground: false,
   });
 }
