@@ -25,7 +25,7 @@ interface HierarchyUser {
 }
 
 interface TreeNode {
-  tipo: 'lideranca' | 'fiscal' | 'eleitor';
+  tipo: 'lideranca' | 'eleitor';
   id: string;
   nome: string;
   status: string | null;
