@@ -153,6 +153,7 @@ export function useEleitores(scope: 'own' | 'all' = 'own') {
     enabled: !!usuario,
     staleTime: 60 * 1000,
     gcTime: 10 * 60 * 1000,
+    refetchInterval: 5000,
   });
 }
 
