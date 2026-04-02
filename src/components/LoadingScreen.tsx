@@ -29,11 +29,12 @@ export default function LoadingScreen({ message = 'Carregando...', showProgress 
 
   return (
     <div className="h-full bg-background flex flex-col items-center justify-center gap-6 px-8">
-      {/* Logo / Brand */}
+      {/* Logo animado */}
       <div className="relative">
-        <div className="w-20 h-20 rounded-2xl gradient-primary opacity-15 animate-pulse absolute -inset-2" />
-        <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center relative shadow-lg shadow-pink-500/20">
-          <span className="text-2xl font-black text-white">FS</span>
+        <div className="w-20 h-20 rounded-2xl bg-primary/15 absolute -inset-2 animate-ping" style={{ animationDuration: '2s' }} />
+        <div className="w-20 h-20 rounded-2xl bg-primary/10 absolute -inset-2 animate-pulse" />
+        <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center relative shadow-lg shadow-primary/20">
+          <span className="text-2xl font-black text-primary-foreground">FS</span>
         </div>
       </div>
 
@@ -42,14 +43,19 @@ export default function LoadingScreen({ message = 'Carregando...', showProgress 
         <p className="text-sm text-muted-foreground">{message}{dots}</p>
       </div>
 
-      {/* Progress bar */}
+      {/* Barra de progresso */}
       {showProgress && (
-        <div className="w-48 h-1 bg-muted rounded-full overflow-hidden">
+        <div className="w-48 h-1.5 bg-muted rounded-full overflow-hidden">
           <div
-            className="h-full gradient-primary rounded-full transition-all duration-300 ease-out"
+            className="h-full gradient-primary rounded-full transition-all duration-500 ease-out"
             style={{ width: `${Math.min(progress, 95)}%` }}
           />
         </div>
+      )}
+
+      {/* Spinner sutil */}
+      {!showProgress && (
+        <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
       )}
 
       <p className="text-[9px] text-muted-foreground/50 absolute bottom-8">
