@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { startLocationTracking, stopLocationTracking, registerBackgroundSync } from '@/services/locationTracker';
+
 import { resolverMunicipioId, buscarNomeMunicipio } from '@/lib/resolverMunicipio';
 import type { User } from '@supabase/supabase-js';
 
