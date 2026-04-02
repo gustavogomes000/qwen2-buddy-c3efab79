@@ -47,7 +47,7 @@ function AppRoutes() {
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
         <Route path="/admin" element={<PrivateRoute><AdminDashboard /></PrivateRoute>} />
-        <Route path="/admin/externos" element={<PrivateRoute><CadastrosExternos /></PrivateRoute>} />
+        
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
