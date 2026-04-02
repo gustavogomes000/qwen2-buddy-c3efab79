@@ -385,36 +385,6 @@ export default function TabRede() {
               )}
             </div>
 
-            {/* Fiscais */}
-            <div className="section-card">
-              <h3 className="section-title flex items-center gap-2">
-                <Shield size={16} className="text-purple-500" /> Fiscais ({totalF})
-              </h3>
-              {fiscais.length === 0 ? (
-                <p className="text-xs text-muted-foreground py-2">Nenhum fiscal cadastrado</p>
-              ) : (
-                <div className="space-y-1.5">
-                  {fiscais.map(f => (
-                    <button key={f.id} onClick={() => openRecord(f, 'fiscal')}
-                      className="w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl border border-border bg-card/50 active:scale-[0.98] transition-transform">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-foreground truncate">{f.pessoas?.nome || '—'}</span>
-                          
-                          {f.origem_captacao === 'visita_comite' && (
-                            <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-500/15 text-blue-600 dark:text-blue-400">Visita</span>
-                          )}
-                        </div>
-                        <p className="text-[10px] text-muted-foreground">
-                          {[f.pessoas?.cpf ? maskCPF(f.pessoas.cpf) : null, f.pessoas?.telefone].filter(Boolean).join(' · ') || '—'}
-                        </p>
-                      </div>
-                      <ChevronRight size={14} className="text-muted-foreground shrink-0" />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
 
             {/* Eleitores */}
             <div className="section-card">
