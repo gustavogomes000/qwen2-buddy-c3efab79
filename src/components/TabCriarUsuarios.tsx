@@ -257,6 +257,10 @@ export default function TabCriarUsuarios() {
   const comUsuarioSup = suplentes.filter(s => suplentesComUsuario.has(s.id)).length;
   const semUsuarioSup = totalSup - comUsuarioSup;
 
+  const totalLid = liderancas.length;
+  const comUsuarioLid = liderancas.filter(l => liderancaComUsuario(l)).length;
+  const semUsuarioLid = totalLid - comUsuarioLid;
+
   return (
     <div className="space-y-3 pb-24">
       {/* Tabs */}
@@ -277,27 +281,25 @@ export default function TabCriarUsuarios() {
           }`}
         >
           <Users size={14} className="inline mr-1" />
-          Lideranças ({liderancas.length})
+          Lideranças ({totalLid})
         </button>
       </div>
 
       {/* Stats */}
-      {tab === 'suplentes' && (
-        <div className="grid grid-cols-3 gap-2">
-          <div className="bg-card rounded-xl border border-border p-2.5 text-center">
-            <p className="text-lg font-bold text-foreground">{totalSup}</p>
-            <p className="text-[9px] text-muted-foreground">Total</p>
-          </div>
-          <div className="bg-card rounded-xl border border-border p-2.5 text-center">
-            <p className="text-lg font-bold text-emerald-500">{comUsuarioSup}</p>
-            <p className="text-[9px] text-muted-foreground">Com acesso</p>
-          </div>
-          <div className="bg-card rounded-xl border border-border p-2.5 text-center">
-            <p className="text-lg font-bold text-amber-500">{semUsuarioSup}</p>
-            <p className="text-[9px] text-muted-foreground">Sem acesso</p>
-          </div>
+      <div className="grid grid-cols-3 gap-2">
+        <div className="bg-card rounded-xl border border-border p-2.5 text-center">
+          <p className="text-lg font-bold text-foreground">{tab === 'suplentes' ? totalSup : totalLid}</p>
+          <p className="text-[9px] text-muted-foreground">Total</p>
         </div>
-      )}
+        <div className="bg-card rounded-xl border border-border p-2.5 text-center">
+          <p className="text-lg font-bold text-emerald-500">{tab === 'suplentes' ? comUsuarioSup : comUsuarioLid}</p>
+          <p className="text-[9px] text-muted-foreground">Com acesso</p>
+        </div>
+        <div className="bg-card rounded-xl border border-border p-2.5 text-center">
+          <p className="text-lg font-bold text-amber-500">{tab === 'suplentes' ? semUsuarioSup : semUsuarioLid}</p>
+          <p className="text-[9px] text-muted-foreground">Sem acesso</p>
+        </div>
+      </div>
 
       {/* Search */}
       <div className="relative">
