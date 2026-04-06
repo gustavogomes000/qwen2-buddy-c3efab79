@@ -874,11 +874,53 @@ export type Database = {
         }
         Relationships: []
       }
+      eventos: {
+        Row: {
+          ativo: boolean | null
+          atualizado_em: string | null
+          criado_em: string | null
+          criado_por: string | null
+          descricao: string | null
+          id: string
+          local: string | null
+          nome: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          atualizado_em?: string | null
+          criado_em?: string | null
+          criado_por?: string | null
+          descricao?: string | null
+          id?: string
+          local?: string | null
+          nome: string
+        }
+        Update: {
+          ativo?: boolean | null
+          atualizado_em?: string | null
+          criado_em?: string | null
+          criado_por?: string | null
+          descricao?: string | null
+          id?: string
+          local?: string | null
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eventos_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "hierarquia_usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fiscais: {
         Row: {
           cadastrado_por: string | null
           colegio_eleitoral: string | null
           criado_em: string | null
+          evento_id: string | null
           id: string
           lideranca_id: string | null
           municipio_id: string | null
@@ -894,6 +936,7 @@ export type Database = {
           cadastrado_por?: string | null
           colegio_eleitoral?: string | null
           criado_em?: string | null
+          evento_id?: string | null
           id?: string
           lideranca_id?: string | null
           municipio_id?: string | null
@@ -909,6 +952,7 @@ export type Database = {
           cadastrado_por?: string | null
           colegio_eleitoral?: string | null
           criado_em?: string | null
+          evento_id?: string | null
           id?: string
           lideranca_id?: string | null
           municipio_id?: string | null
@@ -926,6 +970,13 @@ export type Database = {
             columns: ["cadastrado_por"]
             isOneToOne: false
             referencedRelation: "hierarquia_usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscais_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventos"
             referencedColumns: ["id"]
           },
           {
@@ -1171,6 +1222,7 @@ export type Database = {
           cadastrado_por: string | null
           comunidades_influencia: string | null
           criado_em: string | null
+          evento_id: string | null
           id: string
           lider_principal_id: string | null
           meta_votos: number | null
@@ -1193,6 +1245,7 @@ export type Database = {
           cadastrado_por?: string | null
           comunidades_influencia?: string | null
           criado_em?: string | null
+          evento_id?: string | null
           id?: string
           lider_principal_id?: string | null
           meta_votos?: number | null
@@ -1215,6 +1268,7 @@ export type Database = {
           cadastrado_por?: string | null
           comunidades_influencia?: string | null
           criado_em?: string | null
+          evento_id?: string | null
           id?: string
           lider_principal_id?: string | null
           meta_votos?: number | null
@@ -1236,6 +1290,13 @@ export type Database = {
             columns: ["cadastrado_por"]
             isOneToOne: false
             referencedRelation: "hierarquia_usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "liderancas_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventos"
             referencedColumns: ["id"]
           },
           {
@@ -1500,6 +1561,7 @@ export type Database = {
           cadastrado_por: string | null
           compromisso_voto: string | null
           criado_em: string | null
+          evento_id: string | null
           fiscal_id: string | null
           id: string
           lideranca_id: string | null
@@ -1513,6 +1575,7 @@ export type Database = {
           cadastrado_por?: string | null
           compromisso_voto?: string | null
           criado_em?: string | null
+          evento_id?: string | null
           fiscal_id?: string | null
           id?: string
           lideranca_id?: string | null
@@ -1526,6 +1589,7 @@ export type Database = {
           cadastrado_por?: string | null
           compromisso_voto?: string | null
           criado_em?: string | null
+          evento_id?: string | null
           fiscal_id?: string | null
           id?: string
           lideranca_id?: string | null
@@ -1541,6 +1605,13 @@ export type Database = {
             columns: ["cadastrado_por"]
             isOneToOne: false
             referencedRelation: "hierarquia_usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "possiveis_eleitores_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventos"
             referencedColumns: ["id"]
           },
           {
