@@ -248,7 +248,28 @@ export default function TabUsuarios() {
       if (!payload.novo_nome && !payload.nova_senha && !payload.novo_municipio_id) { toast({ title: 'Nenhuma alteração' }); setEditSaving(false); return; }
 
       const { data, error } = await supabase.functions.invoke('gerenciar-usuario', { body: payload });
-      if (error) throw new Error(error.message);
+      if (error) {
+        let errorMessage = error.message;
+        const context = (error as any).context;
+
+        if (context && typeof context.json === 'function') {
+          try {
+            const details = await context.json();
+            errorMessage = details?.error || errorMessage;
+          } catch {
+            if (context && typeof context.text === 'function') {
+              try {
+                const rawText = await context.text();
+                if (rawText) errorMessage = rawText;
+              } catch {
+                // ignore parse fallback error
+              }
+            }
+          }
+        }
+
+        throw new Error(errorMessage);
+      }
       if (data?.error) throw new Error(data.error);
 
       toast({ title: '✅ Usuário atualizado!' });

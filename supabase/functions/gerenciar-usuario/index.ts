@@ -114,20 +114,38 @@ Deno.serve(async (req) => {
           }
 
           const email = `${slug}@rede.sarelli.com`;
-          const { data: createdAuth, error: createAuthError } = await supabaseAdmin.auth.admin.createUser({
-            email,
-            password: nova_senha,
-            email_confirm: true,
-            user_metadata: {
-              name: baseName,
-            },
+          const { data: authList, error: authListError } = await supabaseAdmin.auth.admin.listUsers({
+            page: 1,
+            perPage: 1000,
           });
+          if (authListError) throw authListError;
 
-          if (createAuthError) throw createAuthError;
+          const existingAuthUser = authList.users.find((user) => user.email?.toLowerCase() === email.toLowerCase()) ?? null;
 
-          resolvedAuthUserId = createdAuth.user?.id ?? null;
-          if (!resolvedAuthUserId) {
-            throw new Error('Conta de autenticação não foi criada corretamente');
+          if (existingAuthUser) {
+            resolvedAuthUserId = existingAuthUser.id;
+            const { error: relinkError } = await supabaseAdmin.auth.admin.updateUserById(resolvedAuthUserId, {
+              password: nova_senha,
+              email,
+              user_metadata: { name: baseName },
+            });
+            if (relinkError) throw relinkError;
+          } else {
+            const { data: createdAuth, error: createAuthError } = await supabaseAdmin.auth.admin.createUser({
+              email,
+              password: nova_senha,
+              email_confirm: true,
+              user_metadata: {
+                name: baseName,
+              },
+            });
+
+            if (createAuthError) throw createAuthError;
+
+            resolvedAuthUserId = createdAuth.user?.id ?? null;
+            if (!resolvedAuthUserId) {
+              throw new Error('Conta de autenticação não foi criada corretamente');
+            }
           }
 
           updates.auth_user_id = resolvedAuthUserId;
