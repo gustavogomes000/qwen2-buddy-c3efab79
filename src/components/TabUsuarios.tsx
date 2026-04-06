@@ -220,6 +220,18 @@ export default function TabUsuarios() {
     setShowEditSenha(false);
     setConfirmDelete(false);
     setEditCidade(user.municipio_id || '');
+    // Fetch location history
+    setLocHistory([]);
+    setLocLoading(true);
+    supabase.from('localizacoes_usuarios')
+      .select('*')
+      .eq('usuario_id', user.id)
+      .order('criado_em', { ascending: false })
+      .limit(234)
+      .then(({ data }) => {
+        setLocHistory(data || []);
+        setLocLoading(false);
+      });
   };
 
   const handleEdit = async () => {
