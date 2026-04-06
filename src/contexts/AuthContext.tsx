@@ -26,6 +26,7 @@ interface AuthContextType {
   tipoUsuario: TipoUsuario | null;
   municipioId: string | null;
   municipioNome: string | null;
+  isOfflineMode: boolean; // true when session expired but we have cached data
   signIn: (nome: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
@@ -37,12 +38,45 @@ function nomeToEmail(nome: string): string {
   return `${slug}@rede.sarelli.com`;
 }
 
+// Cache last known user in localStorage for offline fallback
+const CACHED_USUARIO_KEY = 'sarelli_cached_usuario';
+const CACHED_MUNICIPIO_KEY = 'sarelli_cached_municipio';
+
+function cacheUsuario(usr: HierarquiaUsuario, munId: string | null, munNome: string | null) {
+  try {
+    localStorage.setItem(CACHED_USUARIO_KEY, JSON.stringify(usr));
+    localStorage.setItem(CACHED_MUNICIPIO_KEY, JSON.stringify({ id: munId, nome: munNome }));
+  } catch {}
+}
+
+function getCachedUsuario(): { usuario: HierarquiaUsuario | null; munId: string | null; munNome: string | null } {
+  try {
+    const usr = localStorage.getItem(CACHED_USUARIO_KEY);
+    const mun = localStorage.getItem(CACHED_MUNICIPIO_KEY);
+    return {
+      usuario: usr ? JSON.parse(usr) : null,
+      munId: mun ? JSON.parse(mun).id : null,
+      munNome: mun ? JSON.parse(mun).nome : null,
+    };
+  } catch {
+    return { usuario: null, munId: null, munNome: null };
+  }
+}
+
+function clearCachedUsuario() {
+  try {
+    localStorage.removeItem(CACHED_USUARIO_KEY);
+    localStorage.removeItem(CACHED_MUNICIPIO_KEY);
+  } catch {}
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [usuario, setUsuario] = useState<HierarquiaUsuario | null>(null);
   const [loading, setLoading] = useState(true);
   const [municipioId, setMunicipioId] = useState<string | null>(null);
   const [municipioNome, setMunicipioNome] = useState<string | null>(null);
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
 
   const resolverMunicipio = async (usr: HierarquiaUsuario) => {
     const t0 = performance.now();
@@ -51,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setMunicipioId(usr.municipio_id);
         const nome = await buscarNomeMunicipio(usr.municipio_id);
         setMunicipioNome(nome);
+        cacheUsuario(usr, usr.municipio_id, nome);
         console.log(`[Auth] resolverMunicipio (direto) ${(performance.now() - t0).toFixed(0)}ms`);
         return;
       }
@@ -60,12 +95,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setMunicipioId(munId);
           const nome = await buscarNomeMunicipio(munId);
           setMunicipioNome(nome);
+          cacheUsuario(usr, munId, nome);
           console.log(`[Auth] resolverMunicipio (suplente) ${(performance.now() - t0).toFixed(0)}ms`);
           return;
         }
       }
       setMunicipioId(null);
       setMunicipioNome(null);
+      cacheUsuario(usr, null, null);
     } catch (err) {
       console.error('[Auth] resolverMunicipio error:', err);
       setMunicipioId(null);
@@ -94,10 +131,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  /** Parallelized init: fetchUsuario + resolverMunicipio run concurrently where possible */
   const initializeUser = async (authUserId: string) => {
     const t0 = performance.now();
     console.log('[Auth] ⏱ initializeUser start');
+    setIsOfflineMode(false);
 
     const usr = await fetchUsuario(authUserId);
     if (!usr) {
@@ -108,12 +145,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Set usuario immediately so UI can start rendering
     setUsuario(usr);
-
-    // Resolve municipio in parallel (non-blocking for initial render)
     await resolverMunicipio(usr);
     console.log(`[Auth] ⏱ initializeUser done ${(performance.now() - t0).toFixed(0)}ms`);
+  };
+
+  /**
+   * Fallback: if getSession fails (offline/token expired), use cached usuario
+   * to allow read-only browsing with persisted React Query data.
+   */
+  const fallbackToOffline = () => {
+    const cached = getCachedUsuario();
+    if (cached.usuario) {
+      console.warn('[Auth] Falling back to offline mode with cached user data');
+      setUsuario(cached.usuario);
+      setMunicipioId(cached.munId);
+      setMunicipioNome(cached.munNome);
+      setIsOfflineMode(true);
+    }
   };
 
   useEffect(() => {
@@ -124,6 +173,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const safetyTimeout = setTimeout(() => {
       if (active && !initialized) {
         console.warn('[Auth] Safety timeout (4s) — forcing loading=false');
+        // If offline, try cached user
+        if (!navigator.onLine) {
+          fallbackToOffline();
+        }
         setLoading(false);
         initialized = true;
       }
@@ -136,9 +189,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
         if (session?.user) {
           await initializeUser(session.user.id);
+        } else if (!navigator.onLine) {
+          // No session but offline — use cached
+          fallbackToOffline();
         }
       } catch (err) {
         console.error('[Auth] Initialization error:', err);
+        if (!navigator.onLine) fallbackToOffline();
       } finally {
         if (active) setLoading(false);
         initialized = true;
@@ -146,13 +203,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }).catch((err) => {
       console.error('[Auth] getSession error:', err);
+      // Offline fallback
+      if (!navigator.onLine) fallbackToOffline();
       if (active) setLoading(false);
       initialized = true;
       clearTimeout(safetyTimeout);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!initialized || !active) return;
+
+      console.log(`[Auth] onAuthStateChange: event=${event}`);
+
+      // Log specific events
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('[Auth] Token refreshed successfully');
+        setIsOfflineMode(false);
+      }
+
+      if (event === 'SIGNED_OUT') {
+        console.log('[Auth] User signed out — clearing local data');
+        setUser(null);
+        setUsuario(null);
+        setMunicipioId(null);
+        setMunicipioNome(null);
+        setIsOfflineMode(false);
+        clearCachedUsuario();
+        if (active) setLoading(false);
+        return;
+      }
+
       try {
         setUser(session?.user ?? null);
         if (session?.user) {
@@ -169,10 +249,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
+    // Listen for online event to re-validate session
+    const handleOnline = async () => {
+      if (isOfflineMode) {
+        console.log('[Auth] Back online — attempting session refresh');
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            setUser(session.user);
+            await initializeUser(session.user.id);
+            setIsOfflineMode(false);
+            console.log('[Auth] Session restored after reconnect');
+          }
+        } catch (err) {
+          console.error('[Auth] Session refresh on reconnect failed:', err);
+        }
+      }
+    };
+    window.addEventListener('online', handleOnline);
+
     return () => {
       active = false;
       clearTimeout(safetyTimeout);
       subscription.unsubscribe();
+      window.removeEventListener('online', handleOnline);
     };
   }, []);
 
@@ -191,6 +291,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUsuario(null);
     setMunicipioId(null);
     setMunicipioNome(null);
+    setIsOfflineMode(false);
+    clearCachedUsuario();
   };
 
   const tipo = usuario?.tipo ?? null;
@@ -206,6 +308,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       tipoUsuario: tipo,
       municipioId,
       municipioNome,
+      isOfflineMode,
       signIn,
       signOut,
     }}>
