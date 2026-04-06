@@ -71,9 +71,12 @@ Deno.serve(async (req) => {
       const updates: Record<string, any> = {};
 
       if (novo_nome) {
-        const newEmail = novo_nome.toLowerCase().trim().replace(/\s+/g, '.').replace(/[^a-z0-9.]/g, '') + '@rede.sarelli.com';
-        await supabaseAdmin.auth.admin.updateUserById(auth_user_id, { email: newEmail });
         updates.nome = novo_nome.trim();
+        // Only update auth email if auth_user_id is a valid UUID
+        if (auth_user_id && auth_user_id.length === 36) {
+          const newEmail = novo_nome.toLowerCase().trim().replace(/\s+/g, '.').replace(/[^a-z0-9.]/g, '') + '@rede.sarelli.com';
+          await supabaseAdmin.auth.admin.updateUserById(auth_user_id, { email: newEmail });
+        }
       }
 
       if (novo_municipio_id) {
@@ -85,6 +88,12 @@ Deno.serve(async (req) => {
       }
 
       if (nova_senha) {
+        if (!auth_user_id || auth_user_id.length !== 36) {
+          return new Response(
+            JSON.stringify({ error: 'Usuário sem conta de autenticação vinculada. Não é possível alterar a senha.' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
         const { error } = await supabaseAdmin.auth.admin.updateUserById(auth_user_id, { password: nova_senha });
         if (error) throw error;
       }
