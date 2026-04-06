@@ -94,6 +94,7 @@ interface Props {
 
 export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
   const { usuario, isAdmin, tipoUsuario } = useAuth();
+  const { eventoAtivo } = useEvento();
   const invalidarCadastros = useInvalidarCadastros();
   const { data: cachedData, isLoading: cacheLoading } = useFiscais();
   const [mode, setMode] = useState<'list' | 'form' | 'detail'>('list');
