@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
       Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY')!
     );
 
-    // Verify caller is super_admin
+    // Verify caller is super_admin or coordenador
     const authHeader = req.headers.get('Authorization');
     if (authHeader) {
       const token = authHeader.replace('Bearer ', '');
@@ -44,15 +44,38 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const senha = body.senha || '12345';
+    const senha = body.senha || '123456';
     const resultados: any[] = [];
     let criados = 0;
     let erros = 0;
     let jaExistem = 0;
 
-    // Helper to create a user
+    // Cache of processed names/emails to prevent duplicates within this run
+    const processedNames = new Set<string>();
+    const processedEmails = new Set<string>();
+
+    // Pre-load all existing hierarquia users with auth to avoid repeated queries
+    const { data: allHierarquia } = await supabaseAdmin
+      .from('hierarquia_usuarios')
+      .select('id, nome, auth_user_id, tipo')
+      .eq('ativo', true);
+
+    const hierarquiaByName = new Map<string, typeof allHierarquia extends (infer T)[] | null ? T : never>();
+    for (const h of (allHierarquia || [])) {
+      hierarquiaByName.set(h.nome.trim().toLowerCase(), h);
+    }
+
+    // Helper to create a user - with dedup
     async function criarUsuario(nome: string, tipo: string, suplenteId: string | null, superiorId: string | null) {
-      const slug = nome.toLowerCase().trim().replace(/\s+/g, '.').replace(/[^a-z0-9.]/g, '');
+      const nomeLower = nome.trim().toLowerCase();
+
+      // Skip if already processed in this batch
+      if (processedNames.has(nomeLower)) {
+        return;
+      }
+      processedNames.add(nomeLower);
+
+      const slug = nomeLower.replace(/\s+/g, '.').replace(/[^a-z0-9.]/g, '');
       if (!slug) {
         resultados.push({ nome, status: 'erro', motivo: 'Nome inválido para gerar login' });
         erros++;
@@ -61,15 +84,8 @@ Deno.serve(async (req) => {
 
       const email = `${slug}@rede.sarelli.com`;
 
-      // Check if auth user already exists
-      const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1 });
-      // Check by email in hierarquia
-      const { data: existingHierarquia } = await supabaseAdmin
-        .from('hierarquia_usuarios')
-        .select('id, auth_user_id')
-        .ilike('nome', nome.trim())
-        .eq('ativo', true)
-        .maybeSingle();
+      // Check if already has auth via cached data
+      const existingHierarquia = hierarquiaByName.get(nomeLower);
 
       if (existingHierarquia?.auth_user_id) {
         resultados.push({ nome, status: 'ja_existe', motivo: 'Já tem conta de acesso' });
@@ -77,35 +93,75 @@ Deno.serve(async (req) => {
         return;
       }
 
+      // Check if email already used in this batch
+      if (processedEmails.has(email)) {
+        resultados.push({ nome, status: 'ja_existe', motivo: 'Email duplicado no lote' });
+        jaExistem++;
+        return;
+      }
+      processedEmails.add(email);
+
       // Create auth user
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password: senha,
         email_confirm: true,
-        user_metadata: { name: nome, role: tipo },
+        user_metadata: { name: nome.trim(), role: tipo },
       });
 
       if (authError) {
-        // If email already exists, try with suffix
+        // If email already exists in auth, link instead of creating duplicate
         if (authError.message?.includes('already been registered') || authError.message?.includes('already exists')) {
+          // Try to find existing auth user by email
+          const { data: listData } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+          const existingAuth = listData?.users?.find(u => u.email === email);
+
+          if (existingAuth && existingHierarquia) {
+            // Link existing auth to existing hierarquia
+            await supabaseAdmin.from('hierarquia_usuarios')
+              .update({ auth_user_id: existingAuth.id })
+              .eq('id', existingHierarquia.id);
+            resultados.push({ nome, status: 'vinculado', email, motivo: 'Auth existente vinculado à hierarquia' });
+            criados++;
+            return;
+          } else if (existingAuth && !existingHierarquia) {
+            // Auth exists but no hierarquia - check if hierarquia already has this auth_user_id
+            const jaVinculado = (allHierarquia || []).some(h => h.auth_user_id === existingAuth.id);
+            if (jaVinculado) {
+              resultados.push({ nome, status: 'ja_existe', motivo: 'Já vinculado na hierarquia' });
+              jaExistem++;
+              return;
+            }
+            // Create hierarquia entry
+            await supabaseAdmin.from('hierarquia_usuarios').insert({
+              auth_user_id: existingAuth.id,
+              nome: nome.trim(),
+              tipo,
+              superior_id: superiorId,
+              suplente_id: suplenteId,
+            });
+            resultados.push({ nome, status: 'vinculado', email });
+            criados++;
+            return;
+          }
+
+          // Fallback: create with alternative email
           const emailAlt = `${slug}.${Date.now().toString(36)}@rede.sarelli.com`;
           const { data: authData2, error: authError2 } = await supabaseAdmin.auth.admin.createUser({
             email: emailAlt,
             password: senha,
             email_confirm: true,
-            user_metadata: { name: nome, role: tipo },
+            user_metadata: { name: nome.trim(), role: tipo },
           });
           if (authError2) {
             resultados.push({ nome, status: 'erro', motivo: authError2.message });
             erros++;
             return;
           }
-          // Continue with authData2
           const authUserId = authData2.user?.id;
           if (!authUserId) { erros++; return; }
 
           if (existingHierarquia) {
-            // Update existing hierarquia record
             await supabaseAdmin.from('hierarquia_usuarios')
               .update({ auth_user_id: authUserId })
               .eq('id', existingHierarquia.id);
@@ -148,14 +204,9 @@ Deno.serve(async (req) => {
     }
 
     // 1. Hierarquia_usuarios sem auth_user_id
-    const { data: semAuth } = await supabaseAdmin
-      .from('hierarquia_usuarios')
-      .select('id, nome, tipo, superior_id, suplente_id')
-      .is('auth_user_id', null)
-      .eq('ativo', true);
-
-    for (const u of (semAuth || [])) {
-      await criarUsuario(u.nome, u.tipo, u.suplente_id, u.superior_id);
+    const semAuth = (allHierarquia || []).filter(h => !h.auth_user_id);
+    for (const u of semAuth) {
+      await criarUsuario(u.nome, u.tipo, null, null);
     }
 
     // 2. Lideranças (da tabela liderancas + pessoas)
@@ -167,18 +218,6 @@ Deno.serve(async (req) => {
     for (const l of (liderancasDB || [])) {
       const nomePessoa = (l.pessoas as any)?.nome;
       if (!nomePessoa) continue;
-      // Check if already has user
-      const { data: existing } = await supabaseAdmin
-        .from('hierarquia_usuarios')
-        .select('id')
-        .ilike('nome', nomePessoa.trim())
-        .eq('ativo', true)
-        .maybeSingle();
-      if (existing) {
-        jaExistem++;
-        resultados.push({ nome: nomePessoa, status: 'ja_existe', motivo: 'Já existe na hierarquia' });
-        continue;
-      }
       await criarUsuario(nomePessoa, 'lideranca', l.suplente_id, null);
     }
 
@@ -190,17 +229,6 @@ Deno.serve(async (req) => {
 
     for (const s of (suplentesExternos || [])) {
       if (!s.nome) continue;
-      const { data: existing } = await supabaseAdmin
-        .from('hierarquia_usuarios')
-        .select('id')
-        .ilike('nome', s.nome.trim())
-        .eq('ativo', true)
-        .maybeSingle();
-      if (existing) {
-        jaExistem++;
-        resultados.push({ nome: s.nome, status: 'ja_existe', motivo: 'Já existe na hierarquia' });
-        continue;
-      }
       await criarUsuario(s.nome, 'suplente', s.id, null);
     }
 
