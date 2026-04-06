@@ -6,6 +6,7 @@ import { useCidade } from '@/contexts/CidadeContext';
 import { formatCPF, cleanCPF, validateCPF } from '@/lib/cpf';
 import { resolverLigacaoPolitica } from '@/lib/resolverLigacaoPolitica';
 import { toast } from '@/hooks/use-toast';
+import { useEvento } from '@/contexts/EventoContext';
 import CampoLigacaoPolitica from '@/components/CampoLigacaoPolitica';
 import { addToOfflineQueue, getPendingCount } from '@/lib/offlineQueue';
 
@@ -33,6 +34,7 @@ interface Props {
 export default function TabCadastrar({ onSaved }: Props) {
   const { usuario, tipoUsuario } = useAuth();
   const { cidadeAtiva } = useCidade();
+  const { eventoAtivo } = useEvento();
   const [saving, setSaving] = useState(false);
   const [validandoCPF, setValidandoCPF] = useState(false);
   const [cpfStatus, setCpfStatus] = useState<'idle' | 'validando' | 'confirmado'>('idle');
@@ -168,6 +170,7 @@ export default function TabCadastrar({ onSaved }: Props) {
       cadastrado_por: usuario?.id || null,
       suplente_id: suplenteId,
       municipio_id: ligMunicipioId || null,
+      evento_id: eventoAtivo?.id || null,
     };
 
     // Se offline, salvar na fila local

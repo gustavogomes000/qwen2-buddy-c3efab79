@@ -8,6 +8,7 @@ import { formatCPF, cleanCPF, validateCPF, maskCPF } from '@/lib/cpf';
 import { checkCpfDuplicateByUser } from '@/lib/cpfDuplicateCheck';
 import { resolverLigacaoPolitica } from '@/lib/resolverLigacaoPolitica';
 import { toast } from '@/hooks/use-toast';
+import { useEvento } from '@/contexts/EventoContext';
 import { useQuery } from '@tanstack/react-query';
 import { addToOfflineQueue } from '@/lib/offlineQueue';
 
@@ -93,6 +94,7 @@ interface Props {
 
 export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
   const { usuario, isAdmin, tipoUsuario } = useAuth();
+  const { eventoAtivo } = useEvento();
   const invalidarCadastros = useInvalidarCadastros();
   const { data: cachedData, isLoading: cacheLoading } = useFiscais();
   const [mode, setMode] = useState<'list' | 'form' | 'detail'>('list');
@@ -231,6 +233,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
       colegio_eleitoral: form.colegio_eleitoral_fiscal || null,
       observacoes: form.observacoes || null,
       municipio_id: ligMunicipioId || null,
+      evento_id: eventoAtivo?.id || null,
     };
 
     // Offline: salvar na fila

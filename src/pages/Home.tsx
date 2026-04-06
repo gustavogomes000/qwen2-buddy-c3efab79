@@ -1,11 +1,13 @@
 import { useState, useRef, useCallback, lazy, Suspense, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCidade } from '@/contexts/CidadeContext';
+import { useEvento } from '@/contexts/EventoContext';
 import BottomNav, { type TabId } from '@/components/BottomNav';
 import SeletorCidade from '@/components/SeletorCidade';
 import { useRealtimeSync } from '@/hooks/useDataCache';
 import { Loader2 } from 'lucide-react';
 import FloatingSupportButton from '@/components/FloatingSupportButton';
+import SeletorEvento from '@/components/SeletorEvento';
 import { useLocationTracking } from '@/hooks/useLocationTracking';
 
 const TabLiderancas = lazy(() => import('@/components/TabLiderancas'));
@@ -31,6 +33,7 @@ export default function Home() {
   useRealtimeSync();
   useLocationTracking();
   const { municipios } = useCidade();
+  const { eventos } = useEvento();
   const [activeTab, setActiveTab] = useState<TabId>(() => getInitialTab());
   const [visitedTabs, setVisitedTabs] = useState<Set<TabId>>(() => new Set([getInitialTab()]));
   const [refreshKey, setRefreshKey] = useState(0);
@@ -81,6 +84,11 @@ export default function Home() {
           {showCitySelector && activeTab !== 'perfil' && (
             <div className="mt-2">
               <SeletorCidade />
+            </div>
+          )}
+          {eventos.length > 0 && activeTab !== 'perfil' && (
+            <div className="mt-2">
+              <SeletorEvento />
             </div>
           )}
         </div>

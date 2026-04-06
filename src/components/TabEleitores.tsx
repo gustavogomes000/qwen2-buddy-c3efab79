@@ -9,6 +9,7 @@ import { formatCPF, cleanCPF, validateCPF, maskCPF } from '@/lib/cpf';
 import { checkCpfDuplicateByUser } from '@/lib/cpfDuplicateCheck';
 import { resolverLigacaoPolitica } from '@/lib/resolverLigacaoPolitica';
 import { toast } from '@/hooks/use-toast';
+import { useEvento } from '@/contexts/EventoContext';
 import { addToOfflineQueue } from '@/lib/offlineQueue';
 
 import CampoLigacaoPolitica from '@/components/CampoLigacaoPolitica';
@@ -54,6 +55,7 @@ interface Props {
 export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
   const { usuario, isAdmin, tipoUsuario, municipioId: authMunicipioId } = useAuth();
   const { cidadeAtiva, isTodasCidades } = useCidade();
+  const { eventoAtivo } = useEvento();
   const { data: cachedData, isLoading: cacheLoading } = useEleitores();
   const invalidarCadastros = useInvalidarCadastros();
   const [mode, setMode] = useState<'list' | 'form' | 'detail'>('list');
@@ -198,6 +200,7 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
       compromisso_voto: form.compromisso_voto,
       observacoes: form.observacoes || null,
       municipio_id: ligMunicipioId || null,
+      evento_id: eventoAtivo?.id || null,
     };
 
     // Offline: salvar na fila
