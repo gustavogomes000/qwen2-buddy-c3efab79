@@ -193,4 +193,6 @@ const ConstellationBg = forwardRef<HTMLCanvasElement>(function ConstellationBg(_
       className="fixed inset-0 w-full h-full z-0"
     />
   );
-}
+});
+
+export default ConstellationBg;
