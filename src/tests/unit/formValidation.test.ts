@@ -53,13 +53,14 @@ describe('Validação do formulário de Eleitor', () => {
 describe('Validação de senha de usuário', () => {
   const validarSenha = (senha: string) => senha.length >= 6;
 
-  it('aceita senha com 4+ caracteres', () => {
-    expect(validarSenha('1234')).toBe(true);
+  it('aceita senha com 6+ caracteres', () => {
+    expect(validarSenha('123456')).toBe(true);
     expect(validarSenha('minhaSenhaSegura')).toBe(true);
   });
 
-  it('rejeita senha com menos de 4 caracteres', () => {
-    expect(validarSenha('123')).toBe(false);
+  it('rejeita senha com menos de 6 caracteres', () => {
+    expect(validarSenha('12345')).toBe(false);
+    expect(validarSenha('1234')).toBe(false);
     expect(validarSenha('')).toBe(false);
   });
 });
