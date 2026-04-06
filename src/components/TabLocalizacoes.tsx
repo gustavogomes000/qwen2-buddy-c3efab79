@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Clock, User, ChevronDown, ChevronUp, Loader2, RefreshCw, Navigation } from 'lucide-react';
+import { MapPin, Clock, User, ChevronDown, ChevronUp, Loader2, RefreshCw, Navigation, ExternalLink } from 'lucide-react';
+import { format } from 'date-fns';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -71,6 +72,7 @@ export default function TabLocalizacoes() {
   const [rastro, setRastro] = useState<Localizacao[]>([]);
   const [loadingRastro, setLoadingRastro] = useState(false);
   const [expandedList, setExpandedList] = useState(true);
+  const [enderecos, setEnderecos] = useState<Map<string, string>>(new Map());
   const mapRef = useRef<any>(null);
 
   /* ── Fetch latest location per user ── */
@@ -107,6 +109,25 @@ export default function TabLocalizacoes() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  /* ── Reverse geocode addresses ── */
+  useEffect(() => {
+    if (localizacoes.length === 0) return;
+    localizacoes.forEach(async (loc) => {
+      if (enderecos.has(loc.usuario_id)) return;
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${loc.latitude}&lon=${loc.longitude}&format=json&addressdetails=1&accept-language=pt-BR`);
+        const data = await res.json();
+        if (data?.display_name) {
+          setEnderecos(prev => {
+            const next = new Map(prev);
+            next.set(loc.usuario_id, data.display_name);
+            return next;
+          });
+        }
+      } catch { /* silenciar */ }
+    });
+  }, [localizacoes]);
 
   /* ── Fetch user trail ── */
   const fetchRastro = useCallback(async (userId: string) => {
@@ -336,35 +357,60 @@ export default function TabLocalizacoes() {
                 <p className="text-sm text-muted-foreground text-center py-6">Nenhum usuário com localização</p>
               )}
               {usersWithLocation.map(loc => (
-                <button
+                <div
                   key={loc.id}
-                  onClick={() => handleSelectUser(loc.usuario_id)}
-                  className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/30 active:bg-muted/50 transition-all"
+                  className="p-3 hover:bg-muted/30 transition-all"
                 >
-                  <div className="relative">
-                    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-xs font-bold text-primary">{loc.usuario?.nome?.charAt(0)}</span>
+                  <button
+                    onClick={() => handleSelectUser(loc.usuario_id)}
+                    className="w-full flex items-center gap-3 text-left"
+                  >
+                    <div className="relative">
+                      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-xs font-bold text-primary">{loc.usuario?.nome?.charAt(0)}</span>
+                      </div>
+                      <div
+                        className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background"
+                        style={{ background: isRecent(loc.criado_em) ? '#22c55e' : '#94a3b8' }}
+                      />
                     </div>
-                    <div
-                      className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background"
-                      style={{ background: isRecent(loc.criado_em) ? '#22c55e' : '#94a3b8' }}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{loc.usuario?.nome}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{loc.usuario?.nome}</p>
                       <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-primary/10 text-primary">
                         {tipoLabel(loc.usuario?.tipo || '')}
                       </span>
                     </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                      <Clock size={10} />
-                      {timeAgo(loc.criado_em)}
+                    <div className="text-right shrink-0">
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <Clock size={10} />
+                        {timeAgo(loc.criado_em)}
+                      </div>
                     </div>
+                  </button>
+
+                  {/* Detalhes: horário, endereço, link */}
+                  <div className="mt-2 ml-12 space-y-1">
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                      <Clock size={11} className="shrink-0" />
+                      {format(new Date(loc.criado_em), 'dd/MM/yyyy – HH:mm:ss')}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
+                      <MapPin size={11} className="shrink-0 mt-0.5" />
+                      <span className="line-clamp-2">
+                        {enderecos.get(loc.usuario_id) || `${Number(loc.latitude).toFixed(5)}, ${Number(loc.longitude).toFixed(5)}`}
+                      </span>
+                    </p>
+                    <a
+                      href={`https://www.google.com/maps?q=${loc.latitude},${loc.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] text-primary font-medium hover:underline"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <ExternalLink size={11} /> Abrir no Google Maps
+                    </a>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           )}
