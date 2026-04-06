@@ -392,7 +392,60 @@ export default function TabUsuarios() {
           <ModulosUsuario usuarioId={editing.id} />
         </div>
 
-        {/* Delete */}
+        {/* Location History */}
+        <div className="section-card">
+          <div className="flex items-center gap-2 mb-3">
+            <Navigation size={16} className="text-primary" />
+            <h3 className="text-sm font-semibold text-foreground">Histórico de Localização</h3>
+            <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground font-medium">
+              {locHistory.length} registros
+            </span>
+          </div>
+          {locLoading ? (
+            <div className="flex justify-center py-6"><Loader2 size={18} className="animate-spin text-primary" /></div>
+          ) : locHistory.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-4">Nenhum registro de localização</p>
+          ) : (
+            <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
+              {locHistory.map((loc, i) => (
+                <div key={loc.id || i} className="flex items-start gap-3 p-2.5 rounded-xl bg-muted/30 border border-border">
+                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <MapPin size={13} className="text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-mono text-foreground">
+                        {Number(loc.latitude).toFixed(5)}, {Number(loc.longitude).toFixed(5)}
+                      </p>
+                      {loc.precisao && (
+                        <span className="text-[9px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">±{loc.precisao}m</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <Clock size={10} className="text-muted-foreground" />
+                      <p className="text-[10px] text-muted-foreground">
+                        {format(new Date(loc.criado_em), 'dd/MM/yyyy HH:mm')}
+                      </p>
+                      {loc.fonte && (
+                        <span className="text-[9px] text-muted-foreground">• {loc.fonte}</span>
+                      )}
+                    </div>
+                  </div>
+                  <a
+                    href={`https://www.google.com/maps?q=${loc.latitude},${loc.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-primary underline flex-shrink-0"
+                  >
+                    Mapa
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+
         <div className="section-card border-destructive/30">
           <h3 className="text-sm font-semibold text-destructive mb-2">Zona de perigo</h3>
           {!confirmDelete ? (
