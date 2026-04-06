@@ -8,10 +8,12 @@ import { useLiderancas, useEleitores, useUsuarios, useFiscaisAdmin } from '@/hoo
 import {
   ArrowLeft, Users, Target, Search, X, Shield,
   ChevronDown, ChevronUp, Loader2, Download, Trophy,
-  BarChart3, UserCog, Eye, Building2, Plus, MapPin
+  BarChart3, UserCog, Eye, Building2, Plus, MapPin, Calendar
 } from 'lucide-react';
 import { exportAllCadastros, exportCadastrosFiltered } from '@/lib/exportXlsx';
 import SeletorCidade from '@/components/SeletorCidade';
+import SeletorEvento from '@/components/SeletorEvento';
+import GerenciarEventos from '@/components/GerenciarEventos';
 import { lazy, Suspense } from 'react';
 
 const TabLocalizacoes = lazy(() => import('@/components/TabLocalizacoes'));
