@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit2, Check, X, Loader2, Calendar, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,7 +29,7 @@ export default function GerenciarEventos() {
     setLoadingAll(false);
   };
 
-  useState(() => { fetchAll(); });
+  useEffect(() => { fetchAll(); }, []);
 
   const handleSave = async () => {
     if (!nome.trim()) { toast({ title: 'Informe o nome do evento', variant: 'destructive' }); return; }
