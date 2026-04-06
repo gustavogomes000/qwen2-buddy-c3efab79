@@ -9,7 +9,7 @@ interface Particle {
   alpha: number;
   pulse: number;
   pulseSpeed: number;
-  hue: number; // slight color variation
+  hue: number;
 }
 
 export default function ConstellationBg() {
@@ -24,8 +24,8 @@ export default function ConstellationBg() {
     let animId: number;
     let particles: Particle[] = [];
     let time = 0;
-    const CONNECT_DIST = 160;
-    const COUNT = 65;
+    const CONNECT_DIST = 170;
+    const COUNT = 75;
     let mouseX = -1000;
     let mouseY = -1000;
 
@@ -42,13 +42,13 @@ export default function ConstellationBg() {
         particles.push({
           x: Math.random() * canvas!.width,
           y: Math.random() * canvas!.height,
-          vx: (Math.random() - 0.5) * 0.3,
-          vy: (Math.random() - 0.5) * 0.3,
-          r: Math.random() * 1.8 + 1,
-          alpha: Math.random() * 0.35 + 0.25,
+          vx: (Math.random() - 0.5) * 0.35,
+          vy: (Math.random() - 0.5) * 0.35,
+          r: Math.random() * 2 + 1,
+          alpha: Math.random() * 0.4 + 0.2,
           pulse: Math.random() * Math.PI * 2,
-          pulseSpeed: Math.random() * 0.015 + 0.005,
-          hue: 330 + Math.random() * 30, // pink range 330-360
+          pulseSpeed: Math.random() * 0.02 + 0.005,
+          hue: 325 + Math.random() * 40, // pink range 325-365
         });
       }
     }
@@ -57,42 +57,43 @@ export default function ConstellationBg() {
       const w = canvas!.width;
       const h = canvas!.height;
       ctx!.clearRect(0, 0, w, h);
-      time += 0.003;
+      time += 0.004;
 
       const dpr = window.devicePixelRatio || 1;
       const dist = CONNECT_DIST * dpr;
 
       // Update particles
       for (const p of particles) {
-        // Gentle organic drift using sine waves
-        p.x += p.vx + Math.sin(time + p.pulse) * 0.08;
-        p.y += p.vy + Math.cos(time * 0.7 + p.pulse) * 0.06;
+        // Organic flowing drift with layered sine waves
+        p.x += p.vx + Math.sin(time * 1.2 + p.pulse) * 0.12 + Math.cos(time * 0.4 + p.hue) * 0.04;
+        p.y += p.vy + Math.cos(time * 0.8 + p.pulse) * 0.1 + Math.sin(time * 0.3 + p.hue) * 0.03;
         p.pulse += p.pulseSpeed;
 
-        // Wrap around edges smoothly
+        // Wrap edges
         if (p.x < -20) p.x = w + 20;
         if (p.x > w + 20) p.x = -20;
         if (p.y < -20) p.y = h + 20;
         if (p.y > h + 20) p.y = -20;
 
-        // Mouse attraction (gentle pull, not repulsion)
+        // Mouse attraction with smooth falloff
         const mdx = mouseX * dpr - p.x;
         const mdy = mouseY * dpr - p.y;
         const md = Math.sqrt(mdx * mdx + mdy * mdy);
-        if (md < 150 * dpr && md > 0) {
-          p.vx += (mdx / md) * 0.015;
-          p.vy += (mdy / md) * 0.015;
+        if (md < 180 * dpr && md > 0) {
+          const force = (1 - md / (180 * dpr)) * 0.02;
+          p.vx += (mdx / md) * force;
+          p.vy += (mdy / md) * force;
         }
 
         // Damping
-        p.vx *= 0.998;
-        p.vy *= 0.998;
+        p.vx *= 0.997;
+        p.vy *= 0.997;
 
         // Clamp speed
         const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-        if (speed > 0.6) {
-          p.vx *= 0.95;
-          p.vy *= 0.95;
+        if (speed > 0.7) {
+          p.vx *= 0.94;
+          p.vy *= 0.94;
         }
       }
 
@@ -104,18 +105,17 @@ export default function ConstellationBg() {
           const d = Math.sqrt(dx * dx + dy * dy);
           if (d < dist) {
             const strength = 1 - d / dist;
-            const alpha = strength * strength * 0.18; // quadratic falloff for softer lines
+            const alpha = strength * strength * 0.22;
 
-            // Gradient line between two particle colors
             const grad = ctx!.createLinearGradient(
               particles[i].x, particles[i].y,
               particles[j].x, particles[j].y
             );
-            grad.addColorStop(0, `hsla(${particles[i].hue}, 80%, 65%, ${alpha})`);
-            grad.addColorStop(1, `hsla(${particles[j].hue}, 80%, 65%, ${alpha})`);
+            grad.addColorStop(0, `hsla(${particles[i].hue}, 75%, 68%, ${alpha})`);
+            grad.addColorStop(1, `hsla(${particles[j].hue}, 75%, 68%, ${alpha})`);
 
             ctx!.strokeStyle = grad;
-            ctx!.lineWidth = (0.5 + strength * 0.8) * dpr;
+            ctx!.lineWidth = (0.5 + strength * 1) * dpr;
             ctx!.beginPath();
             ctx!.moveTo(particles[i].x, particles[i].y);
             ctx!.lineTo(particles[j].x, particles[j].y);
@@ -124,32 +124,33 @@ export default function ConstellationBg() {
         }
       }
 
-      // Draw particles
+      // Draw particles with enhanced glow
       for (const p of particles) {
         const pulseVal = Math.sin(p.pulse);
-        const pulseAlpha = p.alpha + pulseVal * 0.12;
-        const pulseR = p.r + pulseVal * 0.5;
+        const breathe = Math.sin(time * 2 + p.pulse) * 0.08;
+        const pulseAlpha = p.alpha + pulseVal * 0.15 + breathe;
+        const pulseR = p.r + pulseVal * 0.6;
 
-        // Outer glow — larger, softer
-        const glowSize = pulseR * 6 * dpr;
+        // Outer glow
+        const glowSize = pulseR * 7 * dpr;
         const gradient = ctx!.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowSize);
-        gradient.addColorStop(0, `hsla(${p.hue}, 80%, 70%, ${pulseAlpha * 0.25})`);
-        gradient.addColorStop(0.4, `hsla(${p.hue}, 80%, 70%, ${pulseAlpha * 0.08})`);
+        gradient.addColorStop(0, `hsla(${p.hue}, 85%, 72%, ${pulseAlpha * 0.3})`);
+        gradient.addColorStop(0.35, `hsla(${p.hue}, 80%, 70%, ${pulseAlpha * 0.1})`);
         gradient.addColorStop(1, `hsla(${p.hue}, 80%, 70%, 0)`);
         ctx!.fillStyle = gradient;
         ctx!.beginPath();
         ctx!.arc(p.x, p.y, glowSize, 0, Math.PI * 2);
         ctx!.fill();
 
-        // Core dot with bright center
+        // Core dot
         const coreSize = pulseR * dpr;
         const coreGrad = ctx!.createRadialGradient(p.x, p.y, 0, p.x, p.y, coreSize);
-        coreGrad.addColorStop(0, `hsla(${p.hue}, 90%, 85%, ${pulseAlpha + 0.3})`);
-        coreGrad.addColorStop(0.5, `hsla(${p.hue}, 80%, 65%, ${pulseAlpha + 0.15})`);
+        coreGrad.addColorStop(0, `hsla(${p.hue}, 95%, 88%, ${pulseAlpha + 0.35})`);
+        coreGrad.addColorStop(0.5, `hsla(${p.hue}, 85%, 68%, ${pulseAlpha + 0.18})`);
         coreGrad.addColorStop(1, `hsla(${p.hue}, 80%, 65%, 0)`);
         ctx!.fillStyle = coreGrad;
         ctx!.beginPath();
-        ctx!.arc(p.x, p.y, coreSize * 1.5, 0, Math.PI * 2);
+        ctx!.arc(p.x, p.y, coreSize * 1.6, 0, Math.PI * 2);
         ctx!.fill();
       }
 

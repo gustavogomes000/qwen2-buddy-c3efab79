@@ -42,10 +42,10 @@ export default function Login() {
         <ConstellationBg />
       </Suspense>
 
-      <div className="w-full max-w-[560px] mx-auto px-5 pt-6 pb-10 sm:py-0 relative z-10 flex flex-col items-center">
-        {/* Photo */}
+      <div className="w-full max-w-[560px] mx-auto px-5 pt-6 pb-10 sm:py-0 relative z-10 flex flex-col items-center animate-fade-in">
+        {/* Foto */}
         <div
-          className="w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] rounded-full overflow-hidden mb-2"
+          className="w-[110px] h-[110px] sm:w-[130px] sm:h-[130px] rounded-full overflow-hidden mb-3 shadow-lg ring-4 ring-pink-200/60"
           style={{ border: '3px solid #f9a8d4' }}
         >
           <img src={fernandaImg} alt="Dra. Fernanda Sarelli" className="w-full h-full object-cover" loading="eager" decoding="sync" />
@@ -60,7 +60,7 @@ export default function Login() {
           decoding="sync"
         />
 
-        {/* Subtitle */}
+        {/* Subtítulo */}
         <p
           className="text-sm sm:text-base font-bold uppercase tracking-[0.2em] mt-2 mb-6"
           style={{ color: '#ec4899' }}
@@ -68,42 +68,42 @@ export default function Login() {
           Cadastro de Campanha
         </p>
 
-        {/* Form card — simple pink border, matching screenshot 2 */}
+        {/* Card do formulário */}
         <div
-          className="w-full rounded-2xl bg-white/50 backdrop-blur-sm px-7 py-8 sm:px-10 sm:py-9"
-          style={{ border: '2px solid #f9a8d4' }}
+          className="w-full rounded-2xl backdrop-blur-sm px-7 py-8 sm:px-10 sm:py-9 shadow-sm"
+          style={{ background: 'rgba(253, 242, 248, 0.7)', border: '2px solid #f9a8d4' }}
         >
           <form onSubmit={handleLogin} className="space-y-5">
-            {/* Username */}
+            {/* Usuário */}
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-[0.15em] text-gray-700 font-bold block">Usuário</label>
               <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-300">
                   <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                   </svg>
                 </div>
                 <input
                   data-testid="input-nome"
                   type="text"
-                  placeholder="Nome de usuário"
+                  placeholder="Ex: Administrador"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
                   autoCapitalize="none"
                   autoCorrect="off"
                   autoComplete="username"
-                  className="w-full bg-white border border-gray-200 text-gray-700 placeholder:text-gray-400 h-[52px] pl-12 pr-4 rounded-xl text-sm outline-none transition-all focus:border-pink-300 focus:ring-2 focus:ring-pink-100"
+                  className="w-full bg-white border border-pink-200 text-gray-700 placeholder:text-gray-400 h-[52px] pl-12 pr-4 rounded-xl text-sm outline-none transition-all focus:border-pink-400 focus:ring-2 focus:ring-pink-100"
                   style={{ fontSize: '16px' }}
                 />
               </div>
             </div>
 
-            {/* Password */}
+            {/* Senha */}
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-[0.15em] text-gray-700 font-bold block">Senha</label>
               <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-300">
                   <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
@@ -116,13 +116,13 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   autoComplete="current-password"
-                  className="w-full bg-white border border-gray-200 text-gray-700 placeholder:text-gray-400 h-[52px] pl-12 pr-12 rounded-xl text-sm outline-none transition-all focus:border-pink-300 focus:ring-2 focus:ring-pink-100"
+                  className="w-full bg-white border border-pink-200 text-gray-700 placeholder:text-gray-400 h-[52px] pl-12 pr-12 rounded-xl text-sm outline-none transition-all focus:border-pink-400 focus:ring-2 focus:ring-pink-100"
                   style={{ fontSize: '16px' }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-pink-400 transition-colors p-0.5"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-pink-300 hover:text-pink-500 transition-colors p-0.5"
                   tabIndex={-1}
                 >
                   {showPassword
@@ -133,26 +133,26 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Remember */}
+            {/* Lembrar */}
             <div className="flex items-center gap-3">
               <input
                 type="checkbox"
                 id="remember"
                 checked={remember}
                 onChange={(e) => setRemember(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300 accent-pink-500 cursor-pointer"
+                className="w-4 h-4 rounded border-pink-300 accent-pink-500 cursor-pointer"
               />
               <label htmlFor="remember" className="text-sm text-gray-600 cursor-pointer select-none">Lembrar meus dados</label>
             </div>
 
-            {/* Submit */}
+            {/* Botão Entrar */}
             <button
               data-testid="btn-entrar"
               type="submit"
               disabled={loading}
-              className="w-full h-[52px] rounded-xl font-semibold text-base text-white transition-all active:scale-[0.97] disabled:opacity-60"
+              className="w-full h-[52px] rounded-xl font-semibold text-base text-white transition-all active:scale-[0.97] disabled:opacity-60 shadow-md hover:shadow-lg hover:brightness-110"
               style={{
-                background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 50%, #e879f9 100%)',
+                background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 35%, #f59e0b 100%)',
               }}
             >
               {loading
@@ -161,17 +161,17 @@ export default function Login() {
                     Entrando...
                   </span>
                 : <span className="flex items-center justify-center gap-2">
-                    Entrar
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
                     </svg>
+                    Entrar
                   </span>
               }
             </button>
           </form>
         </div>
 
-        {/* Footer */}
+        {/* Rodapé */}
         <div className="text-center mt-6 space-y-1">
           <p className="text-xs text-gray-500 tracking-wide">Pré-candidata a Deputada Estadual — GO 2026</p>
           <a
