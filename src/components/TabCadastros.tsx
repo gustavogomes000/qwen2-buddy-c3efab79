@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCidade } from '@/contexts/CidadeContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useLiderancas, useEleitores, useInvalidarCadastros } from '@/hooks/useDataCache';
+import { useLiderancas, useEleitores, useFiscaisAdmin, useInvalidarCadastros } from '@/hooks/useDataCache';
 import { Search, Users, Target, Phone, MapPin, Loader2, Download, UserCheck, Calendar, ChevronDown, Mail, MessageCircle, CreditCard, FileText, Globe } from 'lucide-react';
 import { exportAllCadastros } from '@/lib/exportXlsx';
 import { formatCPF } from '@/lib/cpf';
@@ -10,11 +10,11 @@ import { toast } from '@/hooks/use-toast';
 
 import SkeletonLista from '@/components/SkeletonLista';
 
-type TipoFiltro = 'todos' | 'lideranca' | 'eleitor';
+type TipoFiltro = 'todos' | 'lideranca' | 'fiscal' | 'eleitor';
 
 interface CadastroUnificado {
   id: string;
-  tipo: 'lideranca' | 'eleitor';
+  tipo: 'lideranca' | 'fiscal' | 'eleitor';
   nome: string;
   cpf: string | null;
   telefone: string | null;
@@ -51,6 +51,7 @@ interface CadastroUnificado {
 
 const tipoConfig = {
   lideranca: { label: 'Liderança', icon: Users, color: 'bg-purple-500/10 text-purple-600', dot: 'bg-purple-500' },
+  fiscal: { label: 'Fiscal', icon: Search, color: 'bg-orange-500/10 text-orange-600', dot: 'bg-orange-500' },
   eleitor: { label: 'Eleitor', icon: Target, color: 'bg-blue-500/10 text-blue-600', dot: 'bg-blue-500' },
 };
 
@@ -63,10 +64,11 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
   const { tipoUsuario, usuario, isAdmin, municipioId: authMunicipioId } = useAuth();
   const { cidadeAtiva, isTodasCidades, nomeMunicipioPorId } = useCidade();
   const { data: lidData, isLoading: lidLoading } = useLiderancas();
+  const { data: fisData, isLoading: fisLoading } = useFiscaisAdmin();
   const { data: eleData, isLoading: eleLoading } = useEleitores();
   const invalidarCadastros = useInvalidarCadastros();
 
-  const loading = lidLoading || eleLoading;
+  const loading = lidLoading || fisLoading || eleLoading;
   const [tipoFiltro, setTipoFiltro] = useState<TipoFiltro>('todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [exporting, setExporting] = useState(false);
@@ -123,6 +125,15 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
         });
       }
     }
+    if (fisData) {
+      for (const f of fisData as any[]) {
+        results.push({
+          ...mapBase(f), id: f.id, tipo: 'fiscal',
+          status: f.status, regiao: f.origem_captacao || null,
+          lideranca_nome: f.liderancas?.pessoas?.nome || null,
+        });
+      }
+    }
     if (eleData) {
       for (const e of eleData as any[]) {
         results.push({
@@ -135,7 +146,7 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
     }
     results.sort((a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime());
     return results;
-  }, [lidData, eleData]);
+  }, [lidData, fisData, eleData]);
 
   useEffect(() => {
     if (refreshKey > 0) invalidarCadastros();
@@ -144,8 +155,9 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
   const stats = useMemo(() => {
     const total = cadastros.length;
     const liderancas = cadastros.filter(c => c.tipo === 'lideranca').length;
+    const fiscais = cadastros.filter(c => c.tipo === 'fiscal').length;
     const eleitores = cadastros.filter(c => c.tipo === 'eleitor').length;
-    return { total, liderancas, eleitores };
+    return { total, liderancas, fiscais, eleitores };
   }, [cadastros]);
 
   const filtered = useMemo(() => {
@@ -186,10 +198,11 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
   return (
     <div className="space-y-3 pb-24">
       {/* Stats grid */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         {[
           { label: 'Total', value: stats.total, active: tipoFiltro === 'todos', onClick: () => setTipoFiltro('todos'), dotClass: 'bg-foreground' },
           { label: 'Lideranças', value: stats.liderancas, active: tipoFiltro === 'lideranca', onClick: () => setTipoFiltro(tipoFiltro === 'lideranca' ? 'todos' : 'lideranca'), dotClass: 'bg-purple-500' },
+          { label: 'Fiscais', value: stats.fiscais, active: tipoFiltro === 'fiscal', onClick: () => setTipoFiltro(tipoFiltro === 'fiscal' ? 'todos' : 'fiscal'), dotClass: 'bg-orange-500' },
           { label: 'Eleitores', value: stats.eleitores, active: tipoFiltro === 'eleitor', onClick: () => setTipoFiltro(tipoFiltro === 'eleitor' ? 'todos' : 'eleitor'), dotClass: 'bg-blue-500' },
         ].map(s => (
           <button
