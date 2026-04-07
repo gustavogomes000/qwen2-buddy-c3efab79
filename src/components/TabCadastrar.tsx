@@ -362,7 +362,7 @@ export default function TabCadastrar({ onSaved }: Props) {
           </div>
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Comprometimento</label>
+          <label className="text-xs font-medium text-muted-foreground">Comprometimento <span className="text-primary">*</span></label>
           <select value={form.nivel_comprometimento} onChange={e => update('nivel_comprometimento', e.target.value)} className={selectCls}>
             <option value="">Selecione...</option>
             {comprometimentos.map(o => <option key={o} value={o}>{o}</option>)}
