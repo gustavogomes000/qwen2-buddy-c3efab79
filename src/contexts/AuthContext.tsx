@@ -289,13 +289,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // Immediately clear state so UI redirects to login without waiting for network
     setUser(null);
     setUsuario(null);
     setMunicipioId(null);
     setMunicipioNome(null);
     setIsOfflineMode(false);
+    setLoading(false);
     clearCachedUsuario();
+    // Fire signOut in background — don't block UI on slow/offline network
+    try {
+      await Promise.race([
+        supabase.auth.signOut(),
+        new Promise(resolve => setTimeout(resolve, 3000)),
+      ]);
+    } catch {
+      // Ignore errors — user is already logged out locally
+    }
   };
 
   const tipo = usuario?.tipo ?? null;
