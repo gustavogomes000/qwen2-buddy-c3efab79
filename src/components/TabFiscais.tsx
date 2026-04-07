@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useInvalidarCadastros } from '@/hooks/useDataCache';
 import { useCidade } from '@/contexts/CidadeContext';
 import { formatCPF, cleanCPF, validateCPF, maskCPF } from '@/lib/cpf';
-import { checkCpfDuplicateByUser } from '@/lib/cpfDuplicateCheck';
+
 import { resolverLigacaoPolitica } from '@/lib/resolverLigacaoPolitica';
 import { toast } from '@/hooks/use-toast';
 import { useEvento } from '@/contexts/EventoContext';
@@ -106,7 +106,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
   const [pessoaExistenteId, setPessoaExistenteId] = useState<string | null>(null);
   const [cpfStatus, setCpfStatus] = useState<'idle' | 'validando' | 'confirmado'>('idle');
   const [cpfNomePessoa, setCpfNomePessoa] = useState('');
-  const [cpfDuplicado, setCpfDuplicado] = useState<{ isDuplicate: boolean; tipos: string[] }>({ isDuplicate: false, tipos: [] });
+  
   const [validandoCPF, setValidandoCPF] = useState(false);
   const [form, setForm] = useState({ ...emptyForm });
   const [liderancas, setLiderancas] = useState<{ id: string; nome: string }[]>([]);
@@ -181,7 +181,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
         setCpfStatus('confirmado');
         setCpfNomePessoa(pessoa.nome);
         toast({ title: '✅ Pessoa encontrada!', description: `Dados de ${pessoa.nome} preenchidos` });
-      } else { setCpfStatus('idle'); setCpfDuplicado({ isDuplicate: false, tipos: [] }); }
+      } else { setCpfStatus('idle'); }
     } catch (err) { console.error(err); }
     finally { setValidandoCPF(false); }
   }, [validandoCPF, usuario?.id]);
@@ -191,7 +191,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
     update('cpf', cleaned);
     setCpfStatus('idle');
     setPessoaExistenteId(null);
-    setCpfDuplicado({ isDuplicate: false, tipos: [] });
+    
     if (cpfTimeoutRef.current) clearTimeout(cpfTimeoutRef.current);
     if (cleaned.length === 11) cpfTimeoutRef.current = setTimeout(() => validarCPF(cleaned), 500);
   };

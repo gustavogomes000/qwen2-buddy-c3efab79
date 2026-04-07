@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLiderancas, useInvalidarCadastros } from '@/hooks/useDataCache';
 import { useCidade } from '@/contexts/CidadeContext';
 import { maskCPF, formatCPF, cleanCPF, validateCPF } from '@/lib/cpf';
-import { checkCpfDuplicateByUser } from '@/lib/cpfDuplicateCheck';
+
 import { resolverLigacaoPolitica } from '@/lib/resolverLigacaoPolitica';
 import { toast } from '@/hooks/use-toast';
 
@@ -74,7 +74,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
   const [validandoCPF, setValidandoCPF] = useState(false);
   const [cpfStatus, setCpfStatus] = useState<'idle' | 'validando' | 'confirmado'>('idle');
   const [cpfNomePessoa, setCpfNomePessoa] = useState('');
-  const [cpfDuplicado, setCpfDuplicado] = useState<{ isDuplicate: boolean; tipos: string[] }>({ isDuplicate: false, tipos: [] });
+  
   const [pessoaExistenteId, setPessoaExistenteId] = useState<string | null>(null);
   const [liderancasExistentes, setLiderancasExistentes] = useState<{ id: string; nome: string }[]>([]);
   const [form, setForm] = useState({ ...emptyForm });
@@ -165,7 +165,6 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
         toast({ title: '✅ Pessoa encontrada!', description: `Dados de ${pessoa.nome} preenchidos` });
       } else {
         setCpfStatus('idle');
-        setCpfDuplicado({ isDuplicate: false, tipos: [] });
       }
     } catch (err) { console.error(err); }
     finally { setValidandoCPF(false); }
@@ -177,7 +176,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
     setCpfStatus('idle');
     setCpfNomePessoa('');
     setPessoaExistenteId(null);
-    setCpfDuplicado({ isDuplicate: false, tipos: [] });
+    
     if (cpfTimeoutRef.current) clearTimeout(cpfTimeoutRef.current);
     if (cleaned.length === 11) {
       cpfTimeoutRef.current = setTimeout(() => validarCPF(cleaned), 500);
@@ -409,13 +408,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
               {cpfStatus === 'confirmado' && <CheckCircle2 size={12} className="text-emerald-500" />}
             </label>
             <input type="text" inputMode="numeric" value={formatCPF(form.cpf)} onChange={e => handleCPFChange(e.target.value)} placeholder="000.000.000-00" className={`${inputCls} ${cpfBorderCls}`} maxLength={14} />
-            {cpfStatus === 'confirmado' && cpfNomePessoa && !cpfDuplicado.isDuplicate && <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">✅ {cpfNomePessoa}</p>}
-            {cpfDuplicado.isDuplicate && (
-              <div className="p-2 rounded-lg bg-destructive/10 border border-destructive/30">
-                <p className="text-xs font-semibold text-destructive">⚠️ Você já cadastrou este CPF como: {cpfDuplicado.tipos.join(', ')}</p>
-                <p className="text-[10px] text-destructive/80 mt-0.5">Não é possível cadastrar o mesmo CPF duas vezes pelo mesmo usuário.</p>
-              </div>
-            )}
+            {cpfStatus === 'confirmado' && cpfNomePessoa && <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">✅ {cpfNomePessoa}</p>}
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">WhatsApp <span className="text-primary">*</span></label>
