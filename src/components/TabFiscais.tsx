@@ -191,7 +191,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
     update('cpf', cleaned);
     setCpfStatus('idle');
     setPessoaExistenteId(null);
-    setCpfDuplicado_removed: // removed
+    
     if (cpfTimeoutRef.current) clearTimeout(cpfTimeoutRef.current);
     if (cleaned.length === 11) cpfTimeoutRef.current = setTimeout(() => validarCPF(cleaned), 500);
   };
