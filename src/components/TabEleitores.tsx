@@ -25,7 +25,7 @@ const emptyForm = {
   municipio_eleitoral: '', uf_eleitoral: 'GO', colegio_eleitoral: '',
   endereco_colegio: '', situacao_titulo: '',
   lideranca_id: '',
-  vai_votar: '', compromisso_voto: 'Indefinido', observacoes: '',
+  vai_votar: '', compromisso_voto: 'Indefinido', observacoes: '', regiao_atuacao: '',
 };
 
 interface EleitorRow {
@@ -34,6 +34,7 @@ interface EleitorRow {
   lideranca_id: string | null;
   cadastrado_por: string | null;
   observacoes: string | null;
+  origem_captacao: string | null;
   criado_em: string;
   pessoas: {
     nome: string; cpf: string | null; telefone: string | null; whatsapp: string | null;
@@ -174,6 +175,7 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
     if (!form.secao_eleitoral.trim()) { toast({ title: 'Informe a seção eleitoral', variant: 'destructive' }); return; }
     if (!form.municipio_eleitoral.trim()) { toast({ title: 'Informe o município eleitoral', variant: 'destructive' }); return; }
     if (!form.colegio_eleitoral.trim()) { toast({ title: 'Informe o colégio eleitoral', variant: 'destructive' }); return; }
+    if (!form.regiao_atuacao.trim()) { toast({ title: 'Informe a região de atuação', variant: 'destructive' }); return; }
     if (!form.vai_votar) { toast({ title: 'Informe se vai votar', variant: 'destructive' }); return; }
     if (!ligBloqueado && tipoUsuario !== 'super_admin' && tipoUsuario !== 'coordenador' && !ligSuplenteId && !ligLiderancaId) {
       setLigErro('Selecione um suplente ou liderança');
@@ -200,6 +202,7 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
       observacoes: form.observacoes || null,
       municipio_id: ligMunicipioId || null,
       evento_id: eventoAtivo?.id || null,
+      origem_captacao: form.regiao_atuacao || null,
     };
 
     // Offline: salvar na fila
@@ -236,7 +239,7 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
     } finally { setSaving(false); }
   };
 
-  const QUERY_DETALHE_ELE = 'id, compromisso_voto, lideranca_id, cadastrado_por, observacoes, criado_em, municipio_id, pessoas(*), liderancas:lideranca_id(id, pessoas(nome))';
+  const QUERY_DETALHE_ELE = 'id, compromisso_voto, lideranca_id, cadastrado_por, observacoes, origem_captacao, criado_em, municipio_id, pessoas(*), liderancas:lideranca_id(id, pessoas(nome))';
 
   const fetchDetalhe = useCallback(async (id: string) => {
     const { data } = await (supabase as any).from('possiveis_eleitores').select(QUERY_DETALHE_ELE).eq('id', id).single();
@@ -310,8 +313,8 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
           <h3 className="section-title">👤 Dados Pessoais</h3>
           <Info label="CPF" value={p.cpf ? maskCPF(p.cpf) : null} />
           <Info label="WhatsApp" value={p.whatsapp} />
-          <Info label="E-mail" value={p.email} link={p.email ? `mailto:${p.email}` : undefined} />
           <Info label="Rede social" value={p.instagram || p.facebook} link={p.instagram ? `https://instagram.com/${p.instagram.replace('@', '')}` : undefined} />
+          <Info label="Região" value={e.origem_captacao} />
         </div>
 
         <div className="section-card">
@@ -320,7 +323,6 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
           <Info label="Zona / Seção" value={`${p.zona_eleitoral || '—'} / ${p.secao_eleitoral || '—'}`} />
           <Info label="Município / UF" value={`${p.municipio_eleitoral || '—'} / ${p.uf_eleitoral || '—'}`} />
           <Info label="Colégio" value={p.colegio_eleitoral} />
-          <Info label="End. colégio" value={p.endereco_colegio} />
         </div>
 
         {e.liderancas && (
@@ -379,6 +381,10 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">Rede social <span className="text-primary">*</span></label>
             <input type="text" value={form.instagram} onChange={e => update('instagram', e.target.value)} placeholder="Instagram ou Facebook (@ ou link)" className={inputCls} />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Região de atuação <span className="text-primary">*</span></label>
+            <textarea value={form.regiao_atuacao} onChange={e => update('regiao_atuacao', e.target.value)} rows={2} placeholder="Ex: Setor Bueno, Jardim América..." className={textareaCls} />
           </div>
         </div>
 

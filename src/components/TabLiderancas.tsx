@@ -347,7 +347,6 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
           <h3 className="section-title">👤 Dados Pessoais</h3>
           <Info label="CPF" value={p.cpf ? maskCPF(p.cpf) : null} />
           <Info label="WhatsApp" value={p.whatsapp} />
-          <Info label="E-mail" value={p.email} link={p.email ? `mailto:${p.email}` : undefined} />
           <Info label="Rede social" value={p.instagram || p.facebook} link={p.instagram ? `https://instagram.com/${p.instagram.replace('@', '')}` : undefined} />
         </div>
         <div className="section-card">
@@ -356,7 +355,6 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
           <Info label="Zona / Seção" value={`${p.zona_eleitoral || '—'} / ${p.secao_eleitoral || '—'}`} />
           <Info label="Município / UF" value={`${p.municipio_eleitoral || '—'} / ${p.uf_eleitoral || '—'}`} />
           <Info label="Colégio" value={p.colegio_eleitoral} />
-          <Info label="End. colégio" value={p.endereco_colegio} />
         </div>
         <div className="section-card">
           <h3 className="section-title">⭐ Perfil</h3>

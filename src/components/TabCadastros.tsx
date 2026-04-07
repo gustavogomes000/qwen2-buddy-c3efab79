@@ -127,10 +127,9 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
       for (const e of eleData as any[]) {
         results.push({
           ...mapBase(e), id: e.id, tipo: 'eleitor',
-          status: e.compromisso_voto, regiao: null,
+          status: e.compromisso_voto, regiao: e.origem_captacao || null,
           compromisso_voto: e.compromisso_voto || null,
           lideranca_nome: e.liderancas?.pessoas?.nome || null,
-          
         });
       }
     }
@@ -307,8 +306,8 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
                           <div className="grid grid-cols-2 gap-1.5">
                             <Field label="CPF" value={c.cpf ? formatCPF(c.cpf) : null} />
                             <Field label="WhatsApp" value={c.whatsapp} />
-                            <Field label="E-mail" value={c.email} />
                             <Field label="Rede social" value={c.instagram || c.facebook} />
+                            <Field label="Região" value={c.regiao} />
                           </div>
                         </div>
                         <div>
@@ -320,7 +319,6 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
                             <Field label="Município" value={c.municipio_eleitoral} />
                             <Field label="UF" value={c.uf_eleitoral} />
                             <Field label="Colégio" value={c.colegio_eleitoral} span2 />
-                            <Field label="End. colégio" value={c.endereco_colegio} span2 />
                           </div>
                         </div>
                         {c.tipo === 'lideranca' && (

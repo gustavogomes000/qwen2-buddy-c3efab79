@@ -24,7 +24,7 @@ const emptyForm = {
   municipio_eleitoral: '', uf_eleitoral: 'GO', colegio_eleitoral: '',
   endereco_colegio: '', situacao_titulo: '',
   zona_fiscal: '', secao_fiscal: '', colegio_eleitoral_fiscal: '',
-  lideranca_id: '', observacoes: '',
+  lideranca_id: '', observacoes: '', regiao_atuacao: '',
 };
 
 interface FiscalRow {
@@ -207,6 +207,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
     if (!form.secao_eleitoral.trim()) { toast({ title: 'Informe a seção eleitoral', variant: 'destructive' }); return; }
     if (!form.municipio_eleitoral.trim()) { toast({ title: 'Informe o município eleitoral', variant: 'destructive' }); return; }
     if (!form.colegio_eleitoral.trim()) { toast({ title: 'Informe o colégio eleitoral', variant: 'destructive' }); return; }
+    if (!form.regiao_atuacao.trim()) { toast({ title: 'Informe a região de atuação', variant: 'destructive' }); return; }
     if (!form.zona_fiscal.trim()) { toast({ title: 'Informe a zona fiscal', variant: 'destructive' }); return; }
     if (!form.secao_fiscal.trim()) { toast({ title: 'Informe a seção fiscal', variant: 'destructive' }); return; }
     if (!ligBloqueado && tipoUsuario !== 'super_admin' && tipoUsuario !== 'coordenador' && !ligSuplenteId && !ligLiderancaId) {
@@ -236,6 +237,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
       observacoes: form.observacoes || null,
       municipio_id: ligMunicipioId || null,
       evento_id: eventoAtivo?.id || null,
+      origem_captacao: form.regiao_atuacao || null,
     };
 
     // Offline: salvar na fila
@@ -331,8 +333,8 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
           <h3 className="section-title">👤 Dados Pessoais</h3>
           <Info label="CPF" value={p.cpf ? maskCPF(p.cpf) : null} />
           <Info label="WhatsApp" value={p.whatsapp} />
-          <Info label="E-mail" value={p.email} link={p.email ? `mailto:${p.email}` : undefined} />
           <Info label="Rede social" value={p.instagram || p.facebook} />
+          <Info label="Região" value={f.origem_captacao} />
         </div>
         <div className="section-card">
           <h3 className="section-title">🗳️ Dados Eleitorais</h3>
@@ -340,7 +342,6 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
           <Info label="Zona / Seção" value={`${p.zona_eleitoral || '—'} / ${p.secao_eleitoral || '—'}`} />
           <Info label="Município / UF" value={`${p.municipio_eleitoral || '—'} / ${p.uf_eleitoral || '—'}`} />
           <Info label="Colégio" value={p.colegio_eleitoral} />
-          <Info label="End. colégio" value={p.endereco_colegio} />
         </div>
         <div className="section-card">
           <h3 className="section-title">🔍 Dados do Fiscal</h3>
@@ -400,6 +401,10 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">Rede social <span className="text-primary">*</span></label>
             <input type="text" value={form.instagram} onChange={e => update('instagram', e.target.value)} placeholder="Instagram ou Facebook (@ ou link)" className={inputCls} />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Região de atuação <span className="text-primary">*</span></label>
+            <textarea value={form.regiao_atuacao} onChange={e => update('regiao_atuacao', e.target.value)} rows={2} placeholder="Ex: Setor Bueno, Jardim América..." className={textareaCls} />
           </div>
         </div>
 
