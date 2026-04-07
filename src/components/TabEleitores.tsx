@@ -25,7 +25,7 @@ const emptyForm = {
   municipio_eleitoral: '', uf_eleitoral: 'GO', colegio_eleitoral: '',
   endereco_colegio: '', situacao_titulo: '',
   lideranca_id: '',
-  compromisso_voto: 'Indefinido', observacoes: '',
+  vai_votar: '', compromisso_voto: 'Indefinido', observacoes: '',
 };
 
 interface EleitorRow {
@@ -175,6 +175,13 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
 
   const handleSave = async () => {
     if (!form.nome.trim()) { toast({ title: 'Preencha o nome', variant: 'destructive' }); return; }
+    if (!form.whatsapp.trim()) { toast({ title: 'Informe o WhatsApp', variant: 'destructive' }); return; }
+    if (!form.titulo_eleitor.trim()) { toast({ title: 'Informe o título de eleitor', variant: 'destructive' }); return; }
+    if (!form.zona_eleitoral.trim()) { toast({ title: 'Informe a zona eleitoral', variant: 'destructive' }); return; }
+    if (!form.secao_eleitoral.trim()) { toast({ title: 'Informe a seção eleitoral', variant: 'destructive' }); return; }
+    if (!form.municipio_eleitoral.trim()) { toast({ title: 'Informe o município eleitoral', variant: 'destructive' }); return; }
+    if (!form.colegio_eleitoral.trim()) { toast({ title: 'Informe o colégio eleitoral', variant: 'destructive' }); return; }
+    if (!form.vai_votar) { toast({ title: 'Informe se vai votar', variant: 'destructive' }); return; }
     if (cpfDuplicado.isDuplicate) { toast({ title: '❌ CPF já cadastrado por você', description: `Você já cadastrou este CPF como: ${cpfDuplicado.tipos.join(', ')}`, variant: 'destructive' }); return; }
     if (!ligBloqueado && tipoUsuario !== 'super_admin' && tipoUsuario !== 'coordenador' && !ligSuplenteId && !ligLiderancaId) {
       setLigErro('Selecione um suplente ou liderança');
@@ -402,22 +409,22 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
           </button>
           <p className="text-[11px] text-muted-foreground -mt-2">Abra o site do TSE, consulte os dados eleitorais e preencha abaixo.</p>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Título de eleitor</label>
+            <label className="text-xs font-medium text-muted-foreground">Título de eleitor <span className="text-primary">*</span></label>
             <input type="text" value={form.titulo_eleitor} onChange={e => update('titulo_eleitor', e.target.value)} placeholder="Número do título" className={inputCls} />
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Zona</label>
+              <label className="text-xs font-medium text-muted-foreground">Zona <span className="text-primary">*</span></label>
               <input type="text" value={form.zona_eleitoral} onChange={e => update('zona_eleitoral', e.target.value)} placeholder="045" className={inputCls} />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Seção</label>
+              <label className="text-xs font-medium text-muted-foreground">Seção <span className="text-primary">*</span></label>
               <input type="text" value={form.secao_eleitoral} onChange={e => update('secao_eleitoral', e.target.value)} placeholder="0123" className={inputCls} />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div className="col-span-2 space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Município</label>
+              <label className="text-xs font-medium text-muted-foreground">Município <span className="text-primary">*</span></label>
               <input type="text" value={form.municipio_eleitoral} onChange={e => update('municipio_eleitoral', e.target.value)} placeholder="Cidade" className={inputCls} />
             </div>
             <div className="space-y-1">
@@ -426,7 +433,7 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
             </div>
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Colégio eleitoral</label>
+            <label className="text-xs font-medium text-muted-foreground">Colégio eleitoral <span className="text-primary">*</span></label>
             <input type="text" value={form.colegio_eleitoral} onChange={e => update('colegio_eleitoral', e.target.value)} placeholder="Nome da escola / local" className={inputCls} />
           </div>
         </div>
@@ -448,6 +455,14 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
         {/* Compromisso e Observações */}
         <div className="section-card">
           <h2 className="section-title">📋 Informações Adicionais</h2>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Vai votar? <span className="text-primary">*</span></label>
+            <select value={form.vai_votar} onChange={e => update('vai_votar', e.target.value)} className={selectCls}>
+              <option value="">Selecione...</option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+            </select>
+          </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">Compromisso de voto</label>
             <select data-testid="select-compromisso-voto" value={form.compromisso_voto} onChange={e => update('compromisso_voto', e.target.value)} className={selectCls}>

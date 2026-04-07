@@ -86,7 +86,7 @@ export default function Home() {
               <SeletorCidade />
             </div>
           )}
-          {eventos.length > 0 && activeTab !== 'perfil' && (
+          {isAdminOrCoord && eventos.length > 0 && activeTab !== 'perfil' && (
             <div className="mt-2">
               <SeletorEvento />
             </div>

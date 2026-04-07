@@ -204,6 +204,13 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
   const handleSave = async () => {
     if (!form.nome.trim()) { toast({ title: 'Preencha o nome', variant: 'destructive' }); return; }
     if (!form.whatsapp.trim()) { toast({ title: 'Informe o WhatsApp', variant: 'destructive' }); return; }
+    if (!form.titulo_eleitor.trim()) { toast({ title: 'Informe o título de eleitor', variant: 'destructive' }); return; }
+    if (!form.zona_eleitoral.trim()) { toast({ title: 'Informe a zona eleitoral', variant: 'destructive' }); return; }
+    if (!form.secao_eleitoral.trim()) { toast({ title: 'Informe a seção eleitoral', variant: 'destructive' }); return; }
+    if (!form.municipio_eleitoral.trim()) { toast({ title: 'Informe o município eleitoral', variant: 'destructive' }); return; }
+    if (!form.colegio_eleitoral.trim()) { toast({ title: 'Informe o colégio eleitoral', variant: 'destructive' }); return; }
+    if (!form.regiao_atuacao.trim()) { toast({ title: 'Informe a região de atuação', variant: 'destructive' }); return; }
+    if (!form.nivel_comprometimento) { toast({ title: 'Selecione o comprometimento', variant: 'destructive' }); return; }
     if (form.cpf && form.cpf.length === 11 && !validateCPF(form.cpf)) { toast({ title: 'CPF inválido', variant: 'destructive' }); return; }
     if (cpfDuplicado.isDuplicate) { toast({ title: '❌ CPF já cadastrado por você', description: `Você já cadastrou este CPF como: ${cpfDuplicado.tipos.join(', ')}`, variant: 'destructive' }); return; }
     // Validar ligação política obrigatória para avulsos
@@ -435,25 +442,25 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
             className="w-full flex items-center justify-center gap-2 h-10 px-4 border border-border rounded-xl text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 active:scale-[0.97] transition-all">
             <ExternalLink size={16} /> Consultar dados no TSE
           </button>
-          <div className="space-y-1"><label className="text-xs font-medium text-muted-foreground">Título de eleitor</label><input type="text" value={form.titulo_eleitor} onChange={e => update('titulo_eleitor', e.target.value)} className={inputCls} /></div>
+          <div className="space-y-1"><label className="text-xs font-medium text-muted-foreground">Título de eleitor <span className="text-primary">*</span></label><input type="text" value={form.titulo_eleitor} onChange={e => update('titulo_eleitor', e.target.value)} className={inputCls} /></div>
           <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1"><label className="text-xs font-medium text-muted-foreground">Zona</label><input type="text" value={form.zona_eleitoral} onChange={e => update('zona_eleitoral', e.target.value)} className={inputCls} /></div>
-            <div className="space-y-1"><label className="text-xs font-medium text-muted-foreground">Seção</label><input type="text" value={form.secao_eleitoral} onChange={e => update('secao_eleitoral', e.target.value)} className={inputCls} /></div>
+            <div className="space-y-1"><label className="text-xs font-medium text-muted-foreground">Zona <span className="text-primary">*</span></label><input type="text" value={form.zona_eleitoral} onChange={e => update('zona_eleitoral', e.target.value)} className={inputCls} /></div>
+            <div className="space-y-1"><label className="text-xs font-medium text-muted-foreground">Seção <span className="text-primary">*</span></label><input type="text" value={form.secao_eleitoral} onChange={e => update('secao_eleitoral', e.target.value)} className={inputCls} /></div>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            <div className="col-span-2 space-y-1"><label className="text-xs font-medium text-muted-foreground">Município</label><input type="text" value={form.municipio_eleitoral} onChange={e => update('municipio_eleitoral', e.target.value)} className={inputCls} /></div>
+            <div className="col-span-2 space-y-1"><label className="text-xs font-medium text-muted-foreground">Município <span className="text-primary">*</span></label><input type="text" value={form.municipio_eleitoral} onChange={e => update('municipio_eleitoral', e.target.value)} className={inputCls} /></div>
             <div className="space-y-1"><label className="text-xs font-medium text-muted-foreground">UF</label><input type="text" value="GO" readOnly className={`${inputCls} bg-muted cursor-not-allowed`} /></div>
           </div>
-          <div className="space-y-1"><label className="text-xs font-medium text-muted-foreground">Colégio eleitoral</label><input type="text" value={form.colegio_eleitoral} onChange={e => update('colegio_eleitoral', e.target.value)} className={inputCls} /></div>
+          <div className="space-y-1"><label className="text-xs font-medium text-muted-foreground">Colégio eleitoral <span className="text-primary">*</span></label><input type="text" value={form.colegio_eleitoral} onChange={e => update('colegio_eleitoral', e.target.value)} className={inputCls} /></div>
         </div>
 
         <div className="section-card">
           <h2 className="section-title">⭐ Perfil e Status</h2>
           
-          <div className="space-y-1"><label className="text-xs font-medium text-muted-foreground">Região de atuação</label><textarea value={form.regiao_atuacao} onChange={e => update('regiao_atuacao', e.target.value)} rows={2} className={textareaCls} /></div>
+          <div className="space-y-1"><label className="text-xs font-medium text-muted-foreground">Região de atuação <span className="text-primary">*</span></label><textarea value={form.regiao_atuacao} onChange={e => update('regiao_atuacao', e.target.value)} rows={2} className={textareaCls} /></div>
           <div className="space-y-1"><label className="text-xs font-medium text-muted-foreground">Quantos votos pode trazer</label><input type="number" value={form.meta_votos} onChange={e => update('meta_votos', e.target.value)} placeholder="Ex: 500" className={inputCls} /></div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Comprometimento</label>
+            <label className="text-xs font-medium text-muted-foreground">Comprometimento <span className="text-primary">*</span></label>
             <select value={form.nivel_comprometimento} onChange={e => update('nivel_comprometimento', e.target.value)} className={selectCls}>
               <option value="">Selecione...</option>
               {comprometimentos.map(o => <option key={o} value={o}>{o}</option>)}

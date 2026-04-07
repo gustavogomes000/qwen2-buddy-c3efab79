@@ -206,6 +206,14 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
 
   const handleSave = async () => {
     if (!form.nome.trim()) { toast({ title: 'Preencha o nome', variant: 'destructive' }); return; }
+    if (!form.whatsapp.trim()) { toast({ title: 'Informe o WhatsApp', variant: 'destructive' }); return; }
+    if (!form.titulo_eleitor.trim()) { toast({ title: 'Informe o título de eleitor', variant: 'destructive' }); return; }
+    if (!form.zona_eleitoral.trim()) { toast({ title: 'Informe a zona eleitoral', variant: 'destructive' }); return; }
+    if (!form.secao_eleitoral.trim()) { toast({ title: 'Informe a seção eleitoral', variant: 'destructive' }); return; }
+    if (!form.municipio_eleitoral.trim()) { toast({ title: 'Informe o município eleitoral', variant: 'destructive' }); return; }
+    if (!form.colegio_eleitoral.trim()) { toast({ title: 'Informe o colégio eleitoral', variant: 'destructive' }); return; }
+    if (!form.zona_fiscal.trim()) { toast({ title: 'Informe a zona fiscal', variant: 'destructive' }); return; }
+    if (!form.secao_fiscal.trim()) { toast({ title: 'Informe a seção fiscal', variant: 'destructive' }); return; }
     if (cpfDuplicado.isDuplicate) { toast({ title: '❌ CPF já cadastrado por você', variant: 'destructive' }); return; }
     if (!ligBloqueado && tipoUsuario !== 'super_admin' && tipoUsuario !== 'coordenador' && !ligSuplenteId && !ligLiderancaId) {
       setLigErro('Selecione um suplente ou liderança');
@@ -393,7 +401,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">WhatsApp</label>
+              <label className="text-xs font-medium text-muted-foreground">WhatsApp <span className="text-primary">*</span></label>
               <input type="tel" value={form.whatsapp} onChange={e => update('whatsapp', e.target.value)} placeholder="(62) 99999-9999" className={inputCls} />
             </div>
             <div className="space-y-1">
@@ -421,7 +429,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
           <h2 className="section-title">🗳️ Dados Eleitorais</h2>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Título de eleitor</label>
+              <label className="text-xs font-medium text-muted-foreground">Título de eleitor <span className="text-primary">*</span></label>
               <input type="text" value={form.titulo_eleitor} onChange={e => update('titulo_eleitor', e.target.value)} className={inputCls} />
             </div>
             <div className="space-y-1">
@@ -434,17 +442,17 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Zona eleitoral</label>
+              <label className="text-xs font-medium text-muted-foreground">Zona eleitoral <span className="text-primary">*</span></label>
               <input type="text" value={form.zona_eleitoral} onChange={e => update('zona_eleitoral', e.target.value)} className={inputCls} />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Seção eleitoral</label>
+              <label className="text-xs font-medium text-muted-foreground">Seção eleitoral <span className="text-primary">*</span></label>
               <input type="text" value={form.secao_eleitoral} onChange={e => update('secao_eleitoral', e.target.value)} className={inputCls} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Município eleitoral</label>
+              <label className="text-xs font-medium text-muted-foreground">Município eleitoral <span className="text-primary">*</span></label>
               <input type="text" value={form.municipio_eleitoral} onChange={e => update('municipio_eleitoral', e.target.value)} className={inputCls} />
             </div>
             <div className="space-y-1">
@@ -453,7 +461,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
             </div>
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Colégio eleitoral</label>
+            <label className="text-xs font-medium text-muted-foreground">Colégio eleitoral <span className="text-primary">*</span></label>
             <input type="text" value={form.colegio_eleitoral} onChange={e => update('colegio_eleitoral', e.target.value)} className={inputCls} />
           </div>
           <div className="space-y-1">
@@ -466,24 +474,17 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
           <h2 className="section-title">🔍 Dados da Fiscalização</h2>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Zona fiscal</label>
+              <label className="text-xs font-medium text-muted-foreground">Zona fiscal <span className="text-primary">*</span></label>
               <input type="text" value={form.zona_fiscal} onChange={e => update('zona_fiscal', e.target.value)} className={inputCls} />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Seção fiscal</label>
+              <label className="text-xs font-medium text-muted-foreground">Seção fiscal <span className="text-primary">*</span></label>
               <input type="text" value={form.secao_fiscal} onChange={e => update('secao_fiscal', e.target.value)} className={inputCls} />
             </div>
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">Colégio eleitoral do fiscal</label>
             <input type="text" value={form.colegio_eleitoral_fiscal} onChange={e => update('colegio_eleitoral_fiscal', e.target.value)} className={inputCls} />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Liderança vinculada</label>
-            <select value={form.lideranca_id} onChange={e => update('lideranca_id', e.target.value)} className={selectCls}>
-              <option value="">Nenhuma</option>
-              {liderancas.map(l => <option key={l.id} value={l.id}>{l.nome}</option>)}
-            </select>
           </div>
         </div>
 

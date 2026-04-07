@@ -134,7 +134,14 @@ export default function TabCadastrar({ onSaved }: Props) {
 
   const handleSave = async () => {
     if (!form.nome.trim()) { toast({ title: 'Preencha o nome', variant: 'destructive' }); return; }
-    if (!form.telefone.trim() && !form.whatsapp.trim()) { toast({ title: 'Informe telefone ou WhatsApp', variant: 'destructive' }); return; }
+    if (!form.whatsapp.trim()) { toast({ title: 'Informe o WhatsApp', variant: 'destructive' }); return; }
+    if (!form.titulo_eleitor.trim()) { toast({ title: 'Informe o título de eleitor', variant: 'destructive' }); return; }
+    if (!form.zona_eleitoral.trim()) { toast({ title: 'Informe a zona eleitoral', variant: 'destructive' }); return; }
+    if (!form.secao_eleitoral.trim()) { toast({ title: 'Informe a seção eleitoral', variant: 'destructive' }); return; }
+    if (!form.municipio_eleitoral.trim()) { toast({ title: 'Informe o município eleitoral', variant: 'destructive' }); return; }
+    if (!form.colegio_eleitoral.trim()) { toast({ title: 'Informe o colégio eleitoral', variant: 'destructive' }); return; }
+    if (!form.regiao_atuacao.trim()) { toast({ title: 'Informe a região de atuação', variant: 'destructive' }); return; }
+    if (!form.nivel_comprometimento) { toast({ title: 'Selecione o comprometimento', variant: 'destructive' }); return; }
     if (form.cpf && form.cpf.length === 11 && !validateCPF(form.cpf)) { toast({ title: 'CPF inválido', variant: 'destructive' }); return; }
     if (!ligBloqueado && tipoUsuario !== 'super_admin' && tipoUsuario !== 'coordenador' && !ligSuplenteId && !ligLiderancaId) {
       setLigErro('Selecione um suplente ou liderança');
@@ -261,7 +268,7 @@ export default function TabCadastrar({ onSaved }: Props) {
             <input type="tel" value={form.telefone} onChange={e => update('telefone', e.target.value)} placeholder="(00) 0000-0000" className={inputCls} />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">WhatsApp</label>
+            <label className="text-xs font-medium text-muted-foreground">WhatsApp <span className="text-primary">*</span></label>
             <input type="tel" value={form.whatsapp} onChange={e => update('whatsapp', e.target.value)} placeholder="(00) 00000-0000" className={inputCls} />
           </div>
         </div>
@@ -294,22 +301,22 @@ export default function TabCadastrar({ onSaved }: Props) {
         </button>
         <p className="text-[11px] text-muted-foreground -mt-2">Abra o site do TSE, consulte os dados eleitorais e preencha abaixo.</p>
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Título de eleitor</label>
+          <label className="text-xs font-medium text-muted-foreground">Título de eleitor <span className="text-primary">*</span></label>
           <input type="text" value={form.titulo_eleitor} onChange={e => update('titulo_eleitor', e.target.value)} placeholder="Número do título" className={inputCls} />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Zona</label>
+            <label className="text-xs font-medium text-muted-foreground">Zona <span className="text-primary">*</span></label>
             <input type="text" value={form.zona_eleitoral} onChange={e => update('zona_eleitoral', e.target.value)} placeholder="045" className={inputCls} />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Seção</label>
+            <label className="text-xs font-medium text-muted-foreground">Seção <span className="text-primary">*</span></label>
             <input type="text" value={form.secao_eleitoral} onChange={e => update('secao_eleitoral', e.target.value)} placeholder="0123" className={inputCls} />
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2">
           <div className="col-span-2 space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Município</label>
+            <label className="text-xs font-medium text-muted-foreground">Município <span className="text-primary">*</span></label>
             <input type="text" value={form.municipio_eleitoral} onChange={e => update('municipio_eleitoral', e.target.value)} placeholder="Cidade" className={inputCls} />
           </div>
           <div className="space-y-1">
@@ -318,7 +325,7 @@ export default function TabCadastrar({ onSaved }: Props) {
           </div>
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Colégio eleitoral</label>
+          <label className="text-xs font-medium text-muted-foreground">Colégio eleitoral <span className="text-primary">*</span></label>
           <input type="text" value={form.colegio_eleitoral} onChange={e => update('colegio_eleitoral', e.target.value)} placeholder="Nome da escola / local" className={inputCls} />
         </div>
       </div>
@@ -341,7 +348,7 @@ export default function TabCadastrar({ onSaved }: Props) {
       <div className="section-card">
         <h2 className="section-title">⭐ Perfil e Status</h2>
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Região de atuação</label>
+          <label className="text-xs font-medium text-muted-foreground">Região de atuação <span className="text-primary">*</span></label>
           <textarea value={form.regiao_atuacao} onChange={e => update('regiao_atuacao', e.target.value)} rows={2} placeholder="Bairro X, Comunidade Y..." className={textareaCls} />
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -355,7 +362,7 @@ export default function TabCadastrar({ onSaved }: Props) {
           </div>
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Comprometimento</label>
+          <label className="text-xs font-medium text-muted-foreground">Comprometimento <span className="text-primary">*</span></label>
           <select value={form.nivel_comprometimento} onChange={e => update('nivel_comprometimento', e.target.value)} className={selectCls}>
             <option value="">Selecione...</option>
             {comprometimentos.map(o => <option key={o} value={o}>{o}</option>)}
