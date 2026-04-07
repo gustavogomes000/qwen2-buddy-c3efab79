@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Loader2, CheckCircle2, Search, ChevronRight, ArrowLeft, Phone, MessageCircle, Trash2, Download, WifiOff } from 'lucide-react';
+import { Loader2, Search, ChevronRight, ArrowLeft, Phone, MessageCircle, Trash2, Download, WifiOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useInvalidarCadastros } from '@/hooks/useDataCache';
@@ -103,14 +103,8 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selected, setSelected] = useState<FiscalRow | null>(null);
   const [saving, setSaving] = useState(false);
-  const [pessoaExistenteId, setPessoaExistenteId] = useState<string | null>(null);
-  const [cpfStatus, setCpfStatus] = useState<'idle' | 'validando' | 'confirmado'>('idle');
-  const [cpfNomePessoa, setCpfNomePessoa] = useState('');
-  
-  const [validandoCPF, setValidandoCPF] = useState(false);
   const [form, setForm] = useState({ ...emptyForm });
   const [liderancas, setLiderancas] = useState<{ id: string; nome: string }[]>([]);
-  const cpfTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Ligação política
   const [ligBloqueado, setLigBloqueado] = useState(false);
@@ -155,45 +149,9 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
       .then(({ data }) => { if (data) setLiderancas(data.map((l: any) => ({ id: l.id, nome: l.pessoas?.nome || '—' }))); });
   }, []);
 
-  const validarCPF = useCallback(async (cpfClean: string) => {
-    if (cpfClean.length !== 11 || !validateCPF(cpfClean)) return;
-    if (validandoCPF) return;
-    setValidandoCPF(true);
-    setCpfStatus('validando');
-    try {
-      const { data: pessoa } = await supabase.from('pessoas').select('*').eq('cpf', cpfClean).maybeSingle();
-      if (pessoa) {
-        setForm(f => ({
-          ...f, cpf: pessoa.cpf || cpfClean,
-          nome: pessoa.nome || f.nome, telefone: pessoa.telefone || f.telefone,
-          whatsapp: pessoa.whatsapp || f.whatsapp, email: pessoa.email || f.email,
-          instagram: pessoa.instagram || f.instagram, facebook: pessoa.facebook || f.facebook,
-          titulo_eleitor: pessoa.titulo_eleitor || f.titulo_eleitor,
-          zona_eleitoral: pessoa.zona_eleitoral || f.zona_eleitoral,
-          secao_eleitoral: pessoa.secao_eleitoral || f.secao_eleitoral,
-          municipio_eleitoral: pessoa.municipio_eleitoral || f.municipio_eleitoral,
-          uf_eleitoral: pessoa.uf_eleitoral || f.uf_eleitoral,
-          colegio_eleitoral: pessoa.colegio_eleitoral || f.colegio_eleitoral,
-          endereco_colegio: pessoa.endereco_colegio || f.endereco_colegio,
-          situacao_titulo: pessoa.situacao_titulo || f.situacao_titulo,
-        }));
-        setPessoaExistenteId(pessoa.id);
-        setCpfStatus('confirmado');
-        setCpfNomePessoa(pessoa.nome);
-        toast({ title: '✅ Pessoa encontrada!', description: `Dados de ${pessoa.nome} preenchidos` });
-      } else { setCpfStatus('idle'); }
-    } catch (err) { console.error(err); }
-    finally { setValidandoCPF(false); }
-  }, [validandoCPF, usuario?.id]);
-
   const handleCPFChange = (value: string) => {
     const cleaned = cleanCPF(value);
     update('cpf', cleaned);
-    setCpfStatus('idle');
-    setPessoaExistenteId(null);
-    
-    if (cpfTimeoutRef.current) clearTimeout(cpfTimeoutRef.current);
-    if (cleaned.length === 11) cpfTimeoutRef.current = setTimeout(() => validarCPF(cleaned), 500);
   };
 
   const handleSave = async () => {
@@ -243,9 +201,9 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
     // Offline: salvar na fila
     if (!navigator.onLine) {
       try {
-        await addToOfflineQueue({ type: 'fiscal', pessoa: pessoaData, registro: registroData, pessoaExistenteId });
+        await addToOfflineQueue({ type: 'fiscal', pessoa: pessoaData, registro: registroData, pessoaExistenteId: null });
         toast({ title: '📱 Salvo offline!', description: 'Será enviado quando voltar a internet.' });
-        setForm({ ...emptyForm }); setPessoaExistenteId(null); setCpfStatus('idle'); setCpfNomePessoa('');
+        setForm({ ...emptyForm });
         setMode('list'); onSaved?.();
       } catch (err: any) { toast({ title: 'Erro ao salvar offline', description: err.message, variant: 'destructive' }); }
       finally { setSaving(false); }
@@ -253,21 +211,15 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
     }
 
     try {
-      let pessoaId: string;
-      if (pessoaExistenteId) {
-        pessoaId = pessoaExistenteId;
-        await supabase.from('pessoas').update({ ...pessoaData, atualizado_em: new Date().toISOString() }).eq('id', pessoaId);
-      } else {
-        const { data: novaPessoa, error } = await supabase.from('pessoas').insert(pessoaData as any).select('id').single();
-        if (error) throw error;
-        pessoaId = novaPessoa!.id;
-      }
-
-      const { error } = await (supabase as any).from('fiscais').insert({ ...registroData, pessoa_id: pessoaId });
+      const { data: novaPessoa, error } = await supabase.from('pessoas').insert(pessoaData as any).select('id').single();
       if (error) throw error;
+      const pessoaId = novaPessoa!.id;
+
+      const { error: errFiscal } = await (supabase as any).from('fiscais').insert({ ...registroData, pessoa_id: pessoaId });
+      if (errFiscal) throw errFiscal;
 
       toast({ title: '✅ Fiscal cadastrado!' });
-      setForm({ ...emptyForm }); setPessoaExistenteId(null); setCpfStatus('idle'); setCpfNomePessoa('');
+      setForm({ ...emptyForm });
       setMode('list'); invalidarCadastros(); onSaved?.();
     } catch (err: any) {
       toast({ title: 'Erro ao salvar', description: err.message, variant: 'destructive' });
@@ -297,7 +249,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
   const inputCls = "w-full h-11 px-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30";
   const selectCls = inputCls;
   const textareaCls = "w-full px-3 py-2 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30 resize-none";
-  const cpfBorderCls = cpfStatus === 'confirmado' ? 'border-emerald-500 ring-1 ring-emerald-500/30' : '';
+  
 
   const Info = ({ label, value, link }: { label: string; value?: string | null; link?: string }) => {
     const display = value && value.trim() ? value : '—';
@@ -386,13 +338,10 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
             <input type="text" value={form.nome} onChange={e => update('nome', e.target.value)} placeholder="Nome do fiscal" className={inputCls} />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+            <label className="text-xs font-medium text-muted-foreground">
               CPF <span className="text-primary">*</span>
-              {cpfStatus === 'validando' && <Loader2 size={12} className="animate-spin text-muted-foreground" />}
-              {cpfStatus === 'confirmado' && <CheckCircle2 size={12} className="text-emerald-500" />}
             </label>
-            <input type="text" value={formatCPF(form.cpf)} onChange={e => handleCPFChange(e.target.value)} placeholder="000.000.000-00" maxLength={14} className={`${inputCls} ${cpfBorderCls}`} />
-            {cpfStatus === 'confirmado' && cpfNomePessoa && <p className="text-[10px] text-emerald-600">✓ {cpfNomePessoa}</p>}
+            <input type="text" value={formatCPF(form.cpf)} onChange={e => handleCPFChange(e.target.value)} placeholder="000.000.000-00" maxLength={14} className={inputCls} />
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">WhatsApp <span className="text-primary">*</span></label>
