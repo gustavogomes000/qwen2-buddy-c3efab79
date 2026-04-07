@@ -180,15 +180,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
         setPessoaExistenteId(pessoa.id);
         setCpfStatus('confirmado');
         setCpfNomePessoa(pessoa.nome);
-        if (usuario?.id) {
-          const dup = await checkCpfDuplicateByUser(cpfClean, usuario.id);
-          setCpfDuplicado(dup);
-          if (dup.isDuplicate) {
-            toast({ title: '⚠️ CPF já cadastrado por você', description: `Cadastrado como: ${dup.tipos.join(', ')}`, variant: 'destructive' });
-          } else {
-            toast({ title: '✅ Pessoa encontrada!', description: `Dados de ${pessoa.nome} preenchidos` });
-          }
-        }
+        toast({ title: '✅ Pessoa encontrada!', description: `Dados de ${pessoa.nome} preenchidos` });
       } else { setCpfStatus('idle'); setCpfDuplicado({ isDuplicate: false, tipos: [] }); }
     } catch (err) { console.error(err); }
     finally { setValidandoCPF(false); }
@@ -217,7 +209,10 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
     if (!form.colegio_eleitoral.trim()) { toast({ title: 'Informe o colégio eleitoral', variant: 'destructive' }); return; }
     if (!form.zona_fiscal.trim()) { toast({ title: 'Informe a zona fiscal', variant: 'destructive' }); return; }
     if (!form.secao_fiscal.trim()) { toast({ title: 'Informe a seção fiscal', variant: 'destructive' }); return; }
-    if (cpfDuplicado.isDuplicate) { toast({ title: '❌ CPF já cadastrado por você', variant: 'destructive' }); return; }
+    if (usuario?.id) {
+      const dup = await checkCpfDuplicateByUser(form.cpf, usuario.id);
+      if (dup.isDuplicate) { toast({ title: '❌ CPF já cadastrado por você', description: `Cadastrado como: ${dup.tipos.join(', ')}`, variant: 'destructive' }); return; }
+    }
     if (!ligBloqueado && tipoUsuario !== 'super_admin' && tipoUsuario !== 'coordenador' && !ligSuplenteId && !ligLiderancaId) {
       setLigErro('Selecione um suplente ou liderança');
       toast({ title: 'Selecione uma ligação política', variant: 'destructive' });
