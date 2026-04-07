@@ -135,6 +135,16 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
     if (!form.colegio_eleitoral.trim()) { toast({ title: 'Informe o colégio eleitoral', variant: 'destructive' }); return; }
     if (!form.regiao_atuacao.trim()) { toast({ title: 'Informe a região de atuação', variant: 'destructive' }); return; }
     if (!form.vai_votar) { toast({ title: 'Informe se vai votar', variant: 'destructive' }); return; }
+
+    // Coordenadores: bloquear CPF duplicado
+    if (tipoUsuario === 'coordenador' && form.cpf && form.cpf.length === 11) {
+      const { data: cpfExiste } = await supabase.from('pessoas').select('id').eq('cpf', form.cpf).limit(1);
+      if (cpfExiste && cpfExiste.length > 0) {
+        toast({ title: 'CPF já cadastrado', description: 'Este CPF já existe no sistema.', variant: 'destructive' });
+        return;
+      }
+    }
+
     if (!ligBloqueado && tipoUsuario !== 'super_admin' && tipoUsuario !== 'coordenador' && !ligSuplenteId && !ligLiderancaId) {
       setLigErro('Selecione um suplente ou liderança');
       toast({ title: 'Selecione uma ligação política', variant: 'destructive' });

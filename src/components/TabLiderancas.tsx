@@ -151,6 +151,16 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
     if (!form.regiao_atuacao.trim()) { toast({ title: 'Informe a região de atuação', variant: 'destructive' }); return; }
     if (!form.meta_votos.trim()) { toast({ title: 'Informe quantos votos pode trazer', variant: 'destructive' }); return; }
     if (!form.nivel_comprometimento) { toast({ title: 'Selecione o comprometimento', variant: 'destructive' }); return; }
+
+    // Coordenadores: bloquear CPF duplicado
+    if (tipoUsuario === 'coordenador' && form.cpf && form.cpf.length === 11) {
+      const { data: cpfExiste } = await supabase.from('pessoas').select('id').eq('cpf', form.cpf).limit(1);
+      if (cpfExiste && cpfExiste.length > 0) {
+        toast({ title: 'CPF já cadastrado', description: 'Este CPF já existe no sistema.', variant: 'destructive' });
+        return;
+      }
+    }
+
     // Validar ligação política obrigatória para avulsos
     if (!ligBloqueado && tipoUsuario !== 'super_admin' && tipoUsuario !== 'coordenador' && !ligSuplenteId && !ligLiderancaId) {
       setLigErro('Selecione um suplente ou liderança');
