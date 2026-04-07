@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Search, ChevronRight, Phone, MessageCircle, Trash2, ArrowLeft, XCircle, Download, Loader2, CheckCircle2, ExternalLink, PlusCircle } from 'lucide-react';
+import { Search, ChevronRight, Phone, MessageCircle, Trash2, ArrowLeft, XCircle, Download, Loader2, ExternalLink, PlusCircle } from 'lucide-react';
 import { exportAllCadastros } from '@/lib/exportXlsx';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -160,31 +160,17 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
 
     setSaving(true);
     try {
-      let pessoaId: string;
-      if (pessoaExistenteId) {
-        pessoaId = pessoaExistenteId;
-        await supabase.from('pessoas').update({
-          nome: form.nome, telefone: form.telefone || null, whatsapp: form.whatsapp || null,
-          email: form.email || null, instagram: form.instagram || null, facebook: form.facebook || null,
-          titulo_eleitor: form.titulo_eleitor || null, zona_eleitoral: form.zona_eleitoral || null,
-          secao_eleitoral: form.secao_eleitoral || null, municipio_eleitoral: form.municipio_eleitoral || null,
-          uf_eleitoral: form.uf_eleitoral || null, colegio_eleitoral: form.colegio_eleitoral || null,
-          endereco_colegio: form.endereco_colegio || null, situacao_titulo: form.situacao_titulo || null,
-          atualizado_em: new Date().toISOString(),
-        }).eq('id', pessoaId);
-      } else {
-        const { data: novaPessoa, error } = await supabase.from('pessoas').insert({
-          cpf: form.cpf || null, nome: form.nome, telefone: form.telefone || null,
-          whatsapp: form.whatsapp || null, email: form.email || null,
-          instagram: form.instagram || null, facebook: form.facebook || null,
-          titulo_eleitor: form.titulo_eleitor || null, zona_eleitoral: form.zona_eleitoral || null,
-          secao_eleitoral: form.secao_eleitoral || null, municipio_eleitoral: form.municipio_eleitoral || null,
-          uf_eleitoral: form.uf_eleitoral || null, colegio_eleitoral: form.colegio_eleitoral || null,
-          endereco_colegio: form.endereco_colegio || null, situacao_titulo: form.situacao_titulo || null,
-        }).select('id').single();
-        if (error) throw error;
-        pessoaId = novaPessoa!.id;
-      }
+      const { data: novaPessoa, error } = await supabase.from('pessoas').insert({
+        cpf: form.cpf || null, nome: form.nome, telefone: form.telefone || null,
+        whatsapp: form.whatsapp || null, email: form.email || null,
+        instagram: form.instagram || null, facebook: form.facebook || null,
+        titulo_eleitor: form.titulo_eleitor || null, zona_eleitoral: form.zona_eleitoral || null,
+        secao_eleitoral: form.secao_eleitoral || null, municipio_eleitoral: form.municipio_eleitoral || null,
+        uf_eleitoral: form.uf_eleitoral || null, colegio_eleitoral: form.colegio_eleitoral || null,
+        endereco_colegio: form.endereco_colegio || null, situacao_titulo: form.situacao_titulo || null,
+      }).select('id').single();
+      if (error) throw error;
+      const pessoaId = novaPessoa!.id;
 
       const suplenteId = ligSuplenteId || getSuplementeId();
       const { error: lError } = await (supabase as any).from('liderancas').insert({
@@ -206,9 +192,9 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
 
       toast({ title: '✅ Liderança cadastrada!' });
       setForm({ ...emptyForm });
-      setPessoaExistenteId(null);
-      setCpfStatus('idle');
-      setCpfNomePessoa('');
+      setMode('list');
+      invalidarCadastros();
+      onSaved?.();
       setMode('list');
       invalidarCadastros();
       onSaved?.();
@@ -255,7 +241,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
   const inputCls = "w-full h-11 px-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30";
   const selectCls = inputCls;
   const textareaCls = "w-full px-3 py-2 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30 resize-none";
-  const cpfBorderCls = cpfStatus === 'confirmado' ? 'border-emerald-500 ring-1 ring-emerald-500/30' : '';
+  
 
   const Info = ({ label, value, link }: { label: string; value?: string | null; link?: string }) => {
     const display = value && value.trim() ? value : '—';
@@ -293,7 +279,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
         </div>
         <div className="section-card">
           <h3 className="section-title">👤 Dados Pessoais</h3>
-          <Info label="CPF" value={p.cpf ? maskCPF(p.cpf) : null} />
+          <Info label="CPF" value={p.cpf ? formatCPF(p.cpf) : null} />
           <Info label="WhatsApp" value={p.whatsapp} />
           <Info label="Rede social" value={p.instagram || p.facebook} link={p.instagram ? `https://instagram.com/${p.instagram.replace('@', '')}` : undefined} />
         </div>
@@ -348,13 +334,10 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
             <input type="text" value={form.nome} onChange={e => update('nome', e.target.value)} placeholder="Nome da liderança" className={inputCls} />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+            <label className="text-xs font-medium text-muted-foreground">
               CPF <span className="text-primary">*</span>
-              {cpfStatus === 'validando' && <Loader2 size={12} className="animate-spin text-muted-foreground" />}
-              {cpfStatus === 'confirmado' && <CheckCircle2 size={12} className="text-emerald-500" />}
             </label>
-            <input type="text" inputMode="numeric" value={formatCPF(form.cpf)} onChange={e => handleCPFChange(e.target.value)} placeholder="000.000.000-00" className={`${inputCls} ${cpfBorderCls}`} maxLength={14} />
-            {cpfStatus === 'confirmado' && cpfNomePessoa && <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">✅ {cpfNomePessoa}</p>}
+            <input type="text" inputMode="numeric" value={formatCPF(form.cpf)} onChange={e => handleCPFChange(e.target.value)} placeholder="000.000.000-00" className={inputCls} maxLength={14} />
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">WhatsApp <span className="text-primary">*</span></label>
@@ -424,7 +407,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
   return (
     <div className="space-y-3 pb-24">
       {!viewOnly && (
-        <button data-testid="btn-cadastrar-lideranca" onClick={() => { setForm({ ...emptyForm }); setPessoaExistenteId(null); setCpfStatus('idle'); setMode('form'); }}
+        <button data-testid="btn-cadastrar-lideranca" onClick={() => { setForm({ ...emptyForm }); setMode('form'); }}
           className="w-full h-12 gradient-primary text-white font-semibold rounded-xl active:scale-[0.97] transition-all flex items-center justify-center gap-2">
           <PlusCircle size={18} /> Cadastrar Liderança
         </button>
