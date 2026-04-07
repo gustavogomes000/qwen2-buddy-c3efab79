@@ -204,10 +204,6 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
     if (!form.regiao_atuacao.trim()) { toast({ title: 'Informe a região de atuação', variant: 'destructive' }); return; }
     if (!form.meta_votos.trim()) { toast({ title: 'Informe quantos votos pode trazer', variant: 'destructive' }); return; }
     if (!form.nivel_comprometimento) { toast({ title: 'Selecione o comprometimento', variant: 'destructive' }); return; }
-    if (usuario?.id) {
-      const dup = await checkCpfDuplicateByUser(form.cpf, usuario.id);
-      if (dup.isDuplicate) { toast({ title: '❌ CPF já cadastrado por você', description: `Cadastrado como: ${dup.tipos.join(', ')}`, variant: 'destructive' }); return; }
-    }
     // Validar ligação política obrigatória para avulsos
     if (!ligBloqueado && tipoUsuario !== 'super_admin' && tipoUsuario !== 'coordenador' && !ligSuplenteId && !ligLiderancaId) {
       setLigErro('Selecione um suplente ou liderança');

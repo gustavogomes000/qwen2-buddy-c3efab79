@@ -209,10 +209,6 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
     if (!form.colegio_eleitoral.trim()) { toast({ title: 'Informe o colégio eleitoral', variant: 'destructive' }); return; }
     if (!form.zona_fiscal.trim()) { toast({ title: 'Informe a zona fiscal', variant: 'destructive' }); return; }
     if (!form.secao_fiscal.trim()) { toast({ title: 'Informe a seção fiscal', variant: 'destructive' }); return; }
-    if (usuario?.id) {
-      const dup = await checkCpfDuplicateByUser(form.cpf, usuario.id);
-      if (dup.isDuplicate) { toast({ title: '❌ CPF já cadastrado por você', description: `Cadastrado como: ${dup.tipos.join(', ')}`, variant: 'destructive' }); return; }
-    }
     if (!ligBloqueado && tipoUsuario !== 'super_admin' && tipoUsuario !== 'coordenador' && !ligSuplenteId && !ligLiderancaId) {
       setLigErro('Selecione um suplente ou liderança');
       toast({ title: 'Selecione uma ligação política', variant: 'destructive' });
