@@ -24,7 +24,8 @@ const EventoContext = createContext<EventoContextType | undefined>(undefined);
 const EVENTO_STORAGE_KEY = 'sarelli_evento_ativo_id';
 
 export function EventoProvider({ children }: { children: ReactNode }) {
-  const { usuario } = useAuth();
+  const { usuario, tipoUsuario } = useAuth();
+  const isAdminOrCoord = tipoUsuario === 'super_admin' || tipoUsuario === 'coordenador';
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [eventoAtivoId, setEAId] = useState<string | null>(() => {
     try { return localStorage.getItem(EVENTO_STORAGE_KEY); } catch { return null; }
@@ -32,7 +33,12 @@ export function EventoProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchEventos = async () => {
-    if (!usuario) { setLoading(false); return; }
+    if (!usuario || !isAdminOrCoord) {
+      setEventos([]);
+      setEAId(null);
+      setLoading(false);
+      return;
+    }
     try {
       const { data } = await (supabase as any)
         .from('eventos')
@@ -44,7 +50,7 @@ export function EventoProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   };
 
-  useEffect(() => { fetchEventos(); }, [usuario]);
+  useEffect(() => { fetchEventos(); }, [usuario, isAdminOrCoord]);
 
   const setEventoAtivoId = (id: string | null) => {
     setEAId(id);
