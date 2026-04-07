@@ -216,7 +216,7 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
   const inputCls = "w-full h-11 px-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30";
   const selectCls = inputCls;
   const textareaCls = "w-full px-3 py-2 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30 resize-none";
-  const cpfBorderCls = cpfStatus === 'confirmado' ? 'border-emerald-500 ring-1 ring-emerald-500/30' : '';
+  
 
   const compromissoBadge = (c: string | null) => {
     const colors: Record<string, string> = {
@@ -263,7 +263,7 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
 
         <div className="section-card">
           <h3 className="section-title">👤 Dados Pessoais</h3>
-          <Info label="CPF" value={p.cpf ? maskCPF(p.cpf) : null} />
+          <Info label="CPF" value={p.cpf ? formatCPF(p.cpf) : null} />
           <Info label="WhatsApp" value={p.whatsapp} />
           <Info label="Rede social" value={p.instagram || p.facebook} link={p.instagram ? `https://instagram.com/${p.instagram.replace('@', '')}` : undefined} />
           <Info label="Região" value={e.origem_captacao} />
@@ -316,15 +316,10 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
             <input type="text" value={form.nome} onChange={e => update('nome', e.target.value)} placeholder="Nome do eleitor" className={inputCls} />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+            <label className="text-xs font-medium text-muted-foreground">
               CPF <span className="text-primary">*</span>
-              {cpfStatus === 'validando' && <Loader2 size={12} className="animate-spin text-muted-foreground" />}
-              {cpfStatus === 'confirmado' && <CheckCircle2 size={12} className="text-emerald-500" />}
             </label>
-            <input type="text" inputMode="numeric" value={formatCPF(form.cpf)} onChange={e => handleCPFChange(e.target.value)} placeholder="000.000.000-00" className={`${inputCls} ${cpfBorderCls}`} maxLength={14} />
-            {cpfStatus === 'confirmado' && cpfNomePessoa && (
-              <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">✅ Pessoa encontrada: {cpfNomePessoa}</p>
-            )}
+            <input type="text" inputMode="numeric" value={formatCPF(form.cpf)} onChange={e => handleCPFChange(e.target.value)} placeholder="000.000.000-00" className={inputCls} maxLength={14} />
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">WhatsApp <span className="text-primary">*</span></label>
