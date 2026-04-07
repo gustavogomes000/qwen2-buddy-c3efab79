@@ -391,7 +391,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
               {cpfStatus === 'validando' && <Loader2 size={12} className="animate-spin text-muted-foreground" />}
               {cpfStatus === 'confirmado' && <CheckCircle2 size={12} className="text-emerald-500" />}
             </label>
-            <input type="text" value={maskCPF(form.cpf)} onChange={e => handleCPFChange(e.target.value)} placeholder="000.000.000-00" maxLength={14} className={`${inputCls} ${cpfBorderCls}`} />
+            <input type="text" value={formatCPF(form.cpf)} onChange={e => handleCPFChange(e.target.value)} placeholder="000.000.000-00" maxLength={14} className={`${inputCls} ${cpfBorderCls}`} />
             {cpfStatus === 'confirmado' && cpfNomePessoa && <p className="text-[10px] text-emerald-600">✓ {cpfNomePessoa}</p>}
           </div>
           <div className="space-y-1">
