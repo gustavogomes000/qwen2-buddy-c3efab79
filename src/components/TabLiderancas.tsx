@@ -532,7 +532,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
                   <p className="text-[10px] text-muted-foreground truncate">{l.regiao_atuacao}</p>
                 )}
                 <p className="text-xs text-muted-foreground truncate">
-                  {l.tipo_lideranca || '—'}{l.zona_atuacao ? ` · Z${l.zona_atuacao}` : ''}
+                  {l.tipo_lideranca || ''}{l.zona_atuacao ? `${l.tipo_lideranca ? ' · ' : ''}Z${l.zona_atuacao}` : ''}
                   {l.apoiadores_estimados ? ` · ${l.apoiadores_estimados} apoiadores` : ''}
                 </p>
                 {isAdmin && l.hierarquia_usuarios && (
