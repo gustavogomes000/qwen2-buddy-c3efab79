@@ -62,41 +62,17 @@ export default function CampoLigacaoPolitica({
   const [novaLidRegiao, setNovaLidRegiao] = useState('');
   const [salvandoNova, setSalvandoNova] = useState(false);
 
-  // Buscar suplentes e lideranças via edge function buscar-indicadores
+  // Buscar suplentes com debounce
   const buscarSuplentes = useCallback(async (q: string) => {
-    if (!q || q.length < 2) {
-      // Sem termo, buscar todos via buscar-suplentes
-      setLoadingSup(true);
-      try {
-        const data = await cachedInvoke<any[]>('buscar-suplentes');
-        if (Array.isArray(data)) {
-          let filtered = data as SuplenteResult[];
-          if (cidadeAtivaId) {
-            const { data: supMun } = await (supabase as any)
-              .from('suplente_municipio')
-              .select('suplente_id')
-              .eq('municipio_id', cidadeAtivaId);
-            if (supMun) {
-              const supIds = new Set(supMun.map((sm: any) => String(sm.suplente_id)));
-              filtered = filtered.filter(s => supIds.has(String(s.id)));
-            }
-          }
-          setSuplentes(filtered.slice(0, 20));
-        }
-      } catch {}
-      setLoadingSup(false);
-      return;
-    }
     setLoadingSup(true);
     try {
-      const result = await cachedInvoke<{ suplentes: any[]; liderancas: any[] }>('buscar-indicadores', { termo: q });
-      if (result?.suplentes) {
-        let filtered = result.suplentes.map((s: any) => ({
-          id: s.id,
-          nome: s.nome,
-          partido: s.partido || null,
-          regiao_atuacao: s.regiao_atuacao || null,
-        }));
+      const data = await cachedInvoke<any[]>('buscar-suplentes');
+      if (Array.isArray(data)) {
+        let filtered = data as SuplenteResult[];
+        if (q) {
+          const lower = q.toLowerCase();
+          filtered = filtered.filter((s: any) => s.nome?.toLowerCase().includes(lower));
+        }
         if (cidadeAtivaId) {
           const { data: supMun } = await (supabase as any)
             .from('suplente_municipio')
@@ -104,7 +80,7 @@ export default function CampoLigacaoPolitica({
             .eq('municipio_id', cidadeAtivaId);
           if (supMun) {
             const supIds = new Set(supMun.map((sm: any) => String(sm.suplente_id)));
-            filtered = filtered.filter((s: any) => supIds.has(String(s.id)));
+            filtered = filtered.filter(s => supIds.has(String(s.id)));
           }
         }
         setSuplentes(filtered.slice(0, 20));
@@ -114,63 +90,32 @@ export default function CampoLigacaoPolitica({
   }, [cidadeAtivaId]);
 
   const buscarLiderancas = useCallback(async (q: string) => {
-    if (!q || q.length < 2) {
-      // Sem termo, buscar todas locais
-      setLoadingLid(true);
-      try {
-        let query = (supabase as any)
-          .from('liderancas')
-          .select('id, regiao_atuacao, suplente_id, pessoas(nome)')
-          .eq('status', 'Ativa')
-          .order('criado_em', { ascending: false })
-          .limit(20);
-        if (cidadeAtivaId) query = query.eq('municipio_id', cidadeAtivaId);
-        const { data } = await query;
-        if (data) {
-          setLiderancasLocal((data as any[]).map(l => ({
-            id: l.id,
-            nome: l.pessoas?.nome || '—',
-            regiao_atuacao: l.regiao_atuacao,
-            suplente_id: l.suplente_id,
-          })));
-        }
-      } catch {}
-      setLoadingLid(false);
-      return;
-    }
     setLoadingLid(true);
     try {
-      const result = await cachedInvoke<{ suplentes: any[]; liderancas: any[] }>('buscar-indicadores', { termo: q });
-      if (result?.liderancas) {
-        setLiderancasLocal(result.liderancas.map((l: any) => ({
-          id: l.id,
-          nome: l.nome,
-          regiao_atuacao: l.regiao || null,
-          suplente_id: null,
-        })));
-      }
-      // Também buscar lideranças locais pelo nome
       let query = (supabase as any)
         .from('liderancas')
-        .select('id, regiao_atuacao, suplente_id, pessoas!inner(nome)')
+        .select('id, regiao_atuacao, suplente_id, pessoas(nome)')
         .eq('status', 'Ativa')
-        .ilike('pessoas.nome', `%${q}%`)
+        .order('criado_em', { ascending: false })
         .limit(20);
-      if (cidadeAtivaId) query = query.eq('municipio_id', cidadeAtivaId);
-      const { data: localData } = await query;
-      if (localData) {
-        const existingIds = new Set((result?.liderancas || []).map((l: any) => l.id));
-        const extras = (localData as any[])
-          .filter(l => !existingIds.has(l.id))
-          .map(l => ({
-            id: l.id,
-            nome: l.pessoas?.nome || '—',
-            regiao_atuacao: l.regiao_atuacao,
-            suplente_id: l.suplente_id,
-          }));
-        if (extras.length) {
-          setLiderancasLocal(prev => [...prev, ...extras]);
+
+      if (cidadeAtivaId) {
+        query = query.eq('municipio_id', cidadeAtivaId);
+      }
+
+      const { data } = await query;
+      if (data) {
+        let results = (data as any[]).map(l => ({
+          id: l.id,
+          nome: l.pessoas?.nome || '—',
+          regiao_atuacao: l.regiao_atuacao,
+          suplente_id: l.suplente_id,
+        }));
+        if (q) {
+          const lower = q.toLowerCase();
+          results = results.filter(l => l.nome.toLowerCase().includes(lower));
         }
+        setLiderancasLocal(results);
       }
     } catch {}
     setLoadingLid(false);
