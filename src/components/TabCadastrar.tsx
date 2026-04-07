@@ -253,7 +253,7 @@ export default function TabCadastrar({ onSaved }: Props) {
         </div>
         <div className="space-y-1">
           <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
-            CPF
+            CPF <span className="text-primary">*</span>
             {cpfStatus === 'validando' && <Loader2 size={12} className="animate-spin text-muted-foreground" />}
             {cpfStatus === 'confirmado' && <CheckCircle2 size={12} className="text-emerald-500" />}
           </label>
@@ -265,29 +265,13 @@ export default function TabCadastrar({ onSaved }: Props) {
             <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">✅ Pessoa encontrada: {cpfNomePessoa}</p>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Telefone</label>
-            <input type="tel" value={form.telefone} onChange={e => update('telefone', e.target.value)} placeholder="(00) 0000-0000" className={inputCls} />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">WhatsApp <span className="text-primary">*</span></label>
-            <input type="tel" value={form.whatsapp} onChange={e => update('whatsapp', e.target.value)} placeholder="(00) 00000-0000" className={inputCls} />
-          </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">WhatsApp <span className="text-primary">*</span></label>
+          <input type="tel" value={form.whatsapp} onChange={e => update('whatsapp', e.target.value)} placeholder="(00) 00000-0000" className={inputCls} />
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">E-mail</label>
-          <input type="email" value={form.email} onChange={e => update('email', e.target.value)} placeholder="email@exemplo.com" className={inputCls} />
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Instagram</label>
-            <input type="text" value={form.instagram} onChange={e => update('instagram', e.target.value)} placeholder="@usuario" className={inputCls} />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Facebook</label>
-            <input type="text" value={form.facebook} onChange={e => update('facebook', e.target.value)} placeholder="Nome ou link" className={inputCls} />
-          </div>
+          <label className="text-xs font-medium text-muted-foreground">Rede social <span className="text-primary">*</span></label>
+          <input type="text" value={form.instagram} onChange={e => update('instagram', e.target.value)} placeholder="Instagram ou Facebook (@ ou link)" className={inputCls} />
         </div>
       </div>
 
