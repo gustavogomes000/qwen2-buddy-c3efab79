@@ -473,6 +473,147 @@ export type Database = {
         }
         Relationships: []
       }
+      bd_eleicoes_mesarios: {
+        Row: {
+          ano: number
+          atividade_eleitoral: string | null
+          codigo_municipio: string | null
+          comparecimento: string | null
+          cor_raca: string | null
+          created_at: string | null
+          estado_civil: string | null
+          faixa_etaria: string | null
+          genero: string | null
+          grau_instrucao: string | null
+          id: number
+          identidade_genero: string | null
+          interprete_libras: string | null
+          municipio: string | null
+          qt_convocados: number | null
+          quilombola: string | null
+          tipo_mesario: string | null
+          turno: number | null
+          voluntario: string | null
+          zona: number | null
+        }
+        Insert: {
+          ano: number
+          atividade_eleitoral?: string | null
+          codigo_municipio?: string | null
+          comparecimento?: string | null
+          cor_raca?: string | null
+          created_at?: string | null
+          estado_civil?: string | null
+          faixa_etaria?: string | null
+          genero?: string | null
+          grau_instrucao?: string | null
+          id?: never
+          identidade_genero?: string | null
+          interprete_libras?: string | null
+          municipio?: string | null
+          qt_convocados?: number | null
+          quilombola?: string | null
+          tipo_mesario?: string | null
+          turno?: number | null
+          voluntario?: string | null
+          zona?: number | null
+        }
+        Update: {
+          ano?: number
+          atividade_eleitoral?: string | null
+          codigo_municipio?: string | null
+          comparecimento?: string | null
+          cor_raca?: string | null
+          created_at?: string | null
+          estado_civil?: string | null
+          faixa_etaria?: string | null
+          genero?: string | null
+          grau_instrucao?: string | null
+          id?: never
+          identidade_genero?: string | null
+          interprete_libras?: string | null
+          municipio?: string | null
+          qt_convocados?: number | null
+          quilombola?: string | null
+          tipo_mesario?: string | null
+          turno?: number | null
+          voluntario?: string | null
+          zona?: number | null
+        }
+        Relationships: []
+      }
+      bd_eleicoes_mesarios_funcoes_especiais: {
+        Row: {
+          ano: number
+          atividade_eleitoral: string | null
+          codigo_municipio: string | null
+          comparecimento: string | null
+          cor_raca: string | null
+          created_at: string | null
+          estado_civil: string | null
+          faixa_etaria: string | null
+          funcao_especial: string | null
+          genero: string | null
+          grau_instrucao: string | null
+          id: number
+          identidade_genero: string | null
+          interprete_libras: string | null
+          municipio: string | null
+          qt_convocados: number | null
+          quilombola: string | null
+          tipo_mesario: string | null
+          turno: number | null
+          voluntario: string | null
+          zona: number | null
+        }
+        Insert: {
+          ano: number
+          atividade_eleitoral?: string | null
+          codigo_municipio?: string | null
+          comparecimento?: string | null
+          cor_raca?: string | null
+          created_at?: string | null
+          estado_civil?: string | null
+          faixa_etaria?: string | null
+          funcao_especial?: string | null
+          genero?: string | null
+          grau_instrucao?: string | null
+          id?: never
+          identidade_genero?: string | null
+          interprete_libras?: string | null
+          municipio?: string | null
+          qt_convocados?: number | null
+          quilombola?: string | null
+          tipo_mesario?: string | null
+          turno?: number | null
+          voluntario?: string | null
+          zona?: number | null
+        }
+        Update: {
+          ano?: number
+          atividade_eleitoral?: string | null
+          codigo_municipio?: string | null
+          comparecimento?: string | null
+          cor_raca?: string | null
+          created_at?: string | null
+          estado_civil?: string | null
+          faixa_etaria?: string | null
+          funcao_especial?: string | null
+          genero?: string | null
+          grau_instrucao?: string | null
+          id?: never
+          identidade_genero?: string | null
+          interprete_libras?: string | null
+          municipio?: string | null
+          qt_convocados?: number | null
+          quilombola?: string | null
+          tipo_mesario?: string | null
+          turno?: number | null
+          voluntario?: string | null
+          zona?: number | null
+        }
+        Relationships: []
+      }
       bd_eleicoes_votacao: {
         Row: {
           ano: number
