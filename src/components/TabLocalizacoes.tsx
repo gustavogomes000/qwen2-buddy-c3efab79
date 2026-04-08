@@ -88,7 +88,7 @@ export default function TabLocalizacoes() {
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [rastro, setRastro] = useState<Localizacao[]>([]);
-  const [loadingRastro, setLoadingRastro] = useState(false);
+  const [loadingRastro] = useState(false);
   const [expandedList, setExpandedList] = useState(true);
   const [expandedUserInList, setExpandedUserInList] = useState<string | null>(null);
   const [enderecos, setEnderecos] = useState<Map<string, string>>(new Map());
