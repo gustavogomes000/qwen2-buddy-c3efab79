@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { toggleModuleSelection } from '@/lib/moduleSelection';
 
 const MODULOS = [
   { id: 'master', label: '🔑 Acesso Master', desc: 'Acesso total — vê e faz tudo no sistema' },
@@ -36,26 +37,26 @@ export default function ModulosUsuario({ usuarioId, onClose }: Props) {
 
   const toggleModulo = async (modulo: string) => {
     setSaving(true);
-    const isActive = modulosAtivos.has(modulo);
+    const nextModulos = toggleModuleSelection(modulosAtivos, modulo);
+    const modulosParaRemover = Array.from(modulosAtivos).filter(item => !nextModulos.has(item));
+    const modulosParaAdicionar = Array.from(nextModulos).filter(item => !modulosAtivos.has(item));
 
     try {
-      if (isActive) {
+      if (modulosParaRemover.length > 0) {
         await (supabase as any)
           .from('usuario_modulos')
           .delete()
           .eq('usuario_id', usuarioId)
-          .eq('modulo', modulo);
-        setModulosAtivos(prev => {
-          const next = new Set(prev);
-          next.delete(modulo);
-          return next;
-        });
-      } else {
+          .in('modulo', modulosParaRemover);
+      }
+
+      if (modulosParaAdicionar.length > 0) {
         await (supabase as any)
           .from('usuario_modulos')
-          .insert({ usuario_id: usuarioId, modulo });
-        setModulosAtivos(prev => new Set([...prev, modulo]));
+          .insert(modulosParaAdicionar.map(item => ({ usuario_id: usuarioId, modulo: item })));
       }
+
+      setModulosAtivos(nextModulos);
     } catch (err: any) {
       toast({ title: 'Erro ao alterar módulo', description: err.message, variant: 'destructive' });
     } finally {

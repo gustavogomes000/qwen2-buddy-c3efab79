@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import ModulosUsuario from '@/components/ModulosUsuario';
+import { getDefaultModulesForTipo, toggleModuleSelection } from '@/lib/moduleSelection';
 
 const tipoLabels: Record<string, string> = {
   super_admin: 'Super Admin',
@@ -177,7 +178,7 @@ export default function TabPerfil() {
   const [tipoNovo, setTipoNovo] = useState<string>('suplente');
   const [senhaNova, setSenhaNova] = useState('');
   const [showSenha, setShowSenha] = useState(false);
-  const [selectedModulos, setSelectedModulos] = useState<Set<string>>(new Set());
+  const [selectedModulos, setSelectedModulos] = useState<Set<string>>(() => getDefaultModulesForTipo('suplente'));
   const [saving, setSaving] = useState(false);
   const [externalSearch, setExternalSearch] = useState('');
   const [createCidade, setCreateCidade] = useState('');
@@ -275,7 +276,7 @@ export default function TabPerfil() {
     setTipoNovo('suplente');
     setSenhaNova('');
     setShowSenha(false);
-    setSelectedModulos(new Set());
+    setSelectedModulos(getDefaultModulesForTipo('suplente'));
     setExternalSearch('');
     setCreateCidade(municipios.length === 1 ? municipios[0].id : '');
   };
@@ -404,11 +405,7 @@ export default function TabPerfil() {
   };
 
   const toggleModulo = (id: string) => {
-    setSelectedModulos(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+    setSelectedModulos(prev => toggleModuleSelection(prev, id));
   };
 
   const IconComponent = tipoUsuario ? tipoIcons[tipoUsuario] : User;
@@ -592,7 +589,12 @@ export default function TabPerfil() {
                 ].map(opt => (
                   <button
                     key={opt.value}
-                    onClick={() => setTipoNovo(opt.value)}
+                    onClick={() => {
+                      setTipoNovo(opt.value);
+                      if (opt.value === 'suplente') {
+                        setSelectedModulos(getDefaultModulesForTipo(opt.value));
+                      }
+                    }}
                     className={`py-2.5 rounded-xl text-xs font-semibold transition-all ${
                       tipoNovo === opt.value
                         ? 'bg-primary text-primary-foreground shadow-lg'
