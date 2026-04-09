@@ -214,7 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(safetyTimeout);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!initialized || !active) return;
 
       logger.info('auth_state_change', { event });
@@ -222,6 +222,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === 'TOKEN_REFRESHED') {
         logger.info('token_refreshed');
         setIsOfflineMode(false);
+        return;
       }
 
       if (event === 'SIGNED_OUT') {
@@ -236,19 +237,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      try {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await initializeUser(session.user.id);
-        } else {
-          setUsuario(null);
-          setMunicipioId(null);
-          setMunicipioNome(null);
-        }
-      } catch (err) {
-        console.error('[Auth] Auth state change error:', err);
-      } finally {
-        if (active) setLoading(false);
+      // IMPORTANT: Do NOT await inside onAuthStateChange — it causes deadlocks.
+      // Fire-and-forget the initialization.
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        initializeUser(session.user.id).catch((err) => {
+          console.error('[Auth] Auth state change init error:', err);
+        });
+      } else {
+        setUsuario(null);
+        setMunicipioId(null);
+        setMunicipioNome(null);
       }
     });
 
