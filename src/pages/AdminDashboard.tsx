@@ -117,10 +117,9 @@ export default function AdminDashboard() {
     isTodasCidades ? null : cidadeAtiva?.id || null
   , [isTodasCidades, cidadeAtiva]);
 
-  const canAccessPainel = isAdmin || tipoUsuario === 'suplente';
   useEffect(() => {
-    if (!canAccessPainel) { navigate('/'); return; }
-  }, [canAccessPainel]);
+    if (!isAdmin) { navigate('/'); return; }
+  }, [isAdmin]);
 
   /* ── date filters ── */
   const hoje = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }, []);

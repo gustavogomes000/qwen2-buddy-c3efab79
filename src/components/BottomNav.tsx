@@ -99,9 +99,8 @@ export default function BottomNav({ active, onChange }: Props) {
         {tabs.map(({ id, icon: Icon, label }) => {
           const isActive = active === id;
 
-          // Insert Painel button right before Perfil — visible to admin, coord and suplentes
-          const showPainel = isAdmin || tipoUsuario === 'suplente';
-          const painelBtn = id === 'perfil' && showPainel ? (
+          // Insert Painel button right before Perfil — only for admin/coord
+          const painelBtn = id === 'perfil' && isAdmin ? (
             <button
               key="painel"
               onClick={() => navigate('/admin')}
