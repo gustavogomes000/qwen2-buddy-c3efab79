@@ -8,7 +8,11 @@ const MODULOS = [
   { id: 'cadastrar_liderancas', label: '👥 Lideranças', desc: 'Pode cadastrar lideranças, fiscais e eleitores' },
   { id: 'cadastrar_eleitores', label: '🎯 Eleitores', desc: 'Pode cadastrar somente eleitores' },
 ];
-
+// Modules that are mutually exclusive — only one active at a time
+const MUTUALLY_EXCLUSIVE: Record<string, string[]> = {
+  cadastrar_liderancas: ['cadastrar_eleitores'],
+  cadastrar_eleitores: ['cadastrar_liderancas'],
+};
 
 interface Props {
   usuarioId: string;
