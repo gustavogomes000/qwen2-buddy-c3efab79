@@ -84,7 +84,7 @@ const tipoLabel = (t: string) => {
 };
 
 export default function AdminDashboard() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, tipoUsuario } = useAuth();
   const { municipios, isTodasCidades, cidadeAtiva, setCidadeAtiva, nomeMunicipioPorId } = useCidade();
   const navigate = useNavigate();
 
@@ -117,9 +117,10 @@ export default function AdminDashboard() {
     isTodasCidades ? null : cidadeAtiva?.id || null
   , [isTodasCidades, cidadeAtiva]);
 
+  const canAccessPainel = isAdmin || tipoUsuario === 'suplente';
   useEffect(() => {
-    if (!isAdmin) { navigate('/'); return; }
-  }, [isAdmin]);
+    if (!canAccessPainel) { navigate('/'); return; }
+  }, [canAccessPainel]);
 
   /* ── date filters ── */
   const hoje = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }, []);
