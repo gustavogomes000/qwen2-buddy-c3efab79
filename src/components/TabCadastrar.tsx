@@ -166,7 +166,7 @@ export default function TabCadastrar({ onSaved }: Props) {
       return;
     }
 
-    // Online: salvar normalmente
+    // Online: salvar normalmente com fallback offline se a rede cair
     try {
       const { data: novaPessoa, error } = await supabase.from('pessoas').insert(pessoaData as any).select('id').single();
       if (error) throw error;
@@ -176,14 +176,49 @@ export default function TabCadastrar({ onSaved }: Props) {
         ...registroData,
         pessoa_id: pessoaId,
       });
-      if (lError) throw lError;
+      if (lError) {
+        // Pessoa foi criada mas liderança falhou — salvar na fila com pessoaExistenteId
+        // para evitar pessoa órfã e duplicação
+        console.warn('[TabCadastrar] Liderança insert falhou após pessoa criada, salvando offline com pessoaExistenteId');
+        await addToOfflineQueue({
+          type: 'lideranca',
+          pessoa: pessoaData,
+          registro: registroData,
+          pessoaExistenteId: pessoaId,
+        });
+        toast({ title: '⚠️ Salvo parcialmente', description: 'A liderança será sincronizada automaticamente.' });
+        setForm({ ...emptyForm });
+        clearDraft();
+        onSaved();
+        setSaving(false);
+        return;
+      }
 
       toast({ title: '✅ Liderança cadastrada com sucesso!' });
       setForm({ ...emptyForm });
       clearDraft();
       onSaved();
     } catch (err: any) {
-      toast({ title: 'Erro ao salvar', description: err.message, variant: 'destructive' });
+      // If network error, fall back to offline queue instead of losing data
+      if (!navigator.onLine || err?.message?.includes('fetch') || err?.message?.includes('network') || err?.code === 'PGRST301') {
+        console.warn('[TabCadastrar] Network error durante save, caindo para offline queue');
+        try {
+          await addToOfflineQueue({
+            type: 'lideranca',
+            pessoa: pessoaData,
+            registro: registroData,
+            pessoaExistenteId: null,
+          });
+          toast({ title: '📱 Salvo offline!', description: 'Conexão instável. Será enviado quando a internet estabilizar.' });
+          setForm({ ...emptyForm });
+          clearDraft();
+          onSaved();
+        } catch (offlineErr: any) {
+          toast({ title: 'Erro crítico', description: 'Não foi possível salvar. Tente novamente.', variant: 'destructive' });
+        }
+      } else {
+        toast({ title: 'Erro ao salvar', description: err.message, variant: 'destructive' });
+      }
     } finally { setSaving(false); }
   };
 
