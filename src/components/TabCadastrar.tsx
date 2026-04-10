@@ -9,6 +9,7 @@ import { toast } from '@/hooks/use-toast';
 import { useEvento } from '@/contexts/EventoContext';
 import CampoLigacaoPolitica from '@/components/CampoLigacaoPolitica';
 import { addToOfflineQueue, getPendingCount } from '@/lib/offlineQueue';
+import { useFormDraft } from '@/hooks/useFormDraft';
 
 
 const comprometimentos = ['Alto', 'Médio', 'Baixo'];
@@ -38,6 +39,9 @@ export default function TabCadastrar({ onSaved }: Props) {
   const [saving, setSaving] = useState(false);
   const [liderancasExistentes, setLiderancasExistentes] = useState<{ id: string; nome: string }[]>([]);
   const [form, setForm] = useState({ ...emptyForm });
+
+  // Persist form draft to IndexedDB (survives refresh/crash/close)
+  const { clearDraft } = useFormDraft('cadastrar-lideranca', form, setForm, emptyForm);
 
   // Ligação política
   const [ligBloqueado, setLigBloqueado] = useState(false);
@@ -97,8 +101,8 @@ export default function TabCadastrar({ onSaved }: Props) {
     if (!form.meta_votos.trim()) { toast({ title: 'Informe quantos votos pode trazer', variant: 'destructive' }); return; }
     if (!form.nivel_comprometimento) { toast({ title: 'Selecione o comprometimento', variant: 'destructive' }); return; }
 
-    // Coordenadores: bloquear CPF duplicado
-    if (tipoUsuario === 'coordenador' && form.cpf && form.cpf.length === 11) {
+    // Coordenadores: bloquear CPF duplicado (apenas online)
+    if (navigator.onLine && tipoUsuario === 'coordenador' && form.cpf && form.cpf.length === 11) {
       const { data: cpfExiste } = await supabase.from('pessoas').select('id').eq('cpf', form.cpf).limit(1);
       if (cpfExiste && cpfExiste.length > 0) {
         toast({ title: 'CPF já cadastrado', description: 'Este CPF já existe no sistema.', variant: 'destructive' });
@@ -154,6 +158,7 @@ export default function TabCadastrar({ onSaved }: Props) {
         });
         toast({ title: '📱 Salvo offline!', description: 'Será enviado automaticamente quando voltar a internet.' });
         setForm({ ...emptyForm });
+        clearDraft();
         onSaved();
       } catch (err: any) {
         toast({ title: 'Erro ao salvar offline', description: err.message, variant: 'destructive' });
@@ -175,6 +180,7 @@ export default function TabCadastrar({ onSaved }: Props) {
 
       toast({ title: '✅ Liderança cadastrada com sucesso!' });
       setForm({ ...emptyForm });
+      clearDraft();
       onSaved();
     } catch (err: any) {
       toast({ title: 'Erro ao salvar', description: err.message, variant: 'destructive' });
