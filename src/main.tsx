@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import * as Sentry from "@sentry/react";
 import App from "./App.tsx";
 import "./index.css";
+import { initWebVitals } from "./lib/webVitals";
 
 const t0 = performance.now();
 console.log(`[Main] ⏱ Script start: ${t0.toFixed(1)}ms`);
