@@ -13,6 +13,9 @@ import { toast } from '@/hooks/use-toast';
 import CampoLigacaoPolitica from '@/components/CampoLigacaoPolitica';
 import SkeletonLista from '@/components/SkeletonLista';
 import { useOfflineItems, type OfflineListItem } from '@/hooks/useOfflineItems';
+import { addToOfflineQueue } from '@/lib/offlineQueue';
+import { useFormDraft } from '@/hooks/useFormDraft';
+import { useEvento } from '@/contexts/EventoContext';
 
 const comprometimentos = ['Alto', 'Médio', 'Baixo'];
 const situacoesTitulo = ['Regular', 'Cancelado', 'Suspenso', 'Não informado'];
@@ -74,6 +77,11 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
   const paginaRef = useRef(0);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ ...emptyForm });
+
+  // Persist form draft to IndexedDB (survives refresh/crash/close/PWA update)
+  const { clearDraft } = useFormDraft('cadastrar-lideranca-tab', form, setForm, emptyForm);
+
+  const { eventoAtivo } = useEvento();
 
   // Ligação política state
   const [ligBloqueado, setLigBloqueado] = useState(false);
@@ -164,7 +172,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
 
     setSaving(true);
     try {
-      const { data: novaPessoa, error } = await supabase.from('pessoas').insert({
+      const pessoaData = {
         cpf: form.cpf || null, nome: form.nome, telefone: form.telefone || null,
         whatsapp: form.whatsapp || null, email: form.email || null,
         instagram: form.instagram || null, facebook: form.facebook || null,
@@ -172,13 +180,11 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
         secao_eleitoral: form.secao_eleitoral || null, municipio_eleitoral: form.municipio_eleitoral || null,
         uf_eleitoral: form.uf_eleitoral || null, colegio_eleitoral: form.colegio_eleitoral || null,
         endereco_colegio: form.endereco_colegio || null, situacao_titulo: form.situacao_titulo || null,
-      }).select('id').single();
-      if (error) throw error;
-      const pessoaId = novaPessoa!.id;
+      };
 
       const suplenteId = ligSuplenteId || getSuplementeId();
-      const { error: lError } = await (supabase as any).from('liderancas').insert({
-        pessoa_id: pessoaId, tipo_lideranca: form.tipo_lideranca || null,
+      const registroData = {
+        tipo_lideranca: form.tipo_lideranca || null,
         nivel: form.nivel || null, regiao_atuacao: form.regiao_atuacao || null,
         zona_atuacao: form.zona_atuacao || null, bairros_influencia: form.bairros_influencia || null,
         comunidades_influencia: form.comunidades_influencia || null,
@@ -191,11 +197,34 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
         cadastrado_por: usuario?.id || null,
         suplente_id: suplenteId,
         municipio_id: ligMunicipioId || null,
-      });
+        evento_id: eventoAtivo?.id || null,
+      };
+
+      // Offline: salvar na fila IndexedDB
+      if (!navigator.onLine) {
+        try {
+          await addToOfflineQueue({ type: 'lideranca', pessoa: pessoaData, registro: registroData, pessoaExistenteId: null });
+          toast({ title: '📱 Salvo offline!', description: 'Será enviado quando voltar a internet.' });
+          setForm({ ...emptyForm });
+          clearDraft();
+          setMode('list');
+          onSaved?.();
+        } catch (err: any) {
+          toast({ title: 'Erro ao salvar offline', description: err.message, variant: 'destructive' });
+        } finally { setSaving(false); }
+        return;
+      }
+
+      const { data: novaPessoa, error } = await supabase.from('pessoas').insert(pessoaData as any).select('id').single();
+      if (error) throw error;
+      const pessoaId = novaPessoa!.id;
+
+      const { error: lError } = await (supabase as any).from('liderancas').insert({ ...registroData, pessoa_id: pessoaId });
       if (lError) throw lError;
 
       toast({ title: '✅ Liderança cadastrada!' });
       setForm({ ...emptyForm });
+      clearDraft();
       setMode('list');
       invalidarCadastros();
       onSaved?.();

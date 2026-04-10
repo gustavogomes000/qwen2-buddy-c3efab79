@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { QueryClient } from "@tanstack/react-query";
@@ -15,6 +15,8 @@ import { startAutoSync, syncOfflineData } from "@/services/offlineSync";
 import SyncStatusBanner from "@/components/SyncStatusBanner";
 import { createIdbPersister } from "@/lib/queryPersistence";
 import { useRegisterSW } from 'virtual:pwa-register/react';
+
+import { getPendingCount } from "@/lib/offlineQueue";
 
 const Login = lazy(() => import("./pages/Login"));
 const Home = lazy(() => import("./pages/Home"));
@@ -87,6 +89,8 @@ function OfflineSyncManager() {
 
 /** PWA silent auto-update — no popup, reloads automatically */
 function PwaSilentUpdater() {
+  const updateBlockedRef = useRef(false);
+
   const {
     needRefresh: [needRefresh],
     updateServiceWorker,
@@ -108,9 +112,30 @@ function PwaSilentUpdater() {
   useEffect(() => {
     if (needRefresh) {
       console.log('[SW] New version available, updating silently...');
-      // Small delay to avoid interrupting active operations
-      const t = setTimeout(() => updateServiceWorker(true), 1500);
-      return () => clearTimeout(t);
+      // Wait for pending offline items to finish syncing before reload
+      const tryUpdate = async () => {
+        const pending = await getPendingCount();
+        if (pending > 0) {
+          console.log(`[SW] ${pending} offline items pending, deferring update...`);
+          updateBlockedRef.current = true;
+          return; // Will retry on next interval
+        }
+        updateBlockedRef.current = false;
+        updateServiceWorker(true);
+      };
+      const t = setTimeout(tryUpdate, 2000);
+      // If blocked, retry every 10s
+      const retryInterval = setInterval(async () => {
+        if (!updateBlockedRef.current) return;
+        const pending = await getPendingCount();
+        if (pending === 0) {
+          console.log('[SW] Offline queue clear, proceeding with update');
+          updateBlockedRef.current = false;
+          updateServiceWorker(true);
+          clearInterval(retryInterval);
+        }
+      }, 10_000);
+      return () => { clearTimeout(t); clearInterval(retryInterval); };
     }
   }, [needRefresh, updateServiceWorker]);
 
