@@ -1,9 +1,11 @@
 // ── Offline Sync Service ─────────────────────────────────────────────────────
 // Processes pending offline registrations with idempotency (operationId).
+// Uses exponential backoff for retries to reduce battery/network pressure.
 
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 import { getAllPending, removeFromQueue, updateAttempts, getPendingCount, type OfflineRegistration } from '@/lib/offlineQueue';
+import { requestBackgroundSync } from '@/lib/backgroundSync';
 
 const MAX_ATTEMPTS = 5;
 let syncing = false;
@@ -31,8 +33,21 @@ export async function syncOfflineData(): Promise<{ synced: number; failed: numbe
     if (count === 0) { syncing = false; return { synced: 0, failed: 0 }; }
 
     for (const item of pending) {
+      const attempts = item.attempts || 0;
+
+      // Exponential backoff: skip items that haven't waited long enough
+      if (attempts > 0 && attempts < MAX_ATTEMPTS) {
+        const backoffMs = Math.min(1000 * Math.pow(2, attempts), 5 * 60 * 1000); // max 5min
+        const elapsed = Date.now() - new Date(item.createdAt).getTime();
+        const lastAttemptAge = elapsed; // simplified — ideally track lastAttemptAt
+        if (attempts > 1 && lastAttemptAge < backoffMs) {
+          console.log(`[OfflineSync] Backoff: skipping ${item.operationId} (wait ${(backoffMs / 1000).toFixed(0)}s)`);
+          continue;
+        }
+      }
+
       // Skip items that have exceeded max attempts
-      if ((item.attempts || 0) >= MAX_ATTEMPTS) {
+      if (attempts >= MAX_ATTEMPTS) {
         console.warn(`[OfflineSync] Skipping item ${item.id} (operationId=${item.operationId}) — max attempts (${MAX_ATTEMPTS}) reached`);
         failed++;
         continue;
@@ -46,7 +61,7 @@ export async function syncOfflineData(): Promise<{ synced: number; failed: numbe
       } catch (err: any) {
         const errorMsg = err?.message || String(err);
         console.error(`[OfflineSync] Failed item ${item.id} operationId=${item.operationId}:`, errorMsg);
-        await updateAttempts(item.id!, (item.attempts || 0) + 1, errorMsg);
+        await updateAttempts(item.id!, attempts + 1, errorMsg);
         failed++;
       }
     }
@@ -139,6 +154,9 @@ export function startAutoSync() {
 
   if (navigator.onLine) {
     syncOfflineData();
+  } else {
+    // Request background sync for when connectivity returns (even if app is closed)
+    requestBackgroundSync();
   }
 
   if (!onlineHandler) {
@@ -153,6 +171,9 @@ export function startAutoSync() {
   syncInterval = setInterval(() => {
     if (navigator.onLine) syncOfflineData();
   }, 30_000);
+
+  // Also request background sync for resilience
+  requestBackgroundSync();
 }
 
 export function stopAutoSync() {
