@@ -61,6 +61,8 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
   const { usuario, isAdmin, tipoUsuario, municipioId: authMunicipioId } = useAuth();
   const { cidadeAtiva, isTodasCidades, nomeMunicipioPorId } = useCidade();
   const { data: cachedData, isLoading: cacheLoading, refetch: refetchCache } = useLiderancas();
+  const offlineItems = useOfflineItems('lideranca');
+  const invalidarCadastros = useInvalidarCadastros();
   const invalidarCadastros = useInvalidarCadastros();
   const [mode, setMode] = useState<'list' | 'form' | 'detail'>('list');
   const [data, setData] = useState<LiderancaRow[]>([]);
