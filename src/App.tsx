@@ -14,6 +14,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { startAutoSync, syncOfflineData } from "@/services/offlineSync";
 import SyncStatusBanner from "@/components/SyncStatusBanner";
 import { createIdbPersister } from "@/lib/queryPersistence";
+import { useRealtimeSync } from "@/hooks/useDataCache";
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
 import { getPendingCount } from "@/lib/offlineQueue";
@@ -36,6 +37,7 @@ const queryClient = new QueryClient({
 const idbPersister = createIdbPersister();
 
 const PERSISTED_QUERY_PREFIXES = ['liderancas', 'eleitores', 'fiscais', 'contagens', 'hierarquia_usuarios'];
+const QUERY_CACHE_BUSTER = 'cadastros-cache-v2';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, usuario } = useAuth();
@@ -48,7 +50,6 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, usuario } = useAuth();
   if (loading) return <LoadingScreen message="Carregando..." />;
-  // user is set but usuario still loading (initializeUser in progress)
   if (user && !usuario) return <LoadingScreen message="Carregando perfil..." showProgress />;
   if (user && usuario) return <Navigate to="/" replace />;
   return <>{children}</>;
@@ -69,13 +70,13 @@ function AppRoutes() {
 
 function OfflineSyncManager() {
   const { user } = useAuth();
-  
+
   useEffect(() => {
     if (!user) return;
     const timer = setTimeout(() => {
       startAutoSync();
     }, 3000);
-    
+
     const handler = () => syncOfflineData();
     window.addEventListener('sync-offline-data', handler);
     return () => {
@@ -83,7 +84,12 @@ function OfflineSyncManager() {
       window.removeEventListener('sync-offline-data', handler);
     };
   }, [user]);
-  
+
+  return null;
+}
+
+function RealtimeSyncManager() {
+  useRealtimeSync();
   return null;
 }
 
@@ -98,19 +104,16 @@ function PwaSilentUpdater() {
   } = useRegisterSW({
     onRegisteredSW(_swUrl, registration) {
       if (registration) {
-        // Check for updates every 30 seconds (balanced: fast OTA without battery drain)
         setInterval(async () => {
           try {
             await registration.update();
             updateCheckFailures.current = 0;
           } catch (err) {
             updateCheckFailures.current++;
-            // If SW update checks fail 5+ times, SW may be corrupt
             if (updateCheckFailures.current >= 5) {
               console.warn('[SW] Multiple update check failures — attempting SW recovery');
               try {
                 await registration.unregister();
-                // Clear caches to prevent stale content
                 if ('caches' in window) {
                   const names = await caches.keys();
                   await Promise.all(names.map(n => caches.delete(n)));
@@ -127,18 +130,15 @@ function PwaSilentUpdater() {
     },
     onRegisterError(error) {
       console.error('[SW] Registration error:', error);
-      // If SW fails to register, clear caches as fallback
       if ('caches' in window) {
         caches.keys().then(names => names.forEach(n => caches.delete(n)));
       }
     },
   });
 
-  // Auto-apply update when available — no user action needed
   useEffect(() => {
     if (needRefresh) {
       console.log('[SW] New version available, updating silently...');
-      // Wait for pending offline items to finish syncing before reload
       const tryUpdate = async () => {
         const pending = await getPendingCount();
         if (pending > 0) {
@@ -150,7 +150,6 @@ function PwaSilentUpdater() {
         updateServiceWorker(true);
       };
       const t = setTimeout(tryUpdate, 2000);
-      // If blocked, retry every 10s
       const retryInterval = setInterval(async () => {
         if (!updateBlockedRef.current) return;
         const pending = await getPendingCount();
@@ -177,8 +176,7 @@ function GlobalErrorRecovery() {
     const handleError = (event: ErrorEvent) => {
       errorCount++;
       console.error('[GlobalRecovery] Unhandled error:', event.error?.message);
-      
-      // If chunk load failures (common after PWA update), reload once
+
       if (event.message?.includes('Failed to fetch dynamically imported module') ||
           event.message?.includes('Loading chunk') ||
           event.message?.includes('Loading CSS chunk')) {
@@ -215,7 +213,7 @@ function App() {
       persistOptions={{
         persister: idbPersister,
         maxAge: 24 * 60 * 60 * 1000,
-        buster: '',
+        buster: QUERY_CACHE_BUSTER,
         dehydrateOptions: {
           shouldDehydrateQuery: (query) => {
             const key = query.queryKey[0];
@@ -237,6 +235,7 @@ function App() {
                   <GlobalErrorRecovery />
                   <PwaSilentUpdater />
                   <OfflineSyncManager />
+                  <RealtimeSyncManager />
                   <SyncStatusBanner />
                   <AppRoutes />
                 </ErrorBoundary>
