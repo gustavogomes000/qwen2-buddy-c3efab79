@@ -627,6 +627,15 @@ export default function TabSuplentes({ refreshKey }: Props) {
   // LIST VIEW
   return (
     <div className="space-y-3 pb-24">
+      {isAdmin && (
+        <button
+          onClick={() => setCreatingNewSuplente(true)}
+          className="w-full h-11 flex items-center justify-center gap-2 bg-primary/10 text-primary text-sm font-semibold rounded-xl border border-primary/20 active:scale-[0.97] transition-all"
+        >
+          <Plus size={16} /> Novo Suplente
+        </button>
+      )}
+
       <div className="relative">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <input
