@@ -2,9 +2,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { cachedInvoke } from '@/lib/cacheEdgeFunctions';
 import { resolverMunicipioId, buscarNomeMunicipio } from './resolverMunicipio';
 
-/** Ensure an external suplente exists in the local suplentes table */
-async function sincronizarSuplenteLocal(suplenteId: string) {
+/** Ensure a suplente exists in the local suplentes table using external data or hierarchy fallback */
+async function ensureLocalSuplente(suplenteId: string, usuario?: HierarquiaUsuario) {
   try {
+    // Check if already exists locally
+    const { data: existing } = await (supabase as any).from('suplentes').select('id').eq('id', suplenteId).maybeSingle();
+    if (existing) return;
+
+    // Try external system first
     const data = await cachedInvoke<any[]>('buscar-suplentes');
     if (Array.isArray(data)) {
       const sup = data.find((s: any) => String(s.id) === String(suplenteId));
@@ -15,9 +20,28 @@ async function sincronizarSuplenteLocal(suplenteId: string) {
           partido: sup.partido || null,
           regiao_atuacao: sup.regiao_atuacao || null,
         }, { onConflict: 'id' });
+        return;
       }
     }
+
+    // Fallback: create from hierarchy data
+    const { data: hierUser } = await supabase
+      .from('hierarquia_usuarios')
+      .select('nome')
+      .eq('suplente_id', suplenteId)
+      .limit(1)
+      .maybeSingle();
+
+    await (supabase as any).from('suplentes').upsert({
+      id: suplenteId,
+      nome: hierUser?.nome || 'Suplente',
+    }, { onConflict: 'id' });
   } catch {}
+}
+
+/** Ensure an external suplente exists in the local suplentes table */
+async function sincronizarSuplenteLocal(suplenteId: string) {
+  await ensureLocalSuplente(suplenteId);
 }
 
 interface HierarquiaUsuario {
