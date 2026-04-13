@@ -73,6 +73,10 @@ export async function resolverLigacaoPolitica(
               regiao_atuacao: sup.regiao_atuacao || null,
             }, { onConflict: 'id' });
           } catch {}
+        } else {
+          // Suplente not found in external system — ensure it exists locally
+          // using data from hierarquia_usuarios
+          await ensureLocalSuplente(usuario.suplente_id, usuario);
         }
       }
     } catch {}
