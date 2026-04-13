@@ -10,6 +10,7 @@ interface SuplenteRow {
   regiao_atuacao: string | null;
   telefone: string | null;
   partido: string | null;
+  cargo_disputado: string | null;
   situacao: string | null;
   base_politica: string | null;
   expectativa_votos: number | null;
@@ -65,6 +66,7 @@ export default function TabSuplentes({ refreshKey }: Props) {
   const [newSupPartido, setNewSupPartido] = useState('');
   const [newSupRegiao, setNewSupRegiao] = useState('');
   const [newSupTelefone, setNewSupTelefone] = useState('');
+  const [newSupCargo, setNewSupCargo] = useState('');
   const [savingNewSup, setSavingNewSup] = useState(false);
 
   // Edit user state
