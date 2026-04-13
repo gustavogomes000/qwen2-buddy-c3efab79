@@ -381,6 +381,10 @@ export default function TabSuplentes({ refreshKey }: Props) {
               <label className="text-xs font-medium text-muted-foreground">Telefone</label>
               <input type="text" value={newSupTelefone} onChange={e => setNewSupTelefone(e.target.value)} className={inputCls} placeholder="(62) 99999-9999" />
             </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Cargo / Profissão</label>
+              <input type="text" value={newSupCargo} onChange={e => setNewSupCargo(e.target.value)} className={inputCls} placeholder="Ex: Assistente Social, Vereador..." />
+            </div>
             <button
               onClick={handleCreateNewSuplente}
               disabled={savingNewSup}
