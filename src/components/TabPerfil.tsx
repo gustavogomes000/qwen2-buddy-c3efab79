@@ -255,8 +255,14 @@ export default function TabPerfil() {
   const filteredUsuarios = useMemo(() => {
     if (!search) return usuarios;
     const q = search.toLowerCase();
-    return usuarios.filter(u => u.nome.toLowerCase().includes(q));
-  }, [usuarios, search]);
+    return usuarios.filter(u => {
+      if (u.nome.toLowerCase().includes(q)) return true;
+      // Search by profession/tag from suplente
+      const tag = u.suplente_id ? suplentes.find(s => s.id === u.suplente_id)?.cargo_disputado : null;
+      if (tag && tag.toLowerCase().includes(q)) return true;
+      return false;
+    });
+  }, [usuarios, search, suplentes]);
 
   const getSuplenteNome = (sid: string | null) => {
     if (!sid) return null;
