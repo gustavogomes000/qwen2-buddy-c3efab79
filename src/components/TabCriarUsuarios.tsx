@@ -446,8 +446,8 @@ export default function TabCriarUsuarios() {
             {/* Profissão / Cargo */}
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Profissão / Cargo</label>
-              <input type="text" value={novoProfissao} onChange={e => setNovoProfissao(e.target.value)} className={inputCls} placeholder="Ex: Assistente Social, Vereador..." />
-              <p className="text-[10px] text-muted-foreground">Se preenchido, aparece no lugar de "Suplente"</p>
+              <input type="text" value={novoProfissao} onChange={e => setNovoProfissao(e.target.value)} className={inputCls} placeholder="Ex: Suplente, Assistente Social, Vereador..." />
+              <p className="text-[10px] text-muted-foreground">Vem como "Suplente" por padrão — edite para outra profissão se precisar</p>
             </div>
 
             {/* Senha */}
