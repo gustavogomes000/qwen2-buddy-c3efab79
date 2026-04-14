@@ -201,7 +201,7 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
     } finally { setSaving(false); }
   };
 
-  const QUERY_DETALHE_ELE = 'id, compromisso_voto, lideranca_id, cadastrado_por, observacoes, origem_captacao, criado_em, municipio_id, pessoas(*), liderancas:lideranca_id(id, pessoas(nome))';
+  const QUERY_DETALHE_ELE = 'id, compromisso_voto, lideranca_id, cadastrado_por, observacoes, origem_captacao, criado_em, municipio_id, pessoas(*), liderancas:lideranca_id(id, pessoas(nome)), suplentes:suplente_id(nome, cargo_disputado)';
 
   const fetchDetalhe = useCallback(async (id: string) => {
     const { data } = await (supabase as any).from('possiveis_eleitores').select(QUERY_DETALHE_ELE).eq('id', id).single();
