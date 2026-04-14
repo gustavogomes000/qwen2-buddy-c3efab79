@@ -8,8 +8,9 @@ import { useLiderancas, useEleitores, useUsuarios, useFiscaisAdmin } from '@/hoo
 import {
   ArrowLeft, Users, Target, Search, X, Shield,
   ChevronDown, ChevronUp, Loader2, Download, Trophy,
-  BarChart3, UserCog, Eye, Building2, Plus, MapPin, Calendar
+  BarChart3, UserCog, Eye, Building2, Plus, MapPin, Calendar, Trash2
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { exportAllCadastros, exportCadastrosFiltered } from '@/lib/exportXlsx';
 import SeletorCidade from '@/components/SeletorCidade';
 import SeletorEvento from '@/components/SeletorEvento';
