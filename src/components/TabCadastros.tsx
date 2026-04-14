@@ -73,6 +73,7 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
   const [searchQuery, setSearchQuery] = useState('');
   const [exporting, setExporting] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const isSuperAdmin = tipoUsuario === 'super_admin';
 
