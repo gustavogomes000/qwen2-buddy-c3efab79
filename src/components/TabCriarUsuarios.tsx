@@ -118,7 +118,7 @@ export default function TabCriarUsuarios() {
     setCriarNovoMode(true);
     setSelecionado(null);
     setNome('');
-    setNovoProfissao('');
+    setNovoProfissao('Suplente');
     setSenha('');
     setSuperiorId('');
     setShowSenha(false);
