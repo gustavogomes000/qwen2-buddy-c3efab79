@@ -564,6 +564,9 @@ export default function AdminDashboard() {
                             <p className="text-sm font-bold text-foreground truncate">{u.nome}</p>
                             <div className="flex items-center gap-1.5 mt-0.5">
                               <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-primary/10 text-primary font-medium">{tipoLabel(u.tipo)}</span>
+                              {getCargoTag(u.suplente_id) && (
+                                <span className="text-[8px] px-1.5 py-0.5 rounded-md bg-accent/50 text-accent-foreground font-medium">{getCargoTag(u.suplente_id)}</span>
+                              )}
                               <div className="flex gap-1">
                                 {u.l > 0 && <span className="text-[8px] font-semibold text-primary/70">Lid. {u.l}</span>}
                                 {u.e > 0 && <span className="text-[8px] font-semibold text-muted-foreground">Eleit. {u.e}</span>}
