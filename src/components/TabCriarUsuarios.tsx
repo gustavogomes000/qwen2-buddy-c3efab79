@@ -155,6 +155,14 @@ export default function TabCriarUsuarios() {
           }).select('id').single();
           if (supError) throw new Error(supError.message);
           suplenteId = newSup.id;
+
+          // Create suplente_municipio mapping so city filters work correctly
+          if (cidadeSelecionada && suplenteId) {
+            await (supabase as any).from('suplente_municipio').insert({
+              suplente_id: suplenteId,
+              municipio_id: cidadeSelecionada,
+            }).then(() => {});
+          }
         }
 
         // Create user
@@ -204,6 +212,15 @@ export default function TabCriarUsuarios() {
             await (supabase as any).from('suplentes').update({
               cargo_disputado: cargoExistente.trim(),
             }).eq('id', selecionado.id);
+          } catch {}
+        }
+        // Ensure suplente_municipio mapping exists
+        if (cidadeSelecionada) {
+          try {
+            await (supabase as any).from('suplente_municipio').upsert({
+              suplente_id: selecionado.id,
+              municipio_id: cidadeSelecionada,
+            }, { onConflict: 'suplente_id,municipio_id' });
           } catch {}
         }
       }

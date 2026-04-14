@@ -8,13 +8,25 @@ export async function resolverMunicipioId(
 ): Promise<string | null> {
   if (!suplenteId) return null;
 
+  // 1. Check suplente_municipio mapping first
   const { data } = await (supabase as any)
     .from('suplente_municipio')
     .select('municipio_id')
     .eq('suplente_id', suplenteId)
     .maybeSingle();
 
-  return data?.municipio_id ?? null;
+  if (data?.municipio_id) return data.municipio_id;
+
+  // 2. Fallback: check hierarquia_usuarios.municipio_id for livre suplentes
+  const { data: hierData } = await supabase
+    .from('hierarquia_usuarios')
+    .select('municipio_id')
+    .eq('suplente_id', suplenteId)
+    .not('municipio_id', 'is', null)
+    .limit(1)
+    .maybeSingle();
+
+  return hierData?.municipio_id ?? null;
 }
 
 /**
