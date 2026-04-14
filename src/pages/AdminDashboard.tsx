@@ -170,7 +170,7 @@ export default function AdminDashboard() {
     return Object.entries(map)
       .map(([id, stats]) => {
         const u = usuarios.find(u => u.id === id);
-        return { id, nome: u?.nome || 'Desconhecido', tipo: u?.tipo || '—', municipio_id: u?.municipio_id || null, total: stats.l + stats.e + stats.f, ...stats };
+        return { id, nome: u?.nome || 'Desconhecido', tipo: u?.tipo || '—', municipio_id: u?.municipio_id || null, suplente_id: u?.suplente_id || null, total: stats.l + stats.e + stats.f, ...stats };
       })
       .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome));
   }, [filteredL, filteredE, filteredF, usuarios]);
