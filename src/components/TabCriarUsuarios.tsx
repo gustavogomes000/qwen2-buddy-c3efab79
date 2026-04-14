@@ -141,27 +141,35 @@ export default function TabCriarUsuarios() {
     if (!senha.trim() || senha.length < 6) { toast({ title: 'Senha deve ter pelo menos 6 caracteres', variant: 'destructive' }); return; }
     if (!cidadeSelecionada) { setCidadeErro('Selecione a cidade do usuário'); return; }
 
-    // For "criar novo" mode, we need to create the suplente first
+    // For "criar novo" mode, we need to create the suplente first (for suplente/lideranca types)
     if (criarNovoMode && !selecionado) {
       setSaving(true);
       try {
-        // 1. Create local suplente
-        const { data: newSup, error: supError } = await (supabase as any).from('suplentes').insert({
-          nome: nome.trim(),
-          cargo_disputado: novoProfissao.trim() || null,
-        }).select('id').single();
+        let suplenteId: string | null = null;
 
-        if (supError) throw new Error(supError.message);
+        // For suplente and lideranca types, create a local suplente to link to
+        if (tipoAcesso === 'suplente' || tipoAcesso === 'lideranca') {
+          const { data: newSup, error: supError } = await (supabase as any).from('suplentes').insert({
+            nome: nome.trim(),
+            cargo_disputado: novoProfissao.trim() || null,
+          }).select('id').single();
+          if (supError) throw new Error(supError.message);
+          suplenteId = newSup.id;
+        }
 
-        // 2. Create user linked to this new suplente
+        // Create user
         const payload: any = {
           nome: nome.trim(),
           senha: senha.trim(),
-          tipo: 'suplente',
+          tipo: tipoAcesso,
           superior_id: superiorId || null,
           municipio_id: cidadeSelecionada,
-          suplente_id: newSup.id,
         };
+
+        // Suplente and Liderança are always self-linked
+        if (suplenteId) {
+          payload.suplente_id = suplenteId;
+        }
 
         const { data, error } = await supabase.functions.invoke('criar-usuario', { body: payload });
         if (error) throw new Error(error.message || 'Erro ao criar usuário');
