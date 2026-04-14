@@ -62,12 +62,12 @@ interface Props {
 }
 
 export default function TabCadastros({ refreshKey, onSaved }: Props) {
-  const { tipoUsuario, usuario, isAdmin, municipioId: authMunicipioId } = useAuth();
-  const { cidadeAtiva, isTodasCidades, nomeMunicipioPorId } = useCidade();
+  const { tipoUsuario, isAdmin } = useAuth();
   const scope = isAdmin ? 'all' : 'own';
-  const { data: lidData, isLoading: lidLoading } = useLiderancas(scope);
-  const { data: fisData, isLoading: fisLoading } = useFiscaisAdmin();
-  const { data: eleData, isLoading: eleLoading } = useEleitores(scope);
+  const queryOptions = isAdmin ? { ignoreCityFilter: true } : undefined;
+  const { data: lidData, isLoading: lidLoading } = useLiderancas(scope, queryOptions);
+  const { data: fisData, isLoading: fisLoading } = useFiscaisAdmin(queryOptions);
+  const { data: eleData, isLoading: eleLoading } = useEleitores(scope, queryOptions);
   const invalidarCadastros = useInvalidarCadastros();
 
   const loading = lidLoading || fisLoading || eleLoading;

@@ -8,6 +8,10 @@ const PAGE_SIZE = 200;
 const STALE_TIME = 60_000;
 const GC_TIME = 15 * 60 * 1000;
 
+interface QueryScopeOptions {
+  ignoreCityFilter?: boolean;
+}
+
 /* ── Query keys ── */
 const keys = {
   liderancas: (munId: string | null, scope: string) =>
@@ -156,9 +160,10 @@ function usePaginatedData(config: {
 /* ── Lideranças ── */
 const QUERY_LID = 'id, status, tipo_lideranca, zona_atuacao, apoiadores_estimados, cadastrado_por, criado_em, municipio_id, origem_captacao, regiao_atuacao, bairros_influencia, comunidades_influencia, meta_votos, nivel_comprometimento, observacoes, nivel, suplente_id, pessoas(nome, cpf, telefone, whatsapp, email, instagram, facebook, titulo_eleitor, zona_eleitoral, secao_eleitoral, municipio_eleitoral, uf_eleitoral, colegio_eleitoral, endereco_colegio, situacao_titulo), hierarquia_usuarios!liderancas_cadastrado_por_fkey(nome), suplentes:suplente_id(nome, cargo_disputado)';
 
-export function useLiderancas(scope: 'own' | 'all' = 'own') {
+export function useLiderancas(scope: 'own' | 'all' = 'own', options: QueryScopeOptions = {}) {
   const { usuario, tipoUsuario } = useAuth();
-  const filtroMunicipioId = useFiltroMunicipio();
+  const filtroMunicipioIdBase = useFiltroMunicipio();
+  const filtroMunicipioId = options.ignoreCityFilter ? null : filtroMunicipioIdBase;
   const isAdmin = tipoUsuario === 'super_admin' || tipoUsuario === 'coordenador';
   const scopeKey = scope === 'all' ? 'all' : (isAdmin && usuario?.suplente_id ? `sup-${usuario.suplente_id}` : usuario?.id || 'none');
 
@@ -179,9 +184,10 @@ export function useLiderancas(scope: 'own' | 'all' = 'own') {
 /* ── Eleitores ── */
 const QUERY_ELE = 'id, compromisso_voto, lideranca_id, cadastrado_por, criado_em, municipio_id, origem_captacao, suplente_id, observacoes, pessoas(nome, cpf, telefone, whatsapp, email, instagram, facebook, titulo_eleitor, zona_eleitoral, secao_eleitoral, municipio_eleitoral, uf_eleitoral, colegio_eleitoral, endereco_colegio, situacao_titulo), liderancas:lideranca_id(id, pessoas(nome)), hierarquia_usuarios!possiveis_eleitores_cadastrado_por_fkey(nome), suplentes:suplente_id(nome, cargo_disputado)';
 
-export function useEleitores(scope: 'own' | 'all' = 'own') {
+export function useEleitores(scope: 'own' | 'all' = 'own', options: QueryScopeOptions = {}) {
   const { usuario, tipoUsuario } = useAuth();
-  const filtroMunicipioId = useFiltroMunicipio();
+  const filtroMunicipioIdBase = useFiltroMunicipio();
+  const filtroMunicipioId = options.ignoreCityFilter ? null : filtroMunicipioIdBase;
   const isAdmin = tipoUsuario === 'super_admin' || tipoUsuario === 'coordenador';
   const scopeKey = scope === 'all' ? 'all' : (isAdmin && usuario?.suplente_id ? `sup-${usuario.suplente_id}` : usuario?.id || 'none');
 
@@ -202,9 +208,10 @@ export function useEleitores(scope: 'own' | 'all' = 'own') {
 /* ── Fiscais ── */
 const QUERY_FIS = 'id, status, zona_fiscal, secao_fiscal, colegio_eleitoral, cadastrado_por, suplente_id, criado_em, observacoes, origem_captacao, municipio_id, lideranca_id, pessoas(nome, cpf, telefone, whatsapp, email, instagram, facebook, titulo_eleitor, zona_eleitoral, secao_eleitoral, municipio_eleitoral, uf_eleitoral, colegio_eleitoral, endereco_colegio, situacao_titulo), hierarquia_usuarios!fiscais_cadastrado_por_fkey(nome), liderancas:lideranca_id(id, pessoas(nome)), suplentes:suplente_id(nome, cargo_disputado)';
 
-export function useFiscaisAdmin() {
+export function useFiscaisAdmin(options: QueryScopeOptions = {}) {
   const { usuario, tipoUsuario } = useAuth();
-  const filtroMunicipioId = useFiltroMunicipio();
+  const filtroMunicipioIdBase = useFiltroMunicipio();
+  const filtroMunicipioId = options.ignoreCityFilter ? null : filtroMunicipioIdBase;
   const isAdmin = tipoUsuario === 'super_admin' || tipoUsuario === 'coordenador';
 
   return usePaginatedData({

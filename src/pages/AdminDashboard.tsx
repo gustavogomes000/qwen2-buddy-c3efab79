@@ -103,9 +103,9 @@ export default function AdminDashboard() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: liderancasData, isLoading: lLoading } = useLiderancas('all');
-  const { data: eleitoresData, isLoading: eLoading } = useEleitores('all');
-  const { data: fiscaisData, isLoading: fLoading } = useFiscaisAdmin();
+  const { data: liderancasData, isLoading: lLoading, refetch: refetchLiderancas } = useLiderancas('all', { ignoreCityFilter: true });
+  const { data: eleitoresData, isLoading: eLoading, refetch: refetchEleitores } = useEleitores('all', { ignoreCityFilter: true });
+  const { data: fiscaisData, isLoading: fLoading, refetch: refetchFiscais } = useFiscaisAdmin({ ignoreCityFilter: true });
   const { data: usuariosData, isLoading: uLoading } = useUsuarios();
 
   const liderancas = (liderancasData || []) as LiderancaReg[];
@@ -137,7 +137,18 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!isAdmin) { navigate('/'); return; }
-  }, [isAdmin]);
+  }, [isAdmin, navigate]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    queryClient.invalidateQueries({ queryKey: ['liderancas'] });
+    queryClient.invalidateQueries({ queryKey: ['eleitores'] });
+    queryClient.invalidateQueries({ queryKey: ['fiscais'] });
+    queryClient.invalidateQueries({ queryKey: ['hierarquia_usuarios'] });
+    void refetchLiderancas();
+    void refetchEleitores();
+    void refetchFiscais();
+  }, [isAdmin, queryClient, refetchLiderancas, refetchEleitores, refetchFiscais]);
 
   /* ── date filters ── */
   const hoje = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }, []);
