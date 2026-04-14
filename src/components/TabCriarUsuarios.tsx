@@ -270,7 +270,7 @@ export default function TabCriarUsuarios() {
                 criarNovoMode ? 'gradient-primary text-white shadow-lg' : 'bg-card border border-border text-muted-foreground'
               }`}
             >
-              <Edit3 size={14} /> Livre
+              <Pencil size={14} /> Livre
             </button>
           </div>
         </div>
