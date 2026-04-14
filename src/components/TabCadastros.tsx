@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCidade } from '@/contexts/CidadeContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useLiderancas, useEleitores, useFiscaisAdmin, useInvalidarCadastros } from '@/hooks/useDataCache';
-import { Search, Users, Target, Phone, MapPin, Loader2, Download, UserCheck, Calendar, ChevronDown, Mail, MessageCircle, CreditCard, FileText, Globe } from 'lucide-react';
+import { Search, Users, Target, Phone, MapPin, Loader2, Download, UserCheck, Calendar, ChevronDown, Mail, MessageCircle, CreditCard, FileText, Globe, Trash2 } from 'lucide-react';
 import { exportAllCadastros } from '@/lib/exportXlsx';
 import { formatCPF } from '@/lib/cpf';
 import { toast } from '@/hooks/use-toast';
@@ -73,6 +73,7 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
   const [searchQuery, setSearchQuery] = useState('');
   const [exporting, setExporting] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const isSuperAdmin = tipoUsuario === 'super_admin';
 
@@ -189,6 +190,27 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
   const formatDate = (d: string) => {
     const date = new Date(d);
     return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+  };
+
+  const handleDelete = async (c: CadastroUnificado) => {
+    const confirmMsg = `Tem certeza que deseja apagar "${c.nome}" (${tipoConfig[c.tipo].label})?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    const key = `${c.tipo}-${c.id}`;
+    setDeletingId(key);
+    try {
+      const table = c.tipo === 'lideranca' ? 'liderancas' : c.tipo === 'fiscal' ? 'fiscais' : 'possiveis_eleitores';
+      const { error } = await supabase.from(table).delete().eq('id', c.id);
+      if (error) throw error;
+
+      toast({ title: '🗑️ Registro apagado', description: `${c.nome} foi removido` });
+      setExpandedId(null);
+      invalidarCadastros();
+    } catch (err: any) {
+      toast({ title: 'Erro ao apagar', description: err.message, variant: 'destructive' });
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   if (loading && cadastros.length === 0) {
@@ -371,14 +393,30 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
                             </div>
                           )}
                         </div>
-                      </>
-                    );
-                  })()}
-                </div>
-              )}
-            </div>
-          );
-        })}
+                         {isAdmin && (
+                           <div className="pt-2 border-t border-border">
+                             <button
+                               onClick={(e) => { e.stopPropagation(); handleDelete(c); }}
+                               disabled={deletingId === `${c.tipo}-${c.id}`}
+                               className="w-full h-9 flex items-center justify-center gap-2 bg-destructive/10 text-destructive text-xs font-semibold rounded-xl border border-destructive/20 active:scale-[0.97] transition-all disabled:opacity-50"
+                             >
+                               {deletingId === `${c.tipo}-${c.id}` ? (
+                                 <Loader2 size={14} className="animate-spin" />
+                               ) : (
+                                 <Trash2 size={14} />
+                               )}
+                               Apagar registro
+                             </button>
+                           </div>
+                         )}
+                       </>
+                     );
+                   })()}
+                 </div>
+               )}
+             </div>
+           );
+         })}
 
         {filtered.length === 0 && !loading && (
           <div className="text-center py-8">
