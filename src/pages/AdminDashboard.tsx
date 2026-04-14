@@ -98,6 +98,8 @@ export default function AdminDashboard() {
   const [tipoUsuarioFiltro, setTipoUsuarioFiltro] = useState<TipoUsuarioFiltro>('todos');
   const [rankingTipoUsuario, setRankingTipoUsuario] = useState<TipoUsuarioFiltro>('todos');
   const [rankingSearch, setRankingSearch] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: liderancasData, isLoading: lLoading } = useLiderancas('all');
   const { data: eleitoresData, isLoading: eLoading } = useEleitores('all');
