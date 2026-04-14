@@ -165,16 +165,24 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
     return { total, liderancas, fiscais, eleitores };
   }, [cadastros]);
 
+  const tagsDisponiveis = useMemo(() => {
+    const tags = new Set<string>();
+    cadastros.forEach(c => { if (c.cargo_tag) tags.add(c.cargo_tag); });
+    return Array.from(tags).sort();
+  }, [cadastros]);
+
   const filtered = useMemo(() => {
     let list = cadastros;
     if (tipoFiltro !== 'todos') list = list.filter(c => c.tipo === tipoFiltro);
+    if (filtroTag) list = list.filter(c => c.cargo_tag === filtroTag);
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       list = list.filter(c =>
         c.nome.toLowerCase().includes(q) ||
         (c.cpf && c.cpf.includes(q)) ||
         (c.telefone && c.telefone.includes(q)) ||
-        (c.cadastrado_por_nome && c.cadastrado_por_nome.toLowerCase().includes(q))
+        (c.cadastrado_por_nome && c.cadastrado_por_nome.toLowerCase().includes(q)) ||
+        (c.cargo_tag && c.cargo_tag.toLowerCase().includes(q))
       );
     }
     return list;
