@@ -729,7 +729,14 @@ export default function TabUsuarios() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">{s.nome}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">{s.partido || '—'} · {s.regiao_atuacao || '—'}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[10px] text-muted-foreground truncate">{s.partido || '—'} · {s.regiao_atuacao || '—'}</span>
+                      {s.cargo_disputado && (
+                        <span className="text-[9px] px-2 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-600">
+                          {s.cargo_disputado}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {temAcesso && user ? (
                     <button onClick={() => openEdit(user)}
