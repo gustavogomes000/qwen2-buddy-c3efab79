@@ -182,7 +182,7 @@ export default function AdminDashboard() {
     // Don't filter by city here — show all users and let the UI indicate city
     if (searchTerm) {
       const s = searchTerm.toLowerCase();
-      list = list.filter(u => u.nome.toLowerCase().includes(s));
+      list = list.filter(u => u.nome.toLowerCase().includes(s) || (getCargoTag(u.suplente_id) || '').toLowerCase().includes(s));
     }
     // Sort: users with matching city first, then others
     if (filtroMunicipioId) {
