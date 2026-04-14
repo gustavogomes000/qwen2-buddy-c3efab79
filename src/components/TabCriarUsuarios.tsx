@@ -474,20 +474,48 @@ export default function TabCriarUsuarios() {
 
             {/* Nome */}
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Nome *</label>
+              <label className="text-xs font-medium text-muted-foreground">Nome do usuário *</label>
               <input type="text" value={nome} onChange={e => setNome(e.target.value)} className={inputCls} placeholder="Nome completo" />
             </div>
 
-            {/* Profissão / Cargo */}
+            {/* Tipo de acesso */}
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Profissão / Cargo</label>
-              <input type="text" value={novoProfissao} onChange={e => setNovoProfissao(e.target.value)} className={inputCls} placeholder="Ex: Suplente, Assistente Social, Vereador..." />
-              <p className="text-[10px] text-muted-foreground">Vem como "Suplente" por padrão — edite para outra profissão se precisar</p>
+              <label className="text-xs font-medium text-muted-foreground">Tipo de acesso</label>
+              <div className="flex gap-2">
+                {([
+                  { key: 'suplente' as TipoAcesso, label: 'Suplente', icon: User },
+                  { key: 'lideranca' as TipoAcesso, label: 'Liderança', icon: Users },
+                  { key: 'coordenador' as TipoAcesso, label: 'Coordenador', icon: Shield },
+                ]).map(({ key, label, icon: Icon }) => (
+                  <button key={key}
+                    onClick={() => setTipoAcesso(key)}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                      tipoAcesso === key ? 'gradient-primary text-white shadow-lg' : 'bg-card border border-border text-muted-foreground'
+                    }`}
+                  >
+                    <Icon size={14} /> {label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                {tipoAcesso === 'suplente' && 'Suplente: cadastros ficam vinculados somente a ele'}
+                {tipoAcesso === 'lideranca' && 'Liderança: cadastros ficam vinculados somente a ela'}
+                {tipoAcesso === 'coordenador' && 'Coordenador: acesso total ao painel admin'}
+              </p>
+            </div>
+
+            {/* Profissão / Cargo — tag de filtro */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Profissão / Cargo (tag)</label>
+              <input type="text" value={novoProfissao} onChange={e => setNovoProfissao(e.target.value)} className={inputCls} placeholder="Ex: Assistente Social, Vereador, Empresário..." />
+              <p className="text-[10px] text-muted-foreground">
+                Essa tag aparece no sistema no lugar de "{tipoAcesso === 'lideranca' ? 'Liderança' : tipoAcesso === 'coordenador' ? 'Coordenador' : 'Suplente'}" — útil para filtros
+              </p>
             </div>
 
             {/* Senha */}
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Senha *</label>
+              <label className="text-xs font-medium text-muted-foreground">Senha de acesso *</label>
               <div className="relative">
                 <input
                   type={showSenha ? 'text' : 'password'}
