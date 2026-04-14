@@ -181,6 +181,7 @@ export default function TabPerfil() {
   const [saving, setSaving] = useState(false);
   const [externalSearch, setExternalSearch] = useState('');
   const [createCidade, setCreateCidade] = useState('');
+  const [cargoTagPerfil, setCargoTagPerfil] = useState('');
 
   // Edit
   const [editUser, setEditUser] = useState<UsuarioItem | null>(null);
@@ -278,6 +279,7 @@ export default function TabPerfil() {
     setSelectedModulos(new Set());
     setExternalSearch('');
     setCreateCidade(municipios.length === 1 ? municipios[0].id : '');
+    setCargoTagPerfil('');
   };
 
   const handleCreate = async () => {
