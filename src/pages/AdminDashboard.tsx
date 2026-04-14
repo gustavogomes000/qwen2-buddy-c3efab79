@@ -112,6 +112,19 @@ export default function AdminDashboard() {
   const usuarios = (usuariosData || []) as unknown as HierarquiaUsuario[];
   const loading = lLoading || eLoading || fLoading || uLoading;
 
+  // Suplentes map for cargo_disputado tag
+  const [suplentesTags, setSuplentesTags] = useState<Record<string, string>>({});
+  useEffect(() => {
+    (supabase as any).from('suplentes').select('id, cargo_disputado').then(({ data }: any) => {
+      if (data) {
+        const map: Record<string, string> = {};
+        for (const s of data) { if (s.cargo_disputado) map[s.id] = s.cargo_disputado; }
+        setSuplentesTags(map);
+      }
+    });
+  }, []);
+  const getCargoTag = (supId: string | null) => supId ? suplentesTags[supId] || null : null;
+
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [expandedTipo, setExpandedTipo] = useState<string | null>(null);
   const [popupUser, setPopupUser] = useState<string | null>(null);
