@@ -192,6 +192,27 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
     return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
   };
 
+  const handleDelete = async (c: CadastroUnificado) => {
+    const confirmMsg = `Tem certeza que deseja apagar "${c.nome}" (${tipoConfig[c.tipo].label})?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    const key = `${c.tipo}-${c.id}`;
+    setDeletingId(key);
+    try {
+      const table = c.tipo === 'lideranca' ? 'liderancas' : c.tipo === 'fiscal' ? 'fiscais' : 'possiveis_eleitores';
+      const { error } = await supabase.from(table).delete().eq('id', c.id);
+      if (error) throw error;
+
+      toast({ title: '🗑️ Registro apagado', description: `${c.nome} foi removido` });
+      setExpandedId(null);
+      invalidarCadastros();
+    } catch (err: any) {
+      toast({ title: 'Erro ao apagar', description: err.message, variant: 'destructive' });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   if (loading && cadastros.length === 0) {
     return <SkeletonLista />;
   }
