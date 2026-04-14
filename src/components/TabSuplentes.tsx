@@ -209,6 +209,7 @@ export default function TabSuplentes({ refreshKey }: Props) {
     setEditingUser({ hierarquiaUser: user, suplente: sup });
     setEditNome(user.nome);
     setEditSenha('');
+    setEditCargo(sup.cargo_disputado || 'Suplente');
     setShowEditSenha(false);
     setConfirmDelete(false);
   };
