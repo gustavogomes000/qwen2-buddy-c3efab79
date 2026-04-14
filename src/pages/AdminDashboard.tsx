@@ -197,19 +197,24 @@ export default function AdminDashboard() {
 
   /* ── Registros list ── */
   const allRegistros = useMemo(() => {
-    let result: { tipo: string; pessoa: Pessoa | null; criado_em: string; cadastrado_por: string | null; extra: string }[] = [];
+    let result: { tipo: string; pessoa: Pessoa | null; criado_em: string; cadastrado_por: string | null; suplente_id: string | null; extra: string }[] = [];
     if (tipoFiltro === 'todos' || tipoFiltro === 'lideranca')
-      filteredL.forEach(r => result.push({ tipo: 'lideranca', pessoa: r.pessoas, criado_em: r.criado_em, cadastrado_por: r.cadastrado_por, extra: r.status || '' }));
+      filteredL.forEach(r => result.push({ tipo: 'lideranca', pessoa: r.pessoas, criado_em: r.criado_em, cadastrado_por: r.cadastrado_por, suplente_id: r.suplente_id, extra: r.status || '' }));
     if (tipoFiltro === 'todos' || tipoFiltro === 'eleitor')
-      filteredE.forEach(r => result.push({ tipo: 'eleitor', pessoa: r.pessoas, criado_em: r.criado_em, cadastrado_por: r.cadastrado_por, extra: r.compromisso_voto || '' }));
+      filteredE.forEach(r => result.push({ tipo: 'eleitor', pessoa: r.pessoas, criado_em: r.criado_em, cadastrado_por: r.cadastrado_por, suplente_id: r.suplente_id, extra: r.compromisso_voto || '' }));
     if (tipoFiltro === 'todos' || tipoFiltro === 'fiscal')
-      filteredF.forEach(r => result.push({ tipo: 'fiscal', pessoa: r.pessoas, criado_em: r.criado_em || '', cadastrado_por: r.cadastrado_por, extra: r.status || '' }));
+      filteredF.forEach(r => result.push({ tipo: 'fiscal', pessoa: r.pessoas, criado_em: r.criado_em || '', cadastrado_por: r.cadastrado_por, suplente_id: r.suplente_id, extra: r.status || '' }));
     if (searchTerm) {
       const s = searchTerm.toLowerCase();
-      result = result.filter(r => r.pessoa?.nome?.toLowerCase().includes(s) || r.pessoa?.cpf?.includes(s));
+      result = result.filter(r =>
+        r.pessoa?.nome?.toLowerCase().includes(s) ||
+        r.pessoa?.cpf?.includes(s) ||
+        (getCargoTag(r.suplente_id) || '').toLowerCase().includes(s) ||
+        getUserName(r.cadastrado_por).toLowerCase().includes(s)
+      );
     }
     return result.sort((a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime());
-  }, [filteredL, filteredE, filteredF, tipoFiltro, searchTerm]);
+  }, [filteredL, filteredE, filteredF, tipoFiltro, searchTerm, suplentesTags, usuarios]);
 
   const getUserName = (id: string | null) => id ? (usuarios.find(u => u.id === id)?.nome || '—') : '—';
   const getMedalEmoji = (i: number) => i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}º`;
@@ -756,7 +761,7 @@ export default function AdminDashboard() {
           <div className="space-y-3">
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input type="text" placeholder="Buscar por nome ou CPF..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+              <input type="text" placeholder="Buscar por nome, CPF, cargo..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
                 className="w-full h-10 pl-9 pr-4 rounded-xl bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground" />
             </div>
 
@@ -778,6 +783,9 @@ export default function AdminDashboard() {
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-semibold text-foreground truncate">{r.pessoa?.nome || '—'}</p>
                     </div>
+                    {getCargoTag(r.suplente_id) && (
+                      <p className="text-[10px] text-primary/70 truncate">🔗 {getCargoTag(r.suplente_id)}</p>
+                    )}
                     <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
                       <span>{r.pessoa?.cpf || 'Sem CPF'}</span>
                       <span>{r.pessoa?.telefone || 'Sem tel.'}</span>
