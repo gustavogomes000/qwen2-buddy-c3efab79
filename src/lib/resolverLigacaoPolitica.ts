@@ -62,6 +62,8 @@ interface LigacaoPoliticaResult {
 
 /**
  * Resolve a ligação política do usuário logado para pré-preencher formulários.
+ * - Suplente e Liderança: sempre bloqueado (auto-vinculado)
+ * - Coordenador e super_admin: campo editável (pode escolher)
  */
 export async function resolverLigacaoPolitica(
   usuario: HierarquiaUsuario
@@ -99,7 +101,6 @@ export async function resolverLigacaoPolitica(
           } catch {}
         } else {
           // Suplente not found in external system — ensure it exists locally
-          // using data from hierarquia_usuarios
           await ensureLocalSuplente(usuario.suplente_id, usuario);
         }
       }
@@ -110,7 +111,15 @@ export async function resolverLigacaoPolitica(
     return resultado;
   }
 
-  // 2. Liderança → buscar liderança vinculada ao usuário, herdar suplente_id
+  // 1b. Suplente SEM suplente_id (criado livre) → bloqueado, vinculado a si mesmo
+  if (usuario.tipo === 'suplente' && !usuario.suplente_id) {
+    resultado.bloqueado = true;
+    resultado.nomeFixo = 'Vinculado ao seu perfil';
+    resultado.subtitulo = 'Cadastros serão vinculados a você';
+    return resultado;
+  }
+
+  // 2. Liderança com suplente_id → bloqueado, herdar suplente_id
   if (usuario.tipo === 'lideranca' && usuario.suplente_id) {
     resultado.bloqueado = true;
     resultado.suplenteId = usuario.suplente_id;
@@ -137,6 +146,28 @@ export async function resolverLigacaoPolitica(
     return resultado;
   }
 
-  // 4. Caso contrário (avulso, admin, coordenador) → campo editável
+  // 2b. Liderança SEM suplente_id → bloqueado, vinculado a si mesmo
+  if (usuario.tipo === 'lideranca' && !usuario.suplente_id) {
+    resultado.bloqueado = true;
+    resultado.nomeFixo = 'Vinculado ao seu perfil';
+    resultado.subtitulo = 'Cadastros serão vinculados a você';
+
+    // Tentar encontrar a liderança vinculada ao hierarquia_usuarios
+    try {
+      const { data: lids } = await (supabase as any)
+        .from('liderancas')
+        .select('id, pessoas(nome)')
+        .eq('cadastrado_por', usuario.id)
+        .eq('status', 'Ativa')
+        .limit(1);
+      if (lids && lids.length > 0) {
+        resultado.liderancaId = lids[0].id;
+      }
+    } catch {}
+
+    return resultado;
+  }
+
+  // 3. Coordenador e super_admin → campo editável (pode selecionar qualquer suplente/liderança)
   return resultado;
 }
