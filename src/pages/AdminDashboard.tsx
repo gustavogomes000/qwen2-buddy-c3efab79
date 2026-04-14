@@ -8,8 +8,9 @@ import { useLiderancas, useEleitores, useUsuarios, useFiscaisAdmin } from '@/hoo
 import {
   ArrowLeft, Users, Target, Search, X, Shield,
   ChevronDown, ChevronUp, Loader2, Download, Trophy,
-  BarChart3, UserCog, Eye, Building2, Plus, MapPin, Calendar
+  BarChart3, UserCog, Eye, Building2, Plus, MapPin, Calendar, Trash2
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { exportAllCadastros, exportCadastrosFiltered } from '@/lib/exportXlsx';
 import SeletorCidade from '@/components/SeletorCidade';
 import SeletorEvento from '@/components/SeletorEvento';
@@ -97,6 +98,8 @@ export default function AdminDashboard() {
   const [tipoUsuarioFiltro, setTipoUsuarioFiltro] = useState<TipoUsuarioFiltro>('todos');
   const [rankingTipoUsuario, setRankingTipoUsuario] = useState<TipoUsuarioFiltro>('todos');
   const [rankingSearch, setRankingSearch] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: liderancasData, isLoading: lLoading } = useLiderancas('all');
   const { data: eleitoresData, isLoading: eLoading } = useEleitores('all');
@@ -230,6 +233,22 @@ export default function AdminDashboard() {
     };
   }, [popupUser, filteredL, filteredE, filteredF, usuarios]);
 
+  const handleDeleteCadastro = async (id: string, tipo: 'lideranca' | 'eleitor' | 'fiscal') => {
+    if (!window.confirm('Tem certeza que deseja apagar este cadastro?')) return;
+    setDeletingId(id);
+    try {
+      const table = tipo === 'lideranca' ? 'liderancas' : tipo === 'fiscal' ? 'fiscais' : 'possiveis_eleitores';
+      const { error } = await (supabase as any).from(table).delete().eq('id', id);
+      if (error) throw error;
+      toast({ title: '🗑️ Registro apagado' });
+      queryClient.invalidateQueries({ queryKey: ['liderancas'] });
+      queryClient.invalidateQueries({ queryKey: ['eleitores'] });
+      queryClient.invalidateQueries({ queryKey: ['fiscais'] });
+    } catch (err: any) {
+      toast({ title: 'Erro ao apagar', description: err.message, variant: 'destructive' });
+    } finally { setDeletingId(null); }
+  };
+
   const vistaLabels: { id: VistaAtiva; icon: typeof BarChart3; label: string }[] = [
     { id: 'ranking', icon: Trophy, label: 'Ranking' },
     { id: 'usuarios', icon: UserCog, label: 'Usuários' },
@@ -277,8 +296,6 @@ export default function AdminDashboard() {
       </header>
 
       <div className="max-w-3xl mx-auto px-4 py-4 space-y-4">
-
-
         {/* ── Period filter ── */}
         <div className="flex gap-1.5">
           {(Object.keys(periodoLabels) as Periodo[]).map(p => (
@@ -909,7 +926,17 @@ export default function AdminDashboard() {
                           }`}>{r._tipo === 'lideranca' ? 'Liderança' : r._tipo === 'fiscal' ? 'Fiscal' : 'Eleitor'}</span>
                           <p className="text-sm font-semibold text-foreground">{p.nome || '—'}</p>
                         </div>
-                        <span className="text-[10px] text-muted-foreground shrink-0">{new Date(r.criado_em).toLocaleDateString('pt-BR')}</span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-[10px] text-muted-foreground">{new Date(r.criado_em).toLocaleDateString('pt-BR')}</span>
+                          <button
+                            onClick={() => handleDeleteCadastro(r.id, r._tipo === 'eleitor' ? 'eleitor' : r._tipo)}
+                            disabled={deletingId === r.id}
+                            className="p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                            title="Apagar registro"
+                          >
+                            {deletingId === r.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                          </button>
+                        </div>
                       </div>
 
                       {/* Contato */}
