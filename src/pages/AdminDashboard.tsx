@@ -505,7 +505,7 @@ export default function AdminDashboard() {
           // Busca por nome
           if (rankingSearch) {
             const s = rankingSearch.toLowerCase();
-            filtered = filtered.filter(u => u.nome.toLowerCase().includes(s));
+            filtered = filtered.filter(u => u.nome.toLowerCase().includes(s) || (getCargoTag(u.suplente_id) || '').toLowerCase().includes(s));
           }
 
           const maxTotal = filtered.length > 0 ? Math.max(...filtered.map(u => u.total), 1) : 1;
