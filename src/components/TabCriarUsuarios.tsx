@@ -275,8 +275,8 @@ export default function TabCriarUsuarios() {
           </div>
         </div>
 
-        {/* ── Search + Criar Novo button (only for suplente tab) ── */}
-        {!showForm && (
+        {/* ── Search + list (only when NOT in criarNovoMode and no selection) ── */}
+        {!showForm && !criarNovoMode && (
           <>
             <div className="space-y-2 mb-3">
               <label className="text-xs font-medium text-muted-foreground">
