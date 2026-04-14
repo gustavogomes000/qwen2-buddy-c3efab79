@@ -214,6 +214,15 @@ export default function TabCriarUsuarios() {
             }).eq('id', selecionado.id);
           } catch {}
         }
+        // Ensure suplente_municipio mapping exists
+        if (cidadeSelecionada) {
+          try {
+            await (supabase as any).from('suplente_municipio').upsert({
+              suplente_id: selecionado.id,
+              municipio_id: cidadeSelecionada,
+            }, { onConflict: 'suplente_id,municipio_id' });
+          } catch {}
+        }
       }
 
       const { data, error } = await supabase.functions.invoke('criar-usuario', { body: payload });
