@@ -115,6 +115,24 @@ export default function AdminDashboard() {
   const usuarios = (usuariosData || []) as unknown as HierarquiaUsuario[];
   const loading = lLoading || eLoading || fLoading || uLoading;
 
+  // Cadastros Fernanda (tabela isolada – diferente de Lid/Eleit/Fisc)
+  const [cadastrosFernanda, setCadastrosFernanda] = useState<Array<{ id: string; nome: string; telefone: string; cidade: string | null; instagram: string | null; cadastrado_por: string | null; criado_em: string }>>([]);
+  useEffect(() => {
+    if (!isAdmin) return;
+    let active = true;
+    const load = () => {
+      (supabase as any).from('cadastros_fernanda').select('*').order('criado_em', { ascending: false }).then(({ data }: any) => {
+        if (active && data) setCadastrosFernanda(data);
+      });
+    };
+    load();
+    const channel = supabase
+      .channel('admin_cadastros_fernanda_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cadastros_fernanda' }, load)
+      .subscribe();
+    return () => { active = false; supabase.removeChannel(channel); };
+  }, [isAdmin]);
+
   // Suplentes map for cargo_disputado tag
   const [suplentesTags, setSuplentesTags] = useState<Record<string, string>>({});
   useEffect(() => {
@@ -165,6 +183,7 @@ export default function AdminDashboard() {
   const filteredL = useMemo(() => liderancas.filter(r => dateFilter(r.criado_em)), [liderancas, dateFilter]);
   const filteredE = useMemo(() => eleitores.filter(r => dateFilter(r.criado_em)), [eleitores, dateFilter]);
   const filteredF = useMemo(() => fiscais.filter(r => r.criado_em && dateFilter(r.criado_em)), [fiscais, dateFilter]);
+  const filteredFern = useMemo(() => cadastrosFernanda.filter(r => dateFilter(r.criado_em)), [cadastrosFernanda, dateFilter]);
 
   const totais = useMemo(() => ({
     l: filteredL.length, e: filteredE.length, f: filteredF.length,
@@ -173,21 +192,21 @@ export default function AdminDashboard() {
 
   /* ── Ranking (inclui TODOS os usuários, mesmo com 0 cadastros) ── */
   const rankingUsuarios = useMemo(() => {
-    const map: Record<string, { l: number; e: number; f: number }> = {};
-    // Inicializar todos os usuários (exceto super_admin)
+    const map: Record<string, { l: number; e: number; f: number; fern: number }> = {};
     usuarios.filter(u => u.tipo !== 'super_admin').forEach(u => {
-      map[u.id] = { l: 0, e: 0, f: 0 };
+      map[u.id] = { l: 0, e: 0, f: 0, fern: 0 };
     });
-    filteredL.forEach(r => { if (!r.cadastrado_por) return; if (!map[r.cadastrado_por]) map[r.cadastrado_por] = { l: 0, e: 0, f: 0 }; map[r.cadastrado_por].l++; });
-    filteredE.forEach(r => { if (!r.cadastrado_por) return; if (!map[r.cadastrado_por]) map[r.cadastrado_por] = { l: 0, e: 0, f: 0 }; map[r.cadastrado_por].e++; });
-    filteredF.forEach(r => { if (!r.cadastrado_por) return; if (!map[r.cadastrado_por]) map[r.cadastrado_por] = { l: 0, e: 0, f: 0 }; map[r.cadastrado_por].f++; });
+    filteredL.forEach(r => { if (!r.cadastrado_por) return; if (!map[r.cadastrado_por]) map[r.cadastrado_por] = { l: 0, e: 0, f: 0, fern: 0 }; map[r.cadastrado_por].l++; });
+    filteredE.forEach(r => { if (!r.cadastrado_por) return; if (!map[r.cadastrado_por]) map[r.cadastrado_por] = { l: 0, e: 0, f: 0, fern: 0 }; map[r.cadastrado_por].e++; });
+    filteredF.forEach(r => { if (!r.cadastrado_por) return; if (!map[r.cadastrado_por]) map[r.cadastrado_por] = { l: 0, e: 0, f: 0, fern: 0 }; map[r.cadastrado_por].f++; });
+    filteredFern.forEach(r => { if (!r.cadastrado_por) return; if (!map[r.cadastrado_por]) map[r.cadastrado_por] = { l: 0, e: 0, f: 0, fern: 0 }; map[r.cadastrado_por].fern++; });
     return Object.entries(map)
       .map(([id, stats]) => {
         const u = usuarios.find(u => u.id === id);
-        return { id, nome: u?.nome || 'Desconhecido', tipo: u?.tipo || '—', municipio_id: u?.municipio_id || null, suplente_id: u?.suplente_id || null, total: stats.l + stats.e + stats.f, ...stats };
+        return { id, nome: u?.nome || 'Desconhecido', tipo: u?.tipo || '—', municipio_id: u?.municipio_id || null, suplente_id: u?.suplente_id || null, total: stats.l + stats.e + stats.f + stats.fern, ...stats };
       })
       .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome));
-  }, [filteredL, filteredE, filteredF, usuarios]);
+  }, [filteredL, filteredE, filteredF, filteredFern, usuarios]);
 
   /* ── Users list ── */
   const filteredUsers = useMemo(() => {
@@ -612,6 +631,8 @@ export default function AdminDashboard() {
                   const uLiderancas = filteredL.filter(r => r.cadastrado_por === u.id);
                   const uEleitores = filteredE.filter(r => r.cadastrado_por === u.id);
                   const uFiscais = filteredF.filter(r => r.cadastrado_por === u.id);
+                  const uFernanda = filteredFern.filter(r => r.cadastrado_por === u.id);
+                  const isFernanda = u.tipo === 'fernanda';
 
                   return (
                     <div key={u.id} className="section-card !p-0 overflow-hidden">
@@ -649,6 +670,44 @@ export default function AdminDashboard() {
 
                       {isExpanded && (
                         <div className="border-t border-border px-3 pb-3 pt-2 space-y-2">
+                          {isFernanda ? (
+                            // ─── Vista exclusiva para usuários tipo "fernanda" ───
+                            <>
+                              <div className="flex items-center justify-between px-1">
+                                <span className="text-[11px] font-semibold text-primary uppercase tracking-wider">🩷 Cadastros Fernanda</span>
+                                <span className="text-[11px] font-bold text-foreground">{uFernanda.length}</span>
+                              </div>
+                              {uFernanda.length === 0 ? (
+                                <p className="text-xs text-muted-foreground text-center py-4">Nenhum cadastro ainda</p>
+                              ) : (
+                                <div className="space-y-1.5 max-h-[400px] overflow-y-auto">
+                                  {uFernanda.map(c => (
+                                    <div key={c.id} className="p-3 rounded-xl bg-muted/50 border border-border/50 space-y-1.5">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <p className="text-sm font-semibold text-foreground truncate">{c.nome}</p>
+                                        <span className="text-[10px] text-muted-foreground shrink-0">{new Date(c.criado_em).toLocaleDateString('pt-BR')}</span>
+                                      </div>
+                                      <div className="grid grid-cols-1 gap-1">
+                                        <div className="text-[10px] bg-background rounded px-2 py-1">
+                                          <span className="text-muted-foreground">Telefone:</span>{' '}
+                                          <span className="text-foreground">{c.telefone}</span>
+                                        </div>
+                                        <div className="text-[10px] bg-background rounded px-2 py-1">
+                                          <span className="text-muted-foreground">Cidade:</span>{' '}
+                                          <span className={c.cidade ? 'text-foreground' : 'text-muted-foreground/50 italic'}>{c.cidade || '—'}</span>
+                                        </div>
+                                        <div className="text-[10px] bg-background rounded px-2 py-1">
+                                          <span className="text-muted-foreground">Instagram:</span>{' '}
+                                          <span className={c.instagram ? 'text-foreground' : 'text-muted-foreground/50 italic'}>{c.instagram || '—'}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <>
                           {/* Counts */}
                           <div className="grid grid-cols-3 gap-2">
                             {[
@@ -740,6 +799,8 @@ export default function AdminDashboard() {
                                 });
                               })()}
                             </div>
+                          )}
+                            </>
                           )}
 
                           {/* Export & detail buttons */}
