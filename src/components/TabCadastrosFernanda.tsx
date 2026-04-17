@@ -88,18 +88,21 @@ export default function TabCadastrosFernanda() {
       instagram: form.instagram.trim() || null,
       cadastrado_por: usuario?.id ?? null,
     };
-    const { error } = form.id
-      ? await supabase.from('cadastros_fernanda' as any).update(payload).eq('id', form.id)
-      : await supabase.from('cadastros_fernanda' as any).insert(payload);
-    setSaving(false);
-    if (error) {
-      toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
-      return;
+    if (form.id) {
+      const { data, error } = await supabase.from('cadastros_fernanda' as any).update(payload).eq('id', form.id).select().single();
+      setSaving(false);
+      if (error) { toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' }); return; }
+      setCadastros(prev => prev.map(c => c.id === form.id ? (data as unknown as CadastroFernanda) : c));
+      toast({ title: '✅ Cadastro atualizado' });
+    } else {
+      const { data, error } = await supabase.from('cadastros_fernanda' as any).insert(payload).select().single();
+      setSaving(false);
+      if (error) { toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' }); return; }
+      setCadastros(prev => [(data as unknown as CadastroFernanda), ...prev]);
+      toast({ title: '✅ Cadastro salvo' });
     }
-    toast({ title: form.id ? '✅ Cadastro atualizado' : '✅ Cadastro salvo' });
     setForm(EMPTY);
     setMode('list');
-    carregar();
   };
 
   const abrirNovo = () => { setForm(EMPTY); setMode('form'); };
