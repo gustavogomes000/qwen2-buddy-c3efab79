@@ -8,7 +8,7 @@ import { useLiderancas, useEleitores, useUsuarios, useFiscaisAdmin, useRealtimeS
 import {
   ArrowLeft, Users, Target, Search, X, Shield,
   ChevronDown, ChevronUp, Loader2, Download, Trophy,
-  BarChart3, UserCog, Eye, Building2, Plus, MapPin, Calendar, Trash2
+  BarChart3, UserCog, Eye, Building2, Plus, MapPin, Calendar, Trash2, ClipboardList
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { exportAllCadastros, exportCadastrosFiltered } from '@/lib/exportXlsx';
@@ -18,6 +18,7 @@ import GerenciarEventos from '@/components/GerenciarEventos';
 import { lazy, Suspense } from 'react';
 
 const TabLocalizacoes = lazy(() => import('@/components/TabLocalizacoes'));
+const AdminCadastrosFernanda = lazy(() => import('@/components/AdminCadastrosFernanda'));
 
 
 /* ── types ── */
@@ -72,7 +73,7 @@ interface HierarquiaUsuario {
 /* ── constants ── */
 type Periodo = 'hoje' | 'semana' | 'mes' | 'total';
 type TipoFiltro = 'todos' | 'lideranca' | 'eleitor' | 'fiscal';
-type VistaAtiva = 'usuarios' | 'ranking' | 'registros' | 'cidades' | 'localizacao' | 'eventos';
+type VistaAtiva = 'usuarios' | 'ranking' | 'registros' | 'cidades' | 'localizacao' | 'eventos' | 'fernanda';
 type TipoUsuarioFiltro = 'todos' | 'suplente' | 'lideranca' | 'coordenador';
 
 const periodoLabels: Record<Periodo, string> = { hoje: 'Hoje', semana: 'Semana', mes: 'Mês', total: 'Total' };
@@ -286,6 +287,7 @@ export default function AdminDashboard() {
     { id: 'localizacao', icon: MapPin, label: 'Localização' },
     { id: 'registros', icon: Eye, label: 'Registros' },
     { id: 'eventos', icon: Calendar, label: 'Eventos' },
+    { id: 'fernanda', icon: ClipboardList, label: 'Fernanda' },
     ...(municipios.length > 1 ? [{ id: 'cidades' as VistaAtiva, icon: Building2, label: 'Cidades' }] : []),
   ];
 
@@ -891,6 +893,13 @@ export default function AdminDashboard() {
         {vistaAtiva === 'localizacao' && (
           <Suspense fallback={<div className="flex items-center justify-center py-16"><Loader2 size={28} className="animate-spin text-primary" /></div>}>
             <TabLocalizacoes />
+          </Suspense>
+        )}
+
+        {/* ══════════ FERNANDA ══════════ */}
+        {vistaAtiva === 'fernanda' && (
+          <Suspense fallback={<div className="flex items-center justify-center py-16"><Loader2 size={28} className="animate-spin text-primary" /></div>}>
+            <AdminCadastrosFernanda />
           </Suspense>
         )}
 

@@ -1,1 +1,4 @@
 project_id = "yvdfdmyusdhgtzfguxbj"
+
+[functions.setup-fernanda]
+verify_jwt = false
