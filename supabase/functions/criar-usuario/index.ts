@@ -9,7 +9,7 @@ const corsHeaders = {
 const bodySchema = z.object({
   nome: z.string().trim().min(1, 'Nome é obrigatório').max(120, 'Nome muito longo'),
   senha: z.string().min(4, 'Senha deve ter ao menos 4 caracteres').max(72, 'Senha muito longa'),
-  tipo: z.enum(['super_admin', 'coordenador', 'suplente', 'lideranca', 'fiscal']).optional().default('suplente'),
+  tipo: z.enum(['super_admin', 'coordenador', 'suplente', 'lideranca', 'fiscal', 'fernanda']).optional().default('suplente'),
   superior_id: z.string().uuid().nullable().optional(),
   suplente_id: z.string().uuid().nullable().optional(),
   municipio_id: z.string().uuid().nullable().optional(),

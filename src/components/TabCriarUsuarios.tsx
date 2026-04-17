@@ -33,7 +33,7 @@ interface HierarchyUser {
 }
 
 type VinculoTab = 'suplente' | 'lideranca';
-type TipoAcesso = 'suplente' | 'lideranca' | 'coordenador';
+type TipoAcesso = 'suplente' | 'lideranca' | 'coordenador' | 'fernanda';
 
 export default function TabCriarUsuarios() {
   const { isAdmin } = useAuth();
@@ -147,6 +147,7 @@ export default function TabCriarUsuarios() {
       try {
         let suplenteId: string | null = null;
 
+        // Fernanda e Coordenador não criam registro em suplentes
         // For suplente and lideranca types, create a local suplente to link to
         if (tipoAcesso === 'suplente' || tipoAcesso === 'lideranca') {
           const { data: newSup, error: supError } = await (supabase as any).from('suplentes').insert({
@@ -504,6 +505,7 @@ export default function TabCriarUsuarios() {
                   { key: 'suplente' as TipoAcesso, label: 'Suplente', icon: User },
                   { key: 'lideranca' as TipoAcesso, label: 'Liderança', icon: Users },
                   { key: 'coordenador' as TipoAcesso, label: 'Coordenador', icon: Shield },
+                  { key: 'fernanda' as TipoAcesso, label: 'Fernanda', icon: User },
                 ]).map(({ key, label, icon: Icon }) => (
                   <button key={key}
                     onClick={() => setTipoAcesso(key)}
@@ -519,17 +521,20 @@ export default function TabCriarUsuarios() {
                 {tipoAcesso === 'suplente' && 'Suplente: cadastros ficam vinculados somente a ele'}
                 {tipoAcesso === 'lideranca' && 'Liderança: cadastros ficam vinculados somente a ela'}
                 {tipoAcesso === 'coordenador' && 'Coordenador: acesso total ao painel admin'}
+                {tipoAcesso === 'fernanda' && 'Fernanda: acesso exclusivo à tela "Cadastros Fernanda"'}
               </p>
             </div>
 
-            {/* Profissão / Cargo — tag de filtro */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Profissão / Cargo (tag)</label>
-              <input type="text" value={novoProfissao} onChange={e => setNovoProfissao(e.target.value)} className={inputCls} placeholder="Ex: Assistente Social, Vereador, Empresário..." />
-              <p className="text-[10px] text-muted-foreground">
-                Essa tag aparece no sistema no lugar de "{tipoAcesso === 'lideranca' ? 'Liderança' : tipoAcesso === 'coordenador' ? 'Coordenador' : 'Suplente'}" — útil para filtros
-              </p>
-            </div>
+            {/* Profissão / Cargo — tag de filtro (apenas para suplente/lideranca/coordenador) */}
+            {tipoAcesso !== 'fernanda' && (
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Profissão / Cargo (tag)</label>
+                <input type="text" value={novoProfissao} onChange={e => setNovoProfissao(e.target.value)} className={inputCls} placeholder="Ex: Assistente Social, Vereador, Empresário..." />
+                <p className="text-[10px] text-muted-foreground">
+                  Essa tag aparece no sistema no lugar de "{tipoAcesso === 'lideranca' ? 'Liderança' : tipoAcesso === 'coordenador' ? 'Coordenador' : 'Suplente'}" — útil para filtros
+                </p>
+              </div>
+            )}
 
             {/* Senha */}
             <div className="space-y-1">
