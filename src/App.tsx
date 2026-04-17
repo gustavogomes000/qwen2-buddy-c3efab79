@@ -21,6 +21,7 @@ import { getPendingCount } from "@/lib/offlineQueue";
 const Login = lazy(() => import("./pages/Login"));
 const Home = lazy(() => import("./pages/Home"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const HomeFernanda = lazy(() => import("./pages/HomeFernanda"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,11 +38,15 @@ const idbPersister = createIdbPersister();
 
 const PERSISTED_QUERY_PREFIXES = ['liderancas', 'eleitores', 'fiscais', 'contagens', 'hierarquia_usuarios'];
 
-function PrivateRoute({ children }: { children: React.ReactNode }) {
+function PrivateRoute({ children, allowFernanda = false }: { children: React.ReactNode; allowFernanda?: boolean }) {
   const { user, loading, usuario } = useAuth();
   if (loading) return <LoadingScreen message="Verificando acesso" showProgress />;
   if (!user) return <Navigate to="/login" replace />;
   if (!usuario) return <Navigate to="/login" replace />;
+  // Redirect Fernanda users to their dedicated screen
+  if ((usuario.tipo as string) === 'fernanda' && !allowFernanda) {
+    return <Navigate to="/fernanda" replace />;
+  }
   return <>{children}</>;
 }
 
@@ -61,6 +66,7 @@ function AppRoutes() {
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
         <Route path="/admin" element={<PrivateRoute><AdminDashboard /></PrivateRoute>} />
+        <Route path="/fernanda" element={<PrivateRoute allowFernanda><HomeFernanda /></PrivateRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
