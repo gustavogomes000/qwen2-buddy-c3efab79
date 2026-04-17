@@ -15,10 +15,11 @@ const TabLiderancas = lazy(() => import('@/components/TabLiderancas'));
 const TabFiscais = lazy(() => import('@/components/TabFiscais'));
 const TabEleitores = lazy(() => import('@/components/TabEleitores'));
 const TabCadastros = lazy(() => import('@/components/TabCadastros'));
+const TabCadastrosFernanda = lazy(() => import('@/components/TabCadastrosFernanda'));
 const TabPerfil = lazy(() => import('@/components/TabPerfil'));
 
 const TAB_STORAGE_KEY = 'home-active-tab';
-const VALID_TABS: TabId[] = ['liderancas', 'fiscais', 'eleitores', 'cadastros', 'perfil'];
+const VALID_TABS: TabId[] = ['liderancas', 'fiscais', 'eleitores', 'cadastros', 'fernanda', 'perfil'];
 
 function getInitialTab(): TabId {
   try {
@@ -46,7 +47,12 @@ export default function Home() {
 
   // Auto-correct tab if user doesn't have access to current tab
   useEffect(() => {
-    if (!usuario?.id || isAdminOrCoord) return;
+    if (!usuario?.id) return;
+    if (!isAdminOrCoord && activeTab === 'fernanda') {
+      handleTabChange('cadastros');
+      return;
+    }
+    if (isAdminOrCoord) return;
     supabase.from('usuario_modulos').select('modulo').eq('usuario_id', usuario.id)
       .then(({ data }) => {
         if (!data) return;
@@ -63,7 +69,7 @@ export default function Home() {
           }
         }
       });
-  }, [usuario?.id, isAdminOrCoord]);
+  }, [usuario?.id, isAdminOrCoord, activeTab, handleTabChange]);
 
   useEffect(() => {
     try {
@@ -89,6 +95,7 @@ export default function Home() {
     fiscais: 'Cadastro de Fiscais',
     eleitores: 'Cadastro de Eleitores',
     cadastros: isAdmin ? 'Todos os Cadastros' : 'Meus Cadastros',
+    fernanda: 'Cadastros Fernanda',
     perfil: 'Perfil & Usuários',
   };
 
@@ -124,7 +131,7 @@ export default function Home() {
             {visitedTabs.has('fiscais') && activeTab === 'fiscais' && <TabFiscais refreshKey={refreshKey} onSaved={handleSaved} />}
             {visitedTabs.has('eleitores') && activeTab === 'eleitores' && <TabEleitores refreshKey={refreshKey} onSaved={handleSaved} />}
             {visitedTabs.has('cadastros') && activeTab === 'cadastros' && <TabCadastros refreshKey={refreshKey} onSaved={handleSaved} />}
-            
+            {visitedTabs.has('fernanda') && activeTab === 'fernanda' && isAdmin && <TabCadastrosFernanda />}
             {activeTab === 'perfil' && <TabPerfil />}
           </Suspense>
         </div>
