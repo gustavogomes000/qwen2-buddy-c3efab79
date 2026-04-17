@@ -4,7 +4,7 @@ import { resolverMunicipioId, buscarNomeMunicipio } from '@/lib/resolverMunicipi
 import { logger } from '@/lib/logger';
 import type { User } from '@supabase/supabase-js';
 
-export type TipoUsuario = 'super_admin' | 'coordenador' | 'suplente' | 'lideranca';
+export type TipoUsuario = 'super_admin' | 'coordenador' | 'suplente' | 'lideranca' | 'fernanda';
 
 interface HierarquiaUsuario {
   id: string;

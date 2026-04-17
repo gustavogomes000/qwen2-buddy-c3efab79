@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   LogOut, Shield, User, UserPlus, Loader2, Crown, Users, Eye, Copy, X,
   Pencil, Trash2, Settings, Search, ArrowLeft, KeyRound, EyeOff, ChevronDown,
-  MapPin, Building2, Plus
+  MapPin, Building2, Plus, ClipboardList
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import ModulosUsuario from '@/components/ModulosUsuario';
@@ -15,6 +15,7 @@ const tipoLabels: Record<string, string> = {
   coordenador: 'Coordenador',
   suplente: 'Suplente',
   lideranca: 'Liderança',
+  fernanda: 'Fernanda',
 };
 
 const tipoIcons: Record<string, typeof Shield> = {
@@ -22,6 +23,7 @@ const tipoIcons: Record<string, typeof Shield> = {
   coordenador: Shield,
   suplente: User,
   lideranca: Users,
+  fernanda: ClipboardList,
 };
 
 const tipoColors: Record<string, string> = {
@@ -29,6 +31,7 @@ const tipoColors: Record<string, string> = {
   coordenador: 'bg-orange-500/10 text-orange-600',
   suplente: 'bg-blue-500/10 text-blue-600',
   lideranca: 'bg-purple-500/10 text-purple-600',
+  fernanda: 'bg-primary/10 text-primary',
 };
 
 const MODULOS_OPTIONS = [
@@ -621,6 +624,7 @@ export default function TabPerfil() {
                   { value: 'suplente', label: '🏛️ Suplente' },
                   { value: 'lideranca', label: '👥 Liderança' },
                   { value: 'coordenador', label: '📋 Coordenador' },
+                  { value: 'fernanda', label: '🩷 Fernanda' },
                 ].map(opt => (
                   <button
                     key={opt.value}
@@ -649,6 +653,13 @@ export default function TabPerfil() {
                   placeholder="Ex: Assistente Social, Vereador, Empresário..."
                 />
                 <p className="text-[10px] text-muted-foreground">Essa tag aparece no perfil e nos filtros de cadastros</p>
+              </div>
+            )}
+
+            {createMode === 'livre' && tipoNovo === 'fernanda' && (
+              <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2">
+                <p className="text-xs font-medium text-foreground">Acesso Fernanda</p>
+                <p className="text-[10px] text-muted-foreground">Esse usuário entra direto na tela exclusiva de Cadastros Fernanda.</p>
               </div>
             )}
 
@@ -882,18 +893,22 @@ export default function TabPerfil() {
               )}
 
               {/* Stats */}
-              <div className="flex gap-2 mb-3">
-                <div className="flex-1 bg-muted/50 rounded-lg px-3 py-2 text-center">
+              <div className="grid grid-cols-4 gap-2 mb-3">
+                <div className="bg-muted/50 rounded-lg px-3 py-2 text-center">
                   <p className="text-lg font-bold text-foreground">{usuarios.length}</p>
                   <p className="text-[10px] text-muted-foreground">Total</p>
                 </div>
-                <div className="flex-1 bg-blue-500/5 rounded-lg px-3 py-2 text-center">
+                <div className="bg-blue-500/5 rounded-lg px-3 py-2 text-center">
                   <p className="text-lg font-bold text-blue-600">{usuarios.filter(u => u.tipo === 'suplente').length}</p>
                   <p className="text-[10px] text-muted-foreground">Suplentes</p>
                 </div>
-                <div className="flex-1 bg-purple-500/5 rounded-lg px-3 py-2 text-center">
+                <div className="bg-purple-500/5 rounded-lg px-3 py-2 text-center">
                   <p className="text-lg font-bold text-purple-600">{usuarios.filter(u => u.tipo === 'lideranca').length}</p>
                   <p className="text-[10px] text-muted-foreground">Lideranças</p>
+                </div>
+                <div className="bg-primary/5 rounded-lg px-3 py-2 text-center">
+                  <p className="text-lg font-bold text-primary">{usuarios.filter(u => u.tipo === 'fernanda').length}</p>
+                  <p className="text-[10px] text-muted-foreground">Fernanda</p>
                 </div>
               </div>
 
@@ -940,7 +955,7 @@ export default function TabPerfil() {
       {isAdmin && (
         <div className="section-card">
           <h2 className="section-title flex items-center gap-2">🏙️ Gerenciar Cidades</h2>
-          <div className="flex gap-2 mb-3">
+          <div className="grid grid-cols-4 gap-2 mb-3">
             <input type="text" placeholder="Nome da nova cidade..." id="perfil-nova-cidade"
               className="flex-1 h-10 px-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30" />
             <button
