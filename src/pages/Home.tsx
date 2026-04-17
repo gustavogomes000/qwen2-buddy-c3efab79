@@ -45,6 +45,15 @@ export default function Home() {
   const isAdminOrCoord = tipoUsuario === 'super_admin' || tipoUsuario === 'coordenador';
   const showCitySelector = isAdminOrCoord && municipios.length > 0;
 
+  const handleTabChange = useCallback((tab: TabId) => {
+    setActiveTab(tab);
+    setVisitedTabs(prev => {
+      if (prev.has(tab)) return prev;
+      return new Set([...prev, tab]);
+    });
+    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   // Auto-correct tab if user doesn't have access to current tab
   useEffect(() => {
     if (!usuario?.id) return;
@@ -60,7 +69,6 @@ export default function Home() {
         const hasLiderancas = modulos.has('master') || modulos.has('cadastrar_liderancas');
         const hasEleitores = modulos.has('master') || modulos.has('cadastrar_liderancas') || modulos.has('cadastrar_eleitores');
         
-        // If on liderancas/fiscais tab but only has eleitores module, redirect
         if ((activeTab === 'liderancas' || activeTab === 'fiscais') && !hasLiderancas) {
           if (hasEleitores) {
             handleTabChange('eleitores');
@@ -76,15 +84,6 @@ export default function Home() {
       localStorage.setItem(TAB_STORAGE_KEY, activeTab);
     } catch {}
   }, [activeTab]);
-
-  const handleTabChange = useCallback((tab: TabId) => {
-    setActiveTab(tab);
-    setVisitedTabs(prev => {
-      if (prev.has(tab)) return prev;
-      return new Set([...prev, tab]);
-    });
-    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
 
   const handleSaved = useCallback(() => {
     setRefreshKey(k => k + 1);
