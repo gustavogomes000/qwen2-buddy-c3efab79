@@ -339,6 +339,29 @@ export default function TabCadastrosFernanda() {
         <Plus size={16} /> Novo cadastro
       </button>
 
+      {/* Filtro por período */}
+      <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-0.5 scrollbar-hide">
+        {([
+          { v: 'todos', l: 'Todos' },
+          { v: 'hoje', l: 'Hoje' },
+          { v: 'ontem', l: 'Ontem' },
+          { v: 'semana', l: '7 dias' },
+          { v: 'mes', l: '30 dias' },
+        ] as const).map(opt => (
+          <button
+            key={opt.v}
+            onClick={() => setPeriodo(opt.v)}
+            className={`shrink-0 px-3 h-8 rounded-full text-[11px] font-semibold transition-all active:scale-95 ${
+              periodo === opt.v
+                ? 'gradient-primary text-white shadow-sm'
+                : 'bg-card border border-border text-muted-foreground'
+            }`}
+          >
+            {opt.l}
+          </button>
+        ))}
+      </div>
+
       {/* Count */}
       <p className="text-xs text-muted-foreground">
         {loading ? 'Carregando...' : `${filtrados.length} cadastro${filtrados.length !== 1 ? 's' : ''}`}
