@@ -4,9 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import {
   Plus, Search, ChevronRight, ArrowLeft, Loader2, Phone, Instagram,
-  MapPin, User, Trash2, XCircle, Pencil, Calendar
+  MapPin, User, Trash2, XCircle, Pencil, Calendar as CalendarIcon
 } from 'lucide-react';
 import SkeletonLista from '@/components/SkeletonLista';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 interface CadastroFernanda {
   id: string;
