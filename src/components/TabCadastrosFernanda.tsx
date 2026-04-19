@@ -412,6 +412,8 @@ export default function TabCadastrosFernanda() {
               numberOfMonths={1}
               initialFocus
               locale={ptBR}
+              modifiersClassNames={{ today: '' }}
+              classNames={{ day_today: '' }}
               className={cn('p-3 pointer-events-auto')}
             />
             <div className="p-2 pt-0 flex gap-2">
