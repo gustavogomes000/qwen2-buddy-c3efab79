@@ -78,9 +78,12 @@ export default function TabCadastrosFernanda() {
     const q = busca.toLowerCase().trim();
     let base = cadastros;
 
-    if (periodo === 'data' && dataEspecifica) {
-      const inicioDia = new Date(dataEspecifica.getFullYear(), dataEspecifica.getMonth(), dataEspecifica.getDate());
-      const fimDia = new Date(inicioDia); fimDia.setDate(fimDia.getDate() + 1);
+    if (periodo === 'data' && (intervalo?.from || intervalo?.to)) {
+      const start = intervalo.from ?? intervalo.to!;
+      const end = intervalo.to ?? intervalo.from!;
+      const inicioDia = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+      const fimDia = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+      fimDia.setDate(fimDia.getDate() + 1);
       base = base.filter(c => {
         const d = new Date(c.criado_em);
         return d >= inicioDia && d < fimDia;
