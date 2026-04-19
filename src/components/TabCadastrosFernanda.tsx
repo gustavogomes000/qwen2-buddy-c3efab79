@@ -4,9 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import {
   Plus, Search, ChevronRight, ArrowLeft, Loader2, Phone, Instagram,
-  MapPin, User, Trash2, XCircle, Pencil, Calendar
+  MapPin, User, Trash2, XCircle, Pencil, Calendar as CalendarIcon
 } from 'lucide-react';
 import SkeletonLista from '@/components/SkeletonLista';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 interface CadastroFernanda {
   id: string;
@@ -41,7 +46,9 @@ export default function TabCadastrosFernanda() {
   const [saving, setSaving] = useState(false);
   const [selected, setSelected] = useState<CadastroFernanda | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [periodo, setPeriodo] = useState<'todos' | 'hoje' | 'ontem' | 'semana' | 'mes'>('todos');
+  const [periodo, setPeriodo] = useState<'todos' | 'hoje' | 'ontem' | 'semana' | 'mes' | 'data'>('hoje');
+  const [dataEspecifica, setDataEspecifica] = useState<Date | undefined>(undefined);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -71,7 +78,14 @@ export default function TabCadastrosFernanda() {
     const q = busca.toLowerCase().trim();
     let base = cadastros;
 
-    if (periodo !== 'todos') {
+    if (periodo === 'data' && dataEspecifica) {
+      const inicioDia = new Date(dataEspecifica.getFullYear(), dataEspecifica.getMonth(), dataEspecifica.getDate());
+      const fimDia = new Date(inicioDia); fimDia.setDate(fimDia.getDate() + 1);
+      base = base.filter(c => {
+        const d = new Date(c.criado_em);
+        return d >= inicioDia && d < fimDia;
+      });
+    } else if (periodo !== 'todos' && periodo !== 'data') {
       const agora = new Date();
       const inicio = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
       let from = inicio;
@@ -101,7 +115,7 @@ export default function TabCadastrosFernanda() {
       || (c.cidade || '').toLowerCase().includes(q)
       || (c.instagram || '').toLowerCase().includes(q)
     );
-  }, [cadastros, busca, periodo]);
+  }, [cadastros, busca, periodo, dataEspecifica]);
 
   const handleSalvar = async () => {
     if (!form.nome.trim()) { toast({ title: 'Informe o nome', variant: 'destructive' }); return; }
@@ -342,24 +356,54 @@ export default function TabCadastrosFernanda() {
       {/* Filtro por período */}
       <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-0.5 scrollbar-hide">
         {([
-          { v: 'todos', l: 'Todos' },
           { v: 'hoje', l: 'Hoje' },
           { v: 'ontem', l: 'Ontem' },
           { v: 'semana', l: '7 dias' },
           { v: 'mes', l: '30 dias' },
+          { v: 'todos', l: 'Todos' },
         ] as const).map(opt => (
           <button
             key={opt.v}
-            onClick={() => setPeriodo(opt.v)}
-            className={`shrink-0 px-3 h-8 rounded-full text-[11px] font-semibold transition-all active:scale-95 ${
+            onClick={() => { setPeriodo(opt.v); setDataEspecifica(undefined); }}
+            className={cn(
+              'shrink-0 px-3 h-8 rounded-full text-[11px] font-semibold transition-all active:scale-95',
               periodo === opt.v
                 ? 'gradient-primary text-white shadow-sm'
                 : 'bg-card border border-border text-muted-foreground'
-            }`}
+            )}
           >
             {opt.l}
           </button>
         ))}
+        <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+          <PopoverTrigger asChild>
+            <button
+              className={cn(
+                'shrink-0 px-3 h-8 rounded-full text-[11px] font-semibold transition-all active:scale-95 flex items-center gap-1',
+                periodo === 'data'
+                  ? 'gradient-primary text-white shadow-sm'
+                  : 'bg-card border border-border text-muted-foreground'
+              )}
+            >
+              <CalendarIcon size={11} />
+              {periodo === 'data' && dataEspecifica
+                ? format(dataEspecifica, "dd/MM/yy", { locale: ptBR })
+                : 'Data'}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={dataEspecifica}
+              onSelect={(d) => {
+                if (d) { setDataEspecifica(d); setPeriodo('data'); setDatePickerOpen(false); }
+              }}
+              initialFocus
+              locale={ptBR}
+              className={cn('p-3 pointer-events-auto')}
+            />
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Count */}
@@ -399,7 +443,7 @@ export default function TabCadastrosFernanda() {
                     )}
                   </div>
                   <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground/70 mt-1">
-                    <Calendar size={9} /> {new Date(c.criado_em).toLocaleDateString('pt-BR')}
+                    <CalendarIcon size={9} /> {new Date(c.criado_em).toLocaleDateString('pt-BR')}
                   </div>
                 </div>
                 <ChevronRight size={16} className="text-muted-foreground shrink-0 mt-1" />
