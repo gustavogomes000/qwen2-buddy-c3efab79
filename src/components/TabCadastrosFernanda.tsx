@@ -41,6 +41,7 @@ export default function TabCadastrosFernanda() {
   const [saving, setSaving] = useState(false);
   const [selected, setSelected] = useState<CadastroFernanda | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [periodo, setPeriodo] = useState<'todos' | 'hoje' | 'ontem' | 'semana' | 'mes'>('todos');
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -68,14 +69,39 @@ export default function TabCadastrosFernanda() {
 
   const filtrados = useMemo(() => {
     const q = busca.toLowerCase().trim();
-    if (!q) return cadastros;
-    return cadastros.filter(c =>
+    let base = cadastros;
+
+    if (periodo !== 'todos') {
+      const agora = new Date();
+      const inicio = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+      let from = inicio;
+      let to: Date | null = null;
+      if (periodo === 'hoje') {
+        // from = inicio do dia, sem limite superior (até agora)
+      } else if (periodo === 'ontem') {
+        from = new Date(inicio); from.setDate(from.getDate() - 1);
+        to = inicio;
+      } else if (periodo === 'semana') {
+        from = new Date(inicio); from.setDate(from.getDate() - 7);
+      } else if (periodo === 'mes') {
+        from = new Date(inicio); from.setDate(from.getDate() - 30);
+      }
+      base = base.filter(c => {
+        const d = new Date(c.criado_em);
+        if (d < from) return false;
+        if (to && d >= to) return false;
+        return true;
+      });
+    }
+
+    if (!q) return base;
+    return base.filter(c =>
       c.nome.toLowerCase().includes(q)
       || c.telefone.toLowerCase().includes(q)
       || (c.cidade || '').toLowerCase().includes(q)
       || (c.instagram || '').toLowerCase().includes(q)
     );
-  }, [cadastros, busca]);
+  }, [cadastros, busca, periodo]);
 
   const handleSalvar = async () => {
     if (!form.nome.trim()) { toast({ title: 'Informe o nome', variant: 'destructive' }); return; }
@@ -312,6 +338,29 @@ export default function TabCadastrosFernanda() {
       >
         <Plus size={16} /> Novo cadastro
       </button>
+
+      {/* Filtro por período */}
+      <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-0.5 scrollbar-hide">
+        {([
+          { v: 'todos', l: 'Todos' },
+          { v: 'hoje', l: 'Hoje' },
+          { v: 'ontem', l: 'Ontem' },
+          { v: 'semana', l: '7 dias' },
+          { v: 'mes', l: '30 dias' },
+        ] as const).map(opt => (
+          <button
+            key={opt.v}
+            onClick={() => setPeriodo(opt.v)}
+            className={`shrink-0 px-3 h-8 rounded-full text-[11px] font-semibold transition-all active:scale-95 ${
+              periodo === opt.v
+                ? 'gradient-primary text-white shadow-sm'
+                : 'bg-card border border-border text-muted-foreground'
+            }`}
+          >
+            {opt.l}
+          </button>
+        ))}
+      </div>
 
       {/* Count */}
       <p className="text-xs text-muted-foreground">
