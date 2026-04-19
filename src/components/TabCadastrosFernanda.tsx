@@ -103,10 +103,12 @@ export default function TabCadastrosFernanda() {
       } else if (periodo === 'mes') {
         from = new Date(inicio); from.setDate(from.getDate() - 30);
       }
+      const fromTs = from.getTime();
+      const toTs = to ? to.getTime() : null;
       base = base.filter(c => {
-        const d = new Date(c.criado_em);
-        if (d < from) return false;
-        if (to && d >= to) return false;
+        const t = Date.parse(c.criado_em);
+        if (t < fromTs) return false;
+        if (toTs !== null && t >= toTs) return false;
         return true;
       });
     }
