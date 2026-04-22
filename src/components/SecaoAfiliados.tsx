@@ -426,6 +426,12 @@ export default function SecaoAfiliados() {
                     }`}>
                       {isPendente ? 'Aguardando cadastro' : 'Ativo no sistema'}
                     </span>
+                    {!isPendente && (
+                      <p className="text-[10px] text-muted-foreground mt-1 truncate">
+                        <span className="font-semibold">Usuário:</span>{' '}
+                        <span className="font-mono">{logins[item.id] || '…'}</span>
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-1">
                     {!isPendente && (
