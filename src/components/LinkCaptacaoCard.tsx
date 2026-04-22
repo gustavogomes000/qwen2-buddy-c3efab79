@@ -45,11 +45,12 @@ export default function LinkCaptacaoCard() {
     if (!usuario?.id) return;
     let cancelled = false;
     (async () => {
-      const { data } = await (supabase as any)
+      const { data, error: selErr } = await (supabase as any)
         .from('hierarquia_usuarios')
         .select('link_token')
         .eq('id', usuario.id)
         .maybeSingle();
+      if (selErr) console.warn('[LinkCaptacao] select err', selErr);
       if (cancelled) return;
       if (data?.link_token) {
         setLinkToken(data.link_token);
@@ -58,11 +59,17 @@ export default function LinkCaptacaoCard() {
       const novoToken = (crypto as any)?.randomUUID
         ? (crypto as any).randomUUID().replace(/-/g, '')
         : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-      const { error } = await (supabase as any)
+      const { error, data: updData } = await (supabase as any)
         .from('hierarquia_usuarios')
         .update({ link_token: novoToken })
-        .eq('id', usuario.id);
-      if (!cancelled && !error) setLinkToken(novoToken);
+        .eq('id', usuario.id)
+        .select('link_token')
+        .maybeSingle();
+      if (error) console.warn('[LinkCaptacao] update err', error);
+      if (!cancelled) {
+        if (!error) setLinkToken(updData?.link_token || novoToken);
+        else setLinkToken(novoToken); // fallback: mostra mesmo assim para o usuário copiar
+      }
     })();
     return () => { cancelled = true; };
   }, [usuario?.id]);
