@@ -229,9 +229,20 @@ export default function SecaoAfiliados() {
             <input value={mCpf} onChange={e => setMCpf(e.target.value)} placeholder="CPF" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
             <input type="date" value={mNasc} onChange={e => setMNasc(e.target.value)} className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <input value={mInsta} onChange={e => setMInsta(e.target.value)} placeholder="Instagram" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
-            <input value={mCidade} onChange={e => setMCidade(e.target.value)} placeholder="Cidade" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
+          <input value={mInsta} onChange={e => setMInsta(e.target.value)} placeholder="Instagram" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
+
+          <div className="pt-1 mt-1 border-t border-border">
+            <p className="text-[11px] font-semibold text-foreground mb-2">🗳️ Dados eleitorais (obrigatórios)</p>
+            <input value={mTitulo} onChange={e => setMTitulo(e.target.value)} placeholder="Título de eleitor *" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm mb-2" />
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <input value={mZona} onChange={e => setMZona(e.target.value)} placeholder="Zona *" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
+              <input value={mSecao} onChange={e => setMSecao(e.target.value)} placeholder="Seção *" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
+            </div>
+            <div className="grid grid-cols-3 gap-2 mb-2">
+              <input value={mMunicipio} onChange={e => setMMunicipio(e.target.value)} placeholder="Município *" className="col-span-2 w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
+              <input value={mUf} onChange={e => setMUf(e.target.value.toUpperCase())} placeholder="UF" maxLength={2} className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
+            </div>
+            <input value={mColegio} onChange={e => setMColegio(e.target.value)} placeholder="Colégio eleitoral *" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
           </div>
           <button
             onClick={criarManual}
