@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Link2, Copy, Plus, UserCheck, Clock, Trash2, ExternalLink } from 'lucide-react';
+import { Loader2, Link2, Copy, Plus, UserCheck, Clock, Trash2, ExternalLink, UserPlus, X } from 'lucide-react';
 
 interface AfiliadoItem {
   id: string;
@@ -23,6 +23,16 @@ export default function SecaoAfiliados() {
   const [items, setItems] = useState<AfiliadoItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [showManual, setShowManual] = useState(false);
+  const [savingManual, setSavingManual] = useState(false);
+  const [mNome, setMNome] = useState('');
+  const [mTelefone, setMTelefone] = useState('');
+  const [mWhats, setMWhats] = useState('');
+  const [mEmail, setMEmail] = useState('');
+  const [mCpf, setMCpf] = useState('');
+  const [mNasc, setMNasc] = useState('');
+  const [mInsta, setMInsta] = useState('');
+  const [mCidade, setMCidade] = useState('');
 
   const fetchAfiliados = useCallback(async () => {
     setLoading(true);
@@ -107,6 +117,57 @@ export default function SecaoAfiliados() {
     }
   };
 
+  const criarManual = async () => {
+    if (!mNome.trim() || mNome.trim().length < 2) {
+      toast({ title: 'Informe o nome', variant: 'destructive' }); return;
+    }
+    if (!mTelefone.trim()) {
+      toast({ title: 'Informe o telefone', variant: 'destructive' }); return;
+    }
+    setSavingManual(true);
+    try {
+      // 1) Cria pessoa
+      const { data: pessoa, error: pErr } = await (supabase as any)
+        .from('pessoas')
+        .insert({
+          nome: mNome.trim(),
+          telefone: mTelefone.trim(),
+          whatsapp: mWhats.trim() || mTelefone.trim(),
+          email: mEmail.trim() || null,
+          cpf: mCpf.trim() || null,
+          data_nascimento: mNasc || null,
+          instagram: mInsta.trim() || null,
+          municipio_eleitoral: mCidade.trim() || null,
+          origem: 'afiliado_manual',
+        })
+        .select('id')
+        .single();
+      if (pErr) throw pErr;
+
+      // 2) Cria hierarquia ativa (sem auth_user_id, sem link)
+      const { error: hErr } = await (supabase as any)
+        .from('hierarquia_usuarios')
+        .insert({
+          nome: mNome.trim(),
+          tipo: 'afiliado',
+          ativo: true,
+          superior_id: usuario?.id || null,
+          municipio_id: usuario?.municipio_id || null,
+        });
+      if (hErr) throw hErr;
+
+      toast({ title: '✅ Afiliado cadastrado manualmente!' });
+      setShowManual(false);
+      setMNome(''); setMTelefone(''); setMWhats(''); setMEmail('');
+      setMCpf(''); setMNasc(''); setMInsta(''); setMCidade('');
+      fetchAfiliados();
+    } catch (err: any) {
+      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    } finally {
+      setSavingManual(false);
+    }
+  };
+
   if (!isAdmin) return null;
 
   const pendentes = items.filter(i => !i.auth_user_id);
@@ -114,23 +175,60 @@ export default function SecaoAfiliados() {
 
   return (
     <div className="section-card">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
         <h2 className="section-title flex items-center gap-1.5">
           <Link2 size={16} className="text-primary" /> Afiliados
         </h2>
-        <button
-          onClick={criarAfiliado}
-          disabled={creating}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
-        >
-          {creating ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-          Novo Afiliado
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => setShowManual(v => !v)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-border bg-card text-foreground hover:bg-muted active:scale-95 transition-all"
+          >
+            {showManual ? <X size={14} /> : <UserPlus size={14} />}
+            {showManual ? 'Cancelar' : 'Cadastrar manual'}
+          </button>
+          <button
+            onClick={criarAfiliado}
+            disabled={creating}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
+          >
+            {creating ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+            Gerar link
+          </button>
+        </div>
       </div>
 
       <p className="text-[11px] text-muted-foreground mb-3">
-        Gere um link e envie para a pessoa. Ela mesma preenche os dados e define usuário e senha.
+        <b>Gerar link</b>: a pessoa preenche os dados e cria seu próprio usuário/senha. <b>Cadastrar manual</b>: você mesmo registra o afiliado (sem login no sistema).
       </p>
+
+      {showManual && (
+        <div className="mb-3 p-3 rounded-xl border border-border bg-muted/30 space-y-2">
+          <p className="text-[11px] font-semibold text-foreground">Cadastro manual de afiliado</p>
+          <input value={mNome} onChange={e => setMNome(e.target.value)} placeholder="Nome completo *" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
+          <div className="grid grid-cols-2 gap-2">
+            <input value={mTelefone} onChange={e => setMTelefone(e.target.value)} placeholder="Telefone *" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
+            <input value={mWhats} onChange={e => setMWhats(e.target.value)} placeholder="WhatsApp" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
+          </div>
+          <input value={mEmail} onChange={e => setMEmail(e.target.value)} placeholder="E-mail" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
+          <div className="grid grid-cols-2 gap-2">
+            <input value={mCpf} onChange={e => setMCpf(e.target.value)} placeholder="CPF" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
+            <input type="date" value={mNasc} onChange={e => setMNasc(e.target.value)} className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <input value={mInsta} onChange={e => setMInsta(e.target.value)} placeholder="Instagram" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
+            <input value={mCidade} onChange={e => setMCidade(e.target.value)} placeholder="Cidade" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
+          </div>
+          <button
+            onClick={criarManual}
+            disabled={savingManual}
+            className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+          >
+            {savingManual ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />}
+            Salvar afiliado
+          </button>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-2 mb-3">
