@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import ModulosUsuario from '@/components/ModulosUsuario';
+import SecaoAfiliados from '@/components/SecaoAfiliados';
 
 const tipoLabels: Record<string, string> = {
   super_admin: 'Super Admin',
@@ -857,6 +858,9 @@ export default function TabPerfil() {
 
       {/* Self password change */}
       <SelfPasswordChange />
+
+      {/* Afiliados - Admin only */}
+      {isAdmin && <SecaoAfiliados />}
 
       {/* User management - Admin only */}
       {isAdmin && (
