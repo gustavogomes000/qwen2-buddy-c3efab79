@@ -259,6 +259,23 @@ export default function SecaoAfiliados() {
             </div>
             <input value={mColegio} onChange={e => setMColegio(e.target.value)} placeholder="Colégio eleitoral *" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
           </div>
+
+          <div className="pt-1 mt-1 border-t border-border">
+            <p className="text-[11px] font-semibold text-foreground mb-2">🔑 Acesso ao sistema</p>
+            <input
+              value={mLogin}
+              onChange={e => setMLogin(e.target.value.toLowerCase().replace(/[^a-z0-9.]/g, ''))}
+              placeholder="Nome de usuário * (ex: maria.silva)"
+              className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm mb-2"
+            />
+            <input
+              type="password"
+              value={mSenha}
+              onChange={e => setMSenha(e.target.value)}
+              placeholder="Senha * (mín. 6 caracteres)"
+              className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm"
+            />
+          </div>
           <button
             onClick={criarManual}
             disabled={savingManual}
