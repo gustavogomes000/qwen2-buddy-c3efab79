@@ -90,7 +90,19 @@ export default function TabCadastrosAfiliado() {
     return () => { supabase.removeChannel(channel); };
   }, [carregar]);
 
-  const linkPublico = useMemo(() => linkToken ? `${window.location.origin}/cadastro/${linkToken}` : null, [linkToken]);
+  const slugNome = useMemo(() => {
+    const n = (usuario?.nome || '').toString().trim().toLowerCase();
+    return n
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim().replace(/\s+/g, '-').replace(/-+/g, '-')
+      .slice(0, 40) || 'afiliado';
+  }, [usuario?.nome]);
+
+  const linkPublico = useMemo(
+    () => linkToken ? `${window.location.origin}/c/${slugNome}/${linkToken}` : null,
+    [linkToken, slugNome]
+  );
 
   const copiarLink = async () => {
     if (!linkPublico) return;
@@ -353,14 +365,21 @@ export default function TabCadastrosAfiliado() {
   // ─── LIST VIEW ───
   return (
     <div className="space-y-3 pb-24">
-      {/* Link público */}
+      {/* Link personalizado do afiliado */}
       {linkPublico && (
-        <div className="section-card space-y-2">
+        <div className="section-card space-y-2 border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
           <div className="flex items-center gap-2">
             <Link2 size={14} className="text-primary" />
-            <p className="text-[11px] font-semibold text-foreground">Seu link público</p>
+            <p className="text-[11px] font-semibold text-foreground">
+              Seu link personalizado
+            </p>
           </div>
-          <p className="text-[10px] text-muted-foreground break-all bg-muted/40 rounded-lg p-2">{linkPublico}</p>
+          <p className="text-[10px] text-muted-foreground -mt-1">
+            Envie para captar cadastros vinculados a <strong>{usuario?.nome}</strong>
+          </p>
+          <p className="text-[10px] text-foreground break-all bg-muted/40 rounded-lg p-2 font-mono">
+            {linkPublico}
+          </p>
           <div className="flex gap-2">
             <button onClick={copiarLink} className="flex-1 h-9 rounded-lg bg-card border border-border text-[11px] font-semibold flex items-center justify-center gap-1.5 active:scale-95">
               <Copy size={12} /> Copiar
