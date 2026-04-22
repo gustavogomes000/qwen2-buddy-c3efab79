@@ -254,14 +254,30 @@ export default function SecaoAfiliados() {
         <div className="mb-3 p-3 rounded-xl border border-border bg-muted/30 space-y-2">
           <p className="text-[11px] font-semibold text-foreground">Cadastro manual de afiliado</p>
           <input value={mNome} onChange={e => setMNome(e.target.value)} placeholder="Nome completo *" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
-          <div className="grid grid-cols-2 gap-2">
-            <input value={mTelefone} onChange={e => setMTelefone(e.target.value)} placeholder="Telefone *" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
-            <input value={mWhats} onChange={e => setMWhats(e.target.value)} placeholder="WhatsApp" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
-          </div>
+          <input value={mWhats} onChange={e => setMWhats(e.target.value)} placeholder="WhatsApp * (também usado como telefone)" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
           <input value={mEmail} onChange={e => setMEmail(e.target.value)} placeholder="E-mail" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
           <div className="grid grid-cols-2 gap-2">
             <input value={mCpf} onChange={e => setMCpf(e.target.value)} placeholder="CPF" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
             <input type="date" value={mNasc} onChange={e => setMNasc(e.target.value)} className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
+          </div>
+          <div>
+            <div className="relative">
+              <input
+                value={mCep}
+                onChange={e => setMCep(e.target.value)}
+                onBlur={e => buscarCidadeCep(e.target.value)}
+                placeholder="CEP"
+                className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm"
+              />
+              {mBuscandoCep && (
+                <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-muted-foreground" />
+              )}
+            </div>
+            {mCidadeCep && (
+              <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold">
+                <MapPin size={10} /> {mCidadeCep}{mUfCep ? ` - ${mUfCep}` : ''}
+              </span>
+            )}
           </div>
           <input value={mInsta} onChange={e => setMInsta(e.target.value)} placeholder="Instagram" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
 
