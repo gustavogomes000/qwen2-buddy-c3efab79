@@ -731,6 +731,53 @@ export type Database = {
         }
         Relationships: []
       }
+      cadastros_afiliados: {
+        Row: {
+          afiliado_id: string
+          atualizado_em: string
+          cep: string | null
+          criado_em: string
+          data_nascimento: string | null
+          id: string
+          nome: string
+          origem: string
+          rede_social: string | null
+          telefone: string
+        }
+        Insert: {
+          afiliado_id: string
+          atualizado_em?: string
+          cep?: string | null
+          criado_em?: string
+          data_nascimento?: string | null
+          id?: string
+          nome: string
+          origem?: string
+          rede_social?: string | null
+          telefone: string
+        }
+        Update: {
+          afiliado_id?: string
+          atualizado_em?: string
+          cep?: string | null
+          criado_em?: string
+          data_nascimento?: string | null
+          id?: string
+          nome?: string
+          origem?: string
+          rede_social?: string | null
+          telefone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cadastros_afiliados_afiliado_id_fkey"
+            columns: ["afiliado_id"]
+            isOneToOne: false
+            referencedRelation: "hierarquia_usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cadastros_fernanda: {
         Row: {
           atualizado_em: string
@@ -1365,6 +1412,7 @@ export type Database = {
           auth_user_id: string | null
           criado_em: string | null
           id: string
+          link_token: string | null
           municipio_id: string | null
           nome: string
           superior_id: string | null
@@ -1377,6 +1425,7 @@ export type Database = {
           auth_user_id?: string | null
           criado_em?: string | null
           id?: string
+          link_token?: string | null
           municipio_id?: string | null
           nome: string
           superior_id?: string | null
@@ -1389,6 +1438,7 @@ export type Database = {
           auth_user_id?: string | null
           criado_em?: string | null
           id?: string
+          link_token?: string | null
           municipio_id?: string | null
           nome?: string
           superior_id?: string | null
@@ -2576,6 +2626,7 @@ export type Database = {
         | "lideranca"
         | "fiscal"
         | "fernanda"
+        | "afiliado"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2711,6 +2762,7 @@ export const Constants = {
         "lideranca",
         "fiscal",
         "fernanda",
+        "afiliado",
       ],
     },
   },
