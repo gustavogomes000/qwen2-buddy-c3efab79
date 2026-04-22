@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCidade } from '@/contexts/CidadeContext';
 import { toast } from '@/hooks/use-toast';
 import {
-  Loader2, UserPlus, Users, User, CheckCircle2, Search, Eye, EyeOff, Shield, Plus, Pencil
+  Loader2, UserPlus, Users, User, CheckCircle2, Search, Eye, EyeOff, Shield, Plus, Pencil, Link2
 } from 'lucide-react';
 
 interface SuplenteExterno {
@@ -509,16 +509,17 @@ export default function TabCriarUsuarios() {
             {/* Tipo de acesso */}
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Tipo de acesso</label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 {([
                   { key: 'suplente' as TipoAcesso, label: 'Suplente', icon: User },
                   { key: 'lideranca' as TipoAcesso, label: 'Liderança', icon: Users },
                   { key: 'coordenador' as TipoAcesso, label: 'Coordenador', icon: Shield },
                   { key: 'fernanda' as TipoAcesso, label: 'Fernanda', icon: User },
+                  { key: 'afiliado' as TipoAcesso, label: 'Afiliado', icon: Link2 },
                 ]).map(({ key, label, icon: Icon }) => (
                   <button key={key}
                     onClick={() => setTipoAcesso(key)}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                    className={`flex-1 min-w-[90px] py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${
                       tipoAcesso === key ? 'gradient-primary text-white shadow-lg' : 'bg-card border border-border text-muted-foreground'
                     }`}
                   >
@@ -531,11 +532,12 @@ export default function TabCriarUsuarios() {
                 {tipoAcesso === 'lideranca' && 'Liderança: cadastros ficam vinculados somente a ela'}
                 {tipoAcesso === 'coordenador' && 'Coordenador: acesso total ao painel admin'}
                 {tipoAcesso === 'fernanda' && 'Fernanda: acesso exclusivo à tela "Cadastros Fernanda"'}
+                {tipoAcesso === 'afiliado' && 'Afiliado: tela própria + link público para captar cadastros'}
               </p>
             </div>
 
             {/* Profissão / Cargo — tag de filtro (apenas para suplente/lideranca/coordenador) */}
-            {tipoAcesso !== 'fernanda' && (
+            {tipoAcesso !== 'fernanda' && tipoAcesso !== 'afiliado' && (
               <div className="space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">Profissão / Cargo (tag)</label>
                 <input type="text" value={novoProfissao} onChange={e => setNovoProfissao(e.target.value)} className={inputCls} placeholder="Ex: Assistente Social, Vereador, Empresário..." />
