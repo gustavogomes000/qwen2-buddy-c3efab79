@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Users, UserCircle, BarChart3, Target, List, Search, WifiOff, ClipboardList } from 'lucide-react';
+import { Users, UserCircle, BarChart3, Target, List, Search, WifiOff, ClipboardList, Link2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { getPendingCount } from '@/lib/offlineQueue';
 import { onSyncStatusChange } from '@/services/offlineSync';
 
-export type TabId = 'liderancas' | 'fiscais' | 'eleitores' | 'cadastros' | 'fernanda' | 'perfil';
+export type TabId = 'liderancas' | 'fiscais' | 'eleitores' | 'cadastros' | 'fernanda' | 'afiliados' | 'perfil';
 
 interface Props {
   active: TabId;
@@ -19,6 +19,7 @@ const ALL_TABS: { id: TabId; icon: typeof Users; label: string; module?: string 
   { id: 'eleitores', icon: Target, label: 'Eleitores', module: 'cadastrar_eleitores' },
   { id: 'cadastros', icon: List, label: 'Cadastros' },
   { id: 'fernanda', icon: ClipboardList, label: 'Fernanda' },
+  { id: 'afiliados', icon: Link2, label: 'Afiliados' },
   { id: 'perfil', icon: UserCircle, label: 'Perfil' },
 ];
 
@@ -72,6 +73,8 @@ export default function BottomNav({ active, onChange }: Props) {
     if (tab.id === 'perfil') return true;
     // Fernanda only visible to admin/coord
     if (tab.id === 'fernanda') return isAdminOrCoord;
+    // Afiliados only visible to admin/coord
+    if (tab.id === 'afiliados') return isAdminOrCoord;
     // Cadastros (meus cadastros) - visible to everyone
     if (tab.id === 'cadastros') return true;
     // Module-based tabs
