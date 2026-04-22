@@ -17,7 +17,6 @@ export default function CadastroPublicoAfiliado() {
   const [dataNascimento, setDataNascimento] = useState('');
   const [cep, setCep] = useState('');
   const [instagram, setInstagram] = useState('');
-  const [facebook, setFacebook] = useState('');
   // Eleitorais
   const [tituloEleitor, setTituloEleitor] = useState('');
   const [zonaEleitoral, setZonaEleitoral] = useState('');
@@ -50,6 +49,9 @@ export default function CadastroPublicoAfiliado() {
     if (!senha.trim() || senha.length < 6) {
       toast({ title: 'A senha precisa ter no mínimo 6 caracteres', variant: 'destructive' }); return;
     }
+    if (!tituloEleitor.trim() || !zonaEleitoral.trim() || !secaoEleitoral.trim() || !municipioEleitoral.trim() || !colegioEleitoral.trim()) {
+      toast({ title: 'Preencha os dados eleitorais (Título, Zona, Seção, Município e Colégio)', variant: 'destructive' }); return;
+    }
 
     setSaving(true);
     try {
@@ -64,13 +66,12 @@ export default function CadastroPublicoAfiliado() {
           data_nascimento: dataNascimento || null,
           cep: cep.trim() || null,
           instagram: instagram.trim() || null,
-          facebook: facebook.trim() || null,
-          titulo_eleitor: tituloEleitor.trim() || null,
-          zona_eleitoral: zonaEleitoral.trim() || null,
-          secao_eleitoral: secaoEleitoral.trim() || null,
-          municipio_eleitoral: municipioEleitoral.trim() || null,
+          titulo_eleitor: tituloEleitor.trim(),
+          zona_eleitoral: zonaEleitoral.trim(),
+          secao_eleitoral: secaoEleitoral.trim(),
+          municipio_eleitoral: municipioEleitoral.trim(),
           uf_eleitoral: ufEleitoral.trim() || null,
-          colegio_eleitoral: colegioEleitoral.trim() || null,
+          colegio_eleitoral: colegioEleitoral.trim(),
           usuario_login: usuarioLogin.trim(),
           senha: senha,
         },
@@ -118,7 +119,7 @@ export default function CadastroPublicoAfiliado() {
   const labelCls = 'text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-background flex items-start justify-center px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-background flex items-start justify-center px-4 pt-8 pb-24">
       <div className="w-full max-w-md space-y-5">
         <div className="text-center space-y-2">
           <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
@@ -164,15 +165,9 @@ export default function CadastroPublicoAfiliado() {
               <label className={labelCls}>CEP</label>
               <input type="text" value={cep} onChange={e => setCep(e.target.value)} className={inputCls} maxLength={20} placeholder="00000-000" />
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className={labelCls}>Instagram</label>
-                <input type="text" value={instagram} onChange={e => setInstagram(e.target.value)} className={inputCls} maxLength={120} placeholder="@usuario" />
-              </div>
-              <div>
-                <label className={labelCls}>Facebook</label>
-                <input type="text" value={facebook} onChange={e => setFacebook(e.target.value)} className={inputCls} maxLength={120} placeholder="usuario" />
-              </div>
+            <div>
+              <label className={labelCls}>Instagram</label>
+              <input type="text" value={instagram} onChange={e => setInstagram(e.target.value)} className={inputCls} maxLength={120} placeholder="@usuario" />
             </div>
           </div>
 
@@ -180,23 +175,23 @@ export default function CadastroPublicoAfiliado() {
           <div className="section-card space-y-3">
             <h2 className="section-title">🗳️ Dados eleitorais</h2>
             <div>
-              <label className={labelCls}>Título de eleitor</label>
-              <input type="text" value={tituloEleitor} onChange={e => setTituloEleitor(e.target.value)} className={inputCls} maxLength={40} />
+              <label className={labelCls}>Título de eleitor *</label>
+              <input type="text" value={tituloEleitor} onChange={e => setTituloEleitor(e.target.value)} className={inputCls} maxLength={40} required placeholder="Número do título" />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className={labelCls}>Zona</label>
-                <input type="text" value={zonaEleitoral} onChange={e => setZonaEleitoral(e.target.value)} className={inputCls} maxLength={20} />
+                <label className={labelCls}>Zona *</label>
+                <input type="text" value={zonaEleitoral} onChange={e => setZonaEleitoral(e.target.value)} className={inputCls} maxLength={20} required placeholder="045" />
               </div>
               <div>
-                <label className={labelCls}>Seção</label>
-                <input type="text" value={secaoEleitoral} onChange={e => setSecaoEleitoral(e.target.value)} className={inputCls} maxLength={20} />
+                <label className={labelCls}>Seção *</label>
+                <input type="text" value={secaoEleitoral} onChange={e => setSecaoEleitoral(e.target.value)} className={inputCls} maxLength={20} required placeholder="0123" />
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <div className="col-span-2">
-                <label className={labelCls}>Município eleitoral</label>
-                <input type="text" value={municipioEleitoral} onChange={e => setMunicipioEleitoral(e.target.value)} className={inputCls} maxLength={120} />
+                <label className={labelCls}>Município *</label>
+                <input type="text" value={municipioEleitoral} onChange={e => setMunicipioEleitoral(e.target.value)} className={inputCls} maxLength={120} required placeholder="Cidade" />
               </div>
               <div>
                 <label className={labelCls}>UF</label>
@@ -204,8 +199,8 @@ export default function CadastroPublicoAfiliado() {
               </div>
             </div>
             <div>
-              <label className={labelCls}>Colégio eleitoral</label>
-              <input type="text" value={colegioEleitoral} onChange={e => setColegioEleitoral(e.target.value)} className={inputCls} maxLength={200} placeholder="Nome do local de votação" />
+              <label className={labelCls}>Colégio eleitoral *</label>
+              <input type="text" value={colegioEleitoral} onChange={e => setColegioEleitoral(e.target.value)} className={inputCls} maxLength={200} required placeholder="Nome da escola / local" />
             </div>
           </div>
 

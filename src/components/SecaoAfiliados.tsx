@@ -32,7 +32,12 @@ export default function SecaoAfiliados() {
   const [mCpf, setMCpf] = useState('');
   const [mNasc, setMNasc] = useState('');
   const [mInsta, setMInsta] = useState('');
-  const [mCidade, setMCidade] = useState('');
+  const [mTitulo, setMTitulo] = useState('');
+  const [mZona, setMZona] = useState('');
+  const [mSecao, setMSecao] = useState('');
+  const [mMunicipio, setMMunicipio] = useState('');
+  const [mUf, setMUf] = useState('GO');
+  const [mColegio, setMColegio] = useState('');
 
   const fetchAfiliados = useCallback(async () => {
     setLoading(true);
@@ -124,6 +129,9 @@ export default function SecaoAfiliados() {
     if (!mTelefone.trim()) {
       toast({ title: 'Informe o telefone', variant: 'destructive' }); return;
     }
+    if (!mTitulo.trim() || !mZona.trim() || !mSecao.trim() || !mMunicipio.trim() || !mColegio.trim()) {
+      toast({ title: 'Preencha os dados eleitorais (Título, Zona, Seção, Município e Colégio)', variant: 'destructive' }); return;
+    }
     setSavingManual(true);
     try {
       // 1) Cria pessoa
@@ -137,7 +145,12 @@ export default function SecaoAfiliados() {
           cpf: mCpf.trim() || null,
           data_nascimento: mNasc || null,
           instagram: mInsta.trim() || null,
-          municipio_eleitoral: mCidade.trim() || null,
+          titulo_eleitor: mTitulo.trim(),
+          zona_eleitoral: mZona.trim(),
+          secao_eleitoral: mSecao.trim(),
+          municipio_eleitoral: mMunicipio.trim(),
+          uf_eleitoral: mUf.trim() || 'GO',
+          colegio_eleitoral: mColegio.trim(),
           origem: 'afiliado_manual',
         })
         .select('id')
@@ -159,7 +172,8 @@ export default function SecaoAfiliados() {
       toast({ title: '✅ Afiliado cadastrado manualmente!' });
       setShowManual(false);
       setMNome(''); setMTelefone(''); setMWhats(''); setMEmail('');
-      setMCpf(''); setMNasc(''); setMInsta(''); setMCidade('');
+      setMCpf(''); setMNasc(''); setMInsta('');
+      setMTitulo(''); setMZona(''); setMSecao(''); setMMunicipio(''); setMUf('GO'); setMColegio('');
       fetchAfiliados();
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' });
@@ -215,9 +229,20 @@ export default function SecaoAfiliados() {
             <input value={mCpf} onChange={e => setMCpf(e.target.value)} placeholder="CPF" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
             <input type="date" value={mNasc} onChange={e => setMNasc(e.target.value)} className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <input value={mInsta} onChange={e => setMInsta(e.target.value)} placeholder="Instagram" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
-            <input value={mCidade} onChange={e => setMCidade(e.target.value)} placeholder="Cidade" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
+          <input value={mInsta} onChange={e => setMInsta(e.target.value)} placeholder="Instagram" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
+
+          <div className="pt-1 mt-1 border-t border-border">
+            <p className="text-[11px] font-semibold text-foreground mb-2">🗳️ Dados eleitorais (obrigatórios)</p>
+            <input value={mTitulo} onChange={e => setMTitulo(e.target.value)} placeholder="Título de eleitor *" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm mb-2" />
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <input value={mZona} onChange={e => setMZona(e.target.value)} placeholder="Zona *" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
+              <input value={mSecao} onChange={e => setMSecao(e.target.value)} placeholder="Seção *" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
+            </div>
+            <div className="grid grid-cols-3 gap-2 mb-2">
+              <input value={mMunicipio} onChange={e => setMMunicipio(e.target.value)} placeholder="Município *" className="col-span-2 w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
+              <input value={mUf} onChange={e => setMUf(e.target.value.toUpperCase())} placeholder="UF" maxLength={2} className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
+            </div>
+            <input value={mColegio} onChange={e => setMColegio(e.target.value)} placeholder="Colégio eleitoral *" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
           </div>
           <button
             onClick={criarManual}
