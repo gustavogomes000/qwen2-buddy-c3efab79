@@ -62,6 +62,12 @@ Deno.serve(async (req) => {
 
     const p = parsed.data;
     const { token } = p;
+    const whatsappFinal = (p.whatsapp?.trim() || p.telefone?.trim() || '').trim();
+    if (!whatsappFinal || whatsappFinal.length < 6) {
+      return new Response(JSON.stringify({ error: 'Informe um WhatsApp válido' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -120,8 +126,8 @@ Deno.serve(async (req) => {
       .insert({
         nome: p.nome.trim(),
         cpf: p.cpf?.trim() || null,
-        telefone: p.telefone.trim(),
-        whatsapp: p.whatsapp?.trim() || p.telefone.trim(),
+        telefone: whatsappFinal,
+        whatsapp: whatsappFinal,
         email: p.email?.trim() || null,
         data_nascimento: p.data_nascimento || null,
         instagram: p.instagram?.trim() || null,
