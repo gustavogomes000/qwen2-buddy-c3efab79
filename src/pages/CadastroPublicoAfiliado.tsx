@@ -160,6 +160,12 @@ export default function CadastroPublicoAfiliado() {
     if (!capTelefone.trim() || capTelefone.replace(/\D/g, '').length < 6) {
       toast({ title: 'Informe um telefone válido', variant: 'destructive' }); return;
     }
+    const exigeEleitoral = tipoParam === 'lideranca' || tipoParam === 'fiscal' || tipoParam === 'eleitor';
+    if (exigeEleitoral) {
+      if (!capTitulo.trim() || !capZona.trim() || !capSecao.trim() || !capMunicipioEl.trim() || !capColegio.trim()) {
+        toast({ title: 'Preencha todos os dados eleitorais (Título, Zona, Seção, Município e Colégio)', variant: 'destructive' }); return;
+      }
+    }
     setCapSaving(true);
     try {
       const url = `https://yvdfdmyusdhgtzfguxbj.supabase.co/functions/v1/captacao-afiliado`;
@@ -168,11 +174,29 @@ export default function CadastroPublicoAfiliado() {
         headers: { 'Content-Type': 'application/json', apikey: (supabase as any).supabaseKey || '' },
         body: JSON.stringify({
           token,
+          tipo: tipoParam || 'afiliado',
           nome: capNome.trim(),
+          cpf: capCpf.trim() || null,
+          email: capEmail.trim() || null,
           telefone: capTelefone.trim(),
+          whatsapp: capTelefone.trim(),
           data_nascimento: capData || null,
           cep: capCep.trim() || null,
+          cidade: capCidadeCep || null,
+          uf: capUfCep || null,
+          instagram: capInstagram.trim() || null,
           rede_social: capRede.trim() || null,
+          titulo_eleitor: capTitulo.trim() || null,
+          zona_eleitoral: capZona.trim() || null,
+          secao_eleitoral: capSecao.trim() || null,
+          municipio_eleitoral: capMunicipioEl.trim() || null,
+          uf_eleitoral: capUfEl.trim() || null,
+          colegio_eleitoral: capColegio.trim() || null,
+          nivel_comprometimento: capNivelComp.trim() || null,
+          apoiadores_estimados: capApoiadores ? Number(capApoiadores) : null,
+          bairros_influencia: capBairros.trim() || null,
+          compromisso_voto: capCompromisso.trim() || null,
+          observacoes: capObs.trim() || null,
         }),
       });
       const j = await r.json();
