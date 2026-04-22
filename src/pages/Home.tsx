@@ -16,10 +16,11 @@ const TabFiscais = lazy(() => import('@/components/TabFiscais'));
 const TabEleitores = lazy(() => import('@/components/TabEleitores'));
 const TabCadastros = lazy(() => import('@/components/TabCadastros'));
 const TabCadastrosFernanda = lazy(() => import('@/components/TabCadastrosFernanda'));
+const AdminCadastrosAfiliados = lazy(() => import('@/components/AdminCadastrosAfiliados'));
 const TabPerfil = lazy(() => import('@/components/TabPerfil'));
 
 const TAB_STORAGE_KEY = 'home-active-tab';
-const VALID_TABS: TabId[] = ['liderancas', 'fiscais', 'eleitores', 'cadastros', 'fernanda', 'perfil'];
+const VALID_TABS: TabId[] = ['liderancas', 'fiscais', 'eleitores', 'cadastros', 'fernanda', 'afiliados', 'perfil'];
 
 function getInitialTab(): TabId {
   try {
@@ -61,6 +62,10 @@ export default function Home() {
       handleTabChange('cadastros');
       return;
     }
+    if (!isAdminOrCoord && activeTab === 'afiliados') {
+      handleTabChange('cadastros');
+      return;
+    }
     if (isAdminOrCoord) return;
     supabase.from('usuario_modulos').select('modulo').eq('usuario_id', usuario.id)
       .then(({ data }) => {
@@ -95,6 +100,7 @@ export default function Home() {
     eleitores: 'Cadastro de Eleitores',
     cadastros: isAdmin ? 'Todos os Cadastros' : 'Meus Cadastros',
     fernanda: 'Cadastros Fernanda',
+    afiliados: 'Cadastros Afiliados',
     perfil: 'Perfil & Usuários',
   };
 
@@ -131,6 +137,7 @@ export default function Home() {
             {visitedTabs.has('eleitores') && activeTab === 'eleitores' && <TabEleitores refreshKey={refreshKey} onSaved={handleSaved} />}
             {visitedTabs.has('cadastros') && activeTab === 'cadastros' && <TabCadastros refreshKey={refreshKey} onSaved={handleSaved} />}
             {visitedTabs.has('fernanda') && activeTab === 'fernanda' && isAdmin && <TabCadastrosFernanda />}
+            {visitedTabs.has('afiliados') && activeTab === 'afiliados' && isAdmin && <AdminCadastrosAfiliados />}
             {activeTab === 'perfil' && <TabPerfil />}
           </Suspense>
         </div>
