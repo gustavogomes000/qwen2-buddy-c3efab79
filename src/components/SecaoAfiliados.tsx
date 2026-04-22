@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Link2, Copy, Plus, UserCheck, Clock, Trash2, ExternalLink, UserPlus, X } from 'lucide-react';
+import { Loader2, Link2, Copy, Plus, UserCheck, Clock, Trash2, ExternalLink, UserPlus, X, MapPin } from 'lucide-react';
 
 interface AfiliadoItem {
   id: string;
@@ -26,11 +26,14 @@ export default function SecaoAfiliados() {
   const [showManual, setShowManual] = useState(false);
   const [savingManual, setSavingManual] = useState(false);
   const [mNome, setMNome] = useState('');
-  const [mTelefone, setMTelefone] = useState('');
   const [mWhats, setMWhats] = useState('');
   const [mEmail, setMEmail] = useState('');
   const [mCpf, setMCpf] = useState('');
   const [mNasc, setMNasc] = useState('');
+  const [mCep, setMCep] = useState('');
+  const [mCidadeCep, setMCidadeCep] = useState('');
+  const [mUfCep, setMUfCep] = useState('');
+  const [mBuscandoCep, setMBuscandoCep] = useState(false);
   const [mInsta, setMInsta] = useState('');
   const [mTitulo, setMTitulo] = useState('');
   const [mZona, setMZona] = useState('');
@@ -40,6 +43,19 @@ export default function SecaoAfiliados() {
   const [mColegio, setMColegio] = useState('');
   const [mLogin, setMLogin] = useState('');
   const [mSenha, setMSenha] = useState('');
+
+  const buscarCidadeCep = async (raw: string) => {
+    const cepLimpo = raw.replace(/\D/g, '');
+    if (cepLimpo.length !== 8) { setMCidadeCep(''); setMUfCep(''); return; }
+    setMBuscandoCep(true);
+    try {
+      const r = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+      const d = await r.json();
+      if (d?.erro) { setMCidadeCep(''); setMUfCep(''); }
+      else { setMCidadeCep(d.localidade || ''); setMUfCep(d.uf || ''); }
+    } catch { setMCidadeCep(''); setMUfCep(''); }
+    finally { setMBuscandoCep(false); }
+  };
 
   const fetchAfiliados = useCallback(async () => {
     setLoading(true);
@@ -128,8 +144,8 @@ export default function SecaoAfiliados() {
     if (!mNome.trim() || mNome.trim().length < 2) {
       toast({ title: 'Informe o nome', variant: 'destructive' }); return;
     }
-    if (!mTelefone.trim()) {
-      toast({ title: 'Informe o telefone', variant: 'destructive' }); return;
+    if (!mWhats.trim() || mWhats.replace(/\D/g,'').length < 6) {
+      toast({ title: 'Informe um WhatsApp válido', variant: 'destructive' }); return;
     }
     if (!mTitulo.trim() || !mZona.trim() || !mSecao.trim() || !mMunicipio.trim() || !mColegio.trim()) {
       toast({ title: 'Preencha os dados eleitorais (Título, Zona, Seção, Município e Colégio)', variant: 'destructive' }); return;
@@ -164,10 +180,12 @@ export default function SecaoAfiliados() {
           token: pend.link_token,
           nome: mNome.trim(),
           cpf: mCpf.trim() || null,
-          telefone: mTelefone.trim(),
-          whatsapp: mWhats.trim() || null,
+          telefone: mWhats.trim(),
+          whatsapp: mWhats.trim(),
           email: mEmail.trim() || null,
           data_nascimento: mNasc || null,
+          cep: mCep.trim() || null,
+          cidade_cep: mCidadeCep || null,
           instagram: mInsta.trim() || null,
           titulo_eleitor: mTitulo.trim(),
           zona_eleitoral: mZona.trim(),
@@ -185,8 +203,9 @@ export default function SecaoAfiliados() {
 
       toast({ title: '✅ Afiliado cadastrado!', description: `Usuário: ${d?.login || mLogin.trim()}` });
       setShowManual(false);
-      setMNome(''); setMTelefone(''); setMWhats(''); setMEmail('');
+      setMNome(''); setMWhats(''); setMEmail('');
       setMCpf(''); setMNasc(''); setMInsta('');
+      setMCep(''); setMCidadeCep(''); setMUfCep('');
       setMTitulo(''); setMZona(''); setMSecao(''); setMMunicipio(''); setMUf('GO'); setMColegio('');
       setMLogin(''); setMSenha('');
       fetchAfiliados();
@@ -235,14 +254,30 @@ export default function SecaoAfiliados() {
         <div className="mb-3 p-3 rounded-xl border border-border bg-muted/30 space-y-2">
           <p className="text-[11px] font-semibold text-foreground">Cadastro manual de afiliado</p>
           <input value={mNome} onChange={e => setMNome(e.target.value)} placeholder="Nome completo *" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
-          <div className="grid grid-cols-2 gap-2">
-            <input value={mTelefone} onChange={e => setMTelefone(e.target.value)} placeholder="Telefone *" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
-            <input value={mWhats} onChange={e => setMWhats(e.target.value)} placeholder="WhatsApp" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
-          </div>
+          <input value={mWhats} onChange={e => setMWhats(e.target.value)} placeholder="WhatsApp * (também usado como telefone)" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
           <input value={mEmail} onChange={e => setMEmail(e.target.value)} placeholder="E-mail" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
           <div className="grid grid-cols-2 gap-2">
             <input value={mCpf} onChange={e => setMCpf(e.target.value)} placeholder="CPF" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
             <input type="date" value={mNasc} onChange={e => setMNasc(e.target.value)} className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
+          </div>
+          <div>
+            <div className="relative">
+              <input
+                value={mCep}
+                onChange={e => setMCep(e.target.value)}
+                onBlur={e => buscarCidadeCep(e.target.value)}
+                placeholder="CEP"
+                className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm"
+              />
+              {mBuscandoCep && (
+                <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-muted-foreground" />
+              )}
+            </div>
+            {mCidadeCep && (
+              <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold">
+                <MapPin size={10} /> {mCidadeCep}{mUfCep ? ` - ${mUfCep}` : ''}
+              </span>
+            )}
           </div>
           <input value={mInsta} onChange={e => setMInsta(e.target.value)} placeholder="Instagram" className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm" />
 

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, CheckCircle2, ClipboardList, Eye, EyeOff, KeyRound, LogIn } from 'lucide-react';
+import { Loader2, CheckCircle2, ClipboardList, Eye, EyeOff, KeyRound, LogIn, MapPin } from 'lucide-react';
 
 export default function CadastroPublicoAfiliado() {
   const { token } = useParams<{ token: string }>();
@@ -11,11 +11,13 @@ export default function CadastroPublicoAfiliado() {
   // Pessoais
   const [nome, setNome] = useState('');
   const [cpf, setCpf] = useState('');
-  const [telefone, setTelefone] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [email, setEmail] = useState('');
   const [dataNascimento, setDataNascimento] = useState('');
   const [cep, setCep] = useState('');
+  const [cidadeCep, setCidadeCep] = useState('');
+  const [ufCep, setUfCep] = useState('');
+  const [buscandoCep, setBuscandoCep] = useState(false);
   const [instagram, setInstagram] = useState('');
   // Eleitorais
   const [tituloEleitor, setTituloEleitor] = useState('');
@@ -34,14 +36,30 @@ export default function CadastroPublicoAfiliado() {
 
   useEffect(() => { document.title = 'Cadastro de Afiliado'; }, []);
 
+  const buscarCidadePorCep = async (raw: string) => {
+    const cepLimpo = raw.replace(/\D/g, '');
+    if (cepLimpo.length !== 8) { setCidadeCep(''); setUfCep(''); return; }
+    setBuscandoCep(true);
+    try {
+      const r = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+      const d = await r.json();
+      if (d?.erro) { setCidadeCep(''); setUfCep(''); }
+      else { setCidadeCep(d.localidade || ''); setUfCep(d.uf || ''); }
+    } catch {
+      setCidadeCep(''); setUfCep('');
+    } finally {
+      setBuscandoCep(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
     if (!nome.trim() || nome.trim().length < 2) {
       toast({ title: 'Informe seu nome completo', variant: 'destructive' }); return;
     }
-    if (!telefone.trim()) {
-      toast({ title: 'Informe um telefone', variant: 'destructive' }); return;
+    if (!whatsapp.trim() || whatsapp.replace(/\D/g,'').length < 6) {
+      toast({ title: 'Informe um WhatsApp válido', variant: 'destructive' }); return;
     }
     if (!usuarioLogin.trim() || usuarioLogin.trim().length < 3) {
       toast({ title: 'Defina um nome de usuário (mín. 3 letras)', variant: 'destructive' }); return;
@@ -60,11 +78,12 @@ export default function CadastroPublicoAfiliado() {
           token,
           nome: nome.trim(),
           cpf: cpf.trim() || null,
-          telefone: telefone.trim(),
-          whatsapp: whatsapp.trim() || null,
+          telefone: whatsapp.trim(),
+          whatsapp: whatsapp.trim(),
           email: email.trim() || null,
           data_nascimento: dataNascimento || null,
           cep: cep.trim() || null,
+          cidade_cep: cidadeCep || null,
           instagram: instagram.trim() || null,
           titulo_eleitor: tituloEleitor.trim(),
           zona_eleitoral: zonaEleitoral.trim(),
@@ -147,15 +166,10 @@ export default function CadastroPublicoAfiliado() {
                 <input type="date" value={dataNascimento} onChange={e => setDataNascimento(e.target.value)} className={inputCls} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className={labelCls}>Telefone *</label>
-                <input type="tel" value={telefone} onChange={e => setTelefone(e.target.value)} className={inputCls} required maxLength={40} placeholder="(00) 00000-0000" />
-              </div>
-              <div>
-                <label className={labelCls}>WhatsApp</label>
-                <input type="tel" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} className={inputCls} maxLength={40} placeholder="(00) 00000-0000" />
-              </div>
+            <div>
+              <label className={labelCls}>WhatsApp *</label>
+              <input type="tel" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} className={inputCls} required maxLength={40} placeholder="(00) 00000-0000" />
+              <p className="text-[10px] text-muted-foreground mt-1">Usado também como telefone de contato.</p>
             </div>
             <div>
               <label className={labelCls}>E-mail</label>
@@ -163,7 +177,25 @@ export default function CadastroPublicoAfiliado() {
             </div>
             <div>
               <label className={labelCls}>CEP</label>
-              <input type="text" value={cep} onChange={e => setCep(e.target.value)} className={inputCls} maxLength={20} placeholder="00000-000" />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={cep}
+                  onChange={e => { setCep(e.target.value); }}
+                  onBlur={e => buscarCidadePorCep(e.target.value)}
+                  className={inputCls}
+                  maxLength={20}
+                  placeholder="00000-000"
+                />
+                {buscandoCep && (
+                  <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-muted-foreground" />
+                )}
+              </div>
+              {cidadeCep && (
+                <span className="inline-flex items-center gap-1 mt-2 px-2 py-1 rounded-full bg-primary/10 text-primary text-[11px] font-semibold">
+                  <MapPin size={11} /> {cidadeCep}{ufCep ? ` - ${ufCep}` : ''}
+                </span>
+              )}
             </div>
             <div>
               <label className={labelCls}>Instagram</label>

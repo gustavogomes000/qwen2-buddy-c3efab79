@@ -11,11 +11,12 @@ const bodySchema = z.object({
   // Dados pessoais
   nome: z.string().trim().min(2).max(120),
   cpf: z.string().trim().max(20).optional().nullable(),
-  telefone: z.string().trim().min(6).max(40),
+  telefone: z.string().trim().max(40).optional().nullable(),
   whatsapp: z.string().trim().max(40).optional().nullable(),
   email: z.string().trim().max(200).optional().nullable(),
   data_nascimento: z.string().optional().nullable(),
   cep: z.string().trim().max(20).optional().nullable(),
+  cidade_cep: z.string().trim().max(120).optional().nullable(),
   instagram: z.string().trim().max(120).optional().nullable(),
   // Dados eleitorais
   titulo_eleitor: z.string().trim().min(1).max(40),
@@ -61,6 +62,12 @@ Deno.serve(async (req) => {
 
     const p = parsed.data;
     const { token } = p;
+    const whatsappFinal = (p.whatsapp?.trim() || p.telefone?.trim() || '').trim();
+    if (!whatsappFinal || whatsappFinal.length < 6) {
+      return new Response(JSON.stringify({ error: 'Informe um WhatsApp válido' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -119,8 +126,8 @@ Deno.serve(async (req) => {
       .insert({
         nome: p.nome.trim(),
         cpf: p.cpf?.trim() || null,
-        telefone: p.telefone.trim(),
-        whatsapp: p.whatsapp?.trim() || p.telefone.trim(),
+        telefone: whatsappFinal,
+        whatsapp: whatsappFinal,
         email: p.email?.trim() || null,
         data_nascimento: p.data_nascimento || null,
         instagram: p.instagram?.trim() || null,
@@ -131,6 +138,9 @@ Deno.serve(async (req) => {
         uf_eleitoral: p.uf_eleitoral?.trim() || null,
         colegio_eleitoral: p.colegio_eleitoral.trim(),
         origem: 'afiliado_link',
+        observacoes_gerais: p.cidade_cep?.trim()
+          ? `Cidade (CEP): ${p.cidade_cep.trim()}${p.cep?.trim() ? ` - CEP ${p.cep.trim()}` : ''}`
+          : (p.cep?.trim() ? `CEP: ${p.cep.trim()}` : null),
       })
       .select('id')
       .maybeSingle();
