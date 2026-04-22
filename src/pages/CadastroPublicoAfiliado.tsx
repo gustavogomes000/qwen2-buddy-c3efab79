@@ -17,7 +17,6 @@ export default function CadastroPublicoAfiliado() {
   const [dataNascimento, setDataNascimento] = useState('');
   const [cep, setCep] = useState('');
   const [instagram, setInstagram] = useState('');
-  const [facebook, setFacebook] = useState('');
   // Eleitorais
   const [tituloEleitor, setTituloEleitor] = useState('');
   const [zonaEleitoral, setZonaEleitoral] = useState('');
