@@ -32,7 +32,12 @@ export default function SecaoAfiliados() {
   const [mCpf, setMCpf] = useState('');
   const [mNasc, setMNasc] = useState('');
   const [mInsta, setMInsta] = useState('');
-  const [mCidade, setMCidade] = useState('');
+  const [mTitulo, setMTitulo] = useState('');
+  const [mZona, setMZona] = useState('');
+  const [mSecao, setMSecao] = useState('');
+  const [mMunicipio, setMMunicipio] = useState('');
+  const [mUf, setMUf] = useState('GO');
+  const [mColegio, setMColegio] = useState('');
 
   const fetchAfiliados = useCallback(async () => {
     setLoading(true);
