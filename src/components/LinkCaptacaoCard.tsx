@@ -179,7 +179,7 @@ export default function LinkCaptacaoCard({ initialVariant = 'lideranca', lockVar
 
           {/* Seletor de variantes — escondido quando travado em uma única tela */}
           {!lockVariant && variantes.length > 1 && (
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-5 gap-1.5">
               {variantes.map(v => {
                 const Icon = v.icon;
                 const ativo = v.key === variante;
@@ -188,13 +188,13 @@ export default function LinkCaptacaoCard({ initialVariant = 'lideranca', lockVar
                     key={v.key}
                     type="button"
                     onClick={() => setVariante(v.key)}
-                    className={`flex flex-col items-center justify-center gap-1 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95 ${
+                    className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl text-[9px] font-bold transition-all active:scale-95 ${
                       ativo
                         ? 'gradient-primary text-white shadow-md shadow-primary/30'
                         : 'bg-card border border-border text-muted-foreground hover:text-foreground'
                     }`}
                   >
-                    <Icon size={14} />
+                    <Icon size={13} />
                     {v.label}
                   </button>
                 );
