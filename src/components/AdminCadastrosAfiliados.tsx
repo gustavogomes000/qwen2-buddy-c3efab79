@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Search, Trash2, Loader2, Phone, MapPin, User, Download, ClipboardList, Link2, Copy, Users, AtSign, Cake } from 'lucide-react';
+import { Search, Trash2, Loader2, Phone, MapPin, User, Download, ClipboardList, Link2, Copy, Users, AtSign, Cake, Trophy } from 'lucide-react';
 
 interface CadastroAfil {
   id: string;
@@ -89,6 +89,13 @@ export default function AdminCadastrosAfiliados() {
     return map;
   }, [cadastros]);
 
+  // Ranking ordenado por quantidade de cadastros (desc), depois nome
+  const ranking = useMemo(() => {
+    return [...afiliados]
+      .map(a => ({ ...a, total: totaisPorAfiliado[a.id] || 0 }))
+      .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome));
+  }, [afiliados, totaisPorAfiliado]);
+
   const handleExportar = () => {
     const headers = ['Afiliado', 'Nome', 'Telefone', 'Data nascimento', 'CEP', 'Rede social', 'Origem', 'Cadastrado em'];
     const rows = filtrados.map(c => [
@@ -140,31 +147,54 @@ export default function AdminCadastrosAfiliados() {
       {/* Lista de afiliados com totais */}
       <div className="section-card space-y-2">
         <div className="flex items-center gap-2 mb-1">
-          <Users size={14} className="text-primary" />
-          <p className="text-xs font-semibold">Afiliados ({afiliados.length})</p>
+          <Trophy size={14} className="text-primary" />
+          <p className="text-xs font-semibold">Ranking de Afiliados ({afiliados.length})</p>
         </div>
         {afiliados.length === 0 ? (
           <p className="text-xs text-muted-foreground py-2">Nenhum afiliado cadastrado ainda.</p>
         ) : (
           <div className="space-y-1.5">
-            {afiliados.map(a => (
-              <div key={a.id} className="flex items-center gap-2 bg-muted/30 rounded-lg p-2">
-                <button
-                  onClick={() => setFiltroAfiliado(a.id)}
-                  className="flex-1 text-left min-w-0"
+            {ranking.map((a, idx) => {
+              const isTop = idx < 3 && a.total > 0;
+              const medalha = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : null;
+              return (
+                <div
+                  key={a.id}
+                  className={`flex items-center gap-2 rounded-lg p-2 ${
+                    isTop ? 'bg-primary/10 border border-primary/20' : 'bg-muted/30'
+                  }`}
                 >
-                  <p className="text-sm font-semibold truncate">{a.nome}</p>
-                  <p className="text-[10px] text-muted-foreground">{totaisPorAfiliado[a.id] || 0} cadastros captados</p>
-                </button>
-                <button
-                  onClick={() => copiarLink(a.link_token)}
-                  title="Copiar link público"
-                  className="p-2 rounded-lg bg-card border border-border active:scale-95"
-                >
-                  <Link2 size={13} className="text-primary" />
-                </button>
-              </div>
-            ))}
+                  <div className="w-7 h-7 shrink-0 rounded-full bg-card border border-border flex items-center justify-center text-[11px] font-bold text-muted-foreground">
+                    {medalha || `${idx + 1}º`}
+                  </div>
+                  <button
+                    onClick={() => setFiltroAfiliado(a.id)}
+                    className="flex-1 text-left min-w-0 flex items-center gap-2"
+                  >
+                    <span
+                      className={`shrink-0 min-w-[28px] text-center px-1.5 h-6 rounded-md text-[11px] font-bold flex items-center justify-center ${
+                        a.total > 0 ? 'gradient-primary text-white' : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
+                      {a.total}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold truncate">{a.nome}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {a.total === 1 ? 'cadastro captado' : 'cadastros captados'} · toque para ver
+                      </p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => copiarLink(a.link_token)}
+                    title="Copiar link público"
+                    className="p-2 rounded-lg bg-card border border-border active:scale-95"
+                  >
+                    <Link2 size={13} className="text-primary" />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
