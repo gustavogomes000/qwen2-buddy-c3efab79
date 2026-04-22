@@ -254,20 +254,47 @@ export default function CadastroPublicoAfiliado() {
   // ─── MODO CAPTAÇÃO: formulário simples para o público preencher ───
   if (modo === 'captacao') {
     return (
-      <div className="fixed inset-0 overflow-y-auto bg-gradient-to-br from-primary/5 via-background to-background px-4 pt-8 pb-32">
-        <div className="w-full max-w-md space-y-5 mx-auto">
-          <div className="text-center space-y-2">
-            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-              <ClipboardList size={26} className="text-primary" />
+      <div className="fixed inset-0 overflow-y-auto bg-gradient-to-br from-primary/10 via-background to-primary/5 px-4 pt-6 pb-32">
+        {/* Decorative glow */}
+        <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-primary/20 blur-3xl opacity-60" />
+
+        <div className="relative w-full max-w-md space-y-5 mx-auto">
+          {/* Hero header */}
+          <div className="relative overflow-hidden rounded-3xl gradient-primary p-6 text-center shadow-xl">
+            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
+            <div className="absolute -bottom-12 -left-10 w-44 h-44 rounded-full bg-white/10 blur-2xl" />
+            <div className="relative space-y-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold uppercase tracking-wider">
+                <Sparkles size={11} /> Mandato Dra. Fernanda Sarelli
+              </div>
+              <h1 className="text-2xl font-extrabold text-white leading-tight drop-shadow-sm">
+                Faça parte da nossa rede
+              </h1>
+              <p className="text-[13px] text-white/90 leading-snug">
+                Cadastre-se e receba novidades, ações e convocações da Dra. Fernanda Sarelli.
+              </p>
             </div>
-            <h1 className="text-xl font-bold text-foreground">Faça seu cadastro</h1>
-            {afiliadoNome && (
-              <p className="text-xs text-muted-foreground">Indicado por <b className="text-foreground">{afiliadoNome}</b></p>
-            )}
           </div>
 
+          {/* Indicado por */}
+          {afiliadoNome && (
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-primary/20 shadow-sm">
+              <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center shrink-0">
+                <Heart size={18} className="text-white" fill="currentColor" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Você foi indicado por</p>
+                <p className="text-sm font-bold text-foreground truncate">{afiliadoNome}</p>
+              </div>
+              <UserCheck size={18} className="text-primary shrink-0" />
+            </div>
+          )}
+
           <form onSubmit={handleSubmitCaptacao} className="space-y-4">
-            <div className="section-card space-y-3">
+            <div className="section-card space-y-3 shadow-sm">
+              <h2 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-border">
+                <ClipboardList size={13} className="text-primary" /> Seus dados
+              </h2>
               <div>
                 <label className={labelCls}>Nome *</label>
                 <input type="text" value={capNome} onChange={e => setCapNome(e.target.value)} className={inputCls} required maxLength={120} />
@@ -311,16 +338,21 @@ export default function CadastroPublicoAfiliado() {
             <button
               type="submit"
               disabled={capSaving}
-              className="w-full h-12 rounded-xl gradient-primary text-white text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.97] disabled:opacity-50"
+              className="w-full h-12 rounded-2xl gradient-primary text-white text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.97] disabled:opacity-50 shadow-lg shadow-primary/30"
             >
               {capSaving ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-              {capSaving ? 'Enviando...' : 'Concluir cadastro'}
+              {capSaving ? 'Enviando...' : 'Quero fazer parte'}
             </button>
           </form>
 
-          <p className="text-center text-[10px] text-muted-foreground pb-4">
-            Seus dados são tratados com sigilo.
-          </p>
+          <div className="text-center space-y-1 pb-4">
+            <p className="text-[10px] text-muted-foreground">
+              🔒 Seus dados são tratados com sigilo e segurança.
+            </p>
+            <p className="text-[10px] text-muted-foreground/80">
+              Após o envio você será direcionado ao Instagram da deputada.
+            </p>
+          </div>
         </div>
       </div>
     );
