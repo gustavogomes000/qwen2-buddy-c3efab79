@@ -438,7 +438,7 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
   // LIST VIEW
   return (
     <div className="space-y-3 pb-24">
-      {!viewOnly && <LinkCaptacaoCard initialVariant="eleitor" />}
+      {!viewOnly && <LinkCaptacaoCard initialVariant="eleitor" lockVariant />}
       {!viewOnly && (
         <button data-testid="btn-cadastrar-eleitor" onClick={() => setMode('form')} className="w-full h-12 gradient-primary text-white font-semibold rounded-xl active:scale-[0.97] transition-all">
           + Cadastrar Eleitor

@@ -16,6 +16,8 @@ type LinkVariant = 'lideranca' | 'fiscal' | 'eleitor';
 
 interface LinkCaptacaoCardProps {
   initialVariant?: LinkVariant;
+  /** Quando true, esconde o seletor de variantes e fixa o tipo passado em initialVariant */
+  lockVariant?: boolean;
 }
 
 /**
@@ -25,7 +27,7 @@ interface LinkCaptacaoCardProps {
  * ao próprio usuário via `afiliado_id` (a coluna serve apenas como FK para
  * `hierarquia_usuarios.id`, sem restringir o tipo).
  */
-export default function LinkCaptacaoCard({ initialVariant = 'lideranca' }: LinkCaptacaoCardProps) {
+export default function LinkCaptacaoCard({ initialVariant = 'lideranca', lockVariant = false }: LinkCaptacaoCardProps) {
   const { usuario } = useAuth();
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [recentes, setRecentes] = useState<CadastroItem[]>([]);
@@ -171,8 +173,8 @@ export default function LinkCaptacaoCard({ initialVariant = 'lideranca' }: LinkC
             </span>
           </div>
 
-          {/* Seletor de variantes (apenas suplente) */}
-          {variantes.length > 1 && (
+          {/* Seletor de variantes — escondido quando travado em uma única tela */}
+          {!lockVariant && variantes.length > 1 && (
             <div className="grid grid-cols-3 gap-1.5">
               {variantes.map(v => {
                 const Icon = v.icon;

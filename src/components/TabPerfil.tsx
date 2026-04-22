@@ -857,9 +857,6 @@ export default function TabPerfil() {
         </span>
       </div>
 
-      {/* Link público de captação — disponível para todos os usuários */}
-      <LinkCaptacaoCard />
-
       {/* Self password change */}
       <SelfPasswordChange />
 

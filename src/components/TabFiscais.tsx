@@ -455,7 +455,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
 
   return (
     <div className="space-y-3 pb-24">
-      {!viewOnly && <LinkCaptacaoCard initialVariant="fiscal" />}
+      {!viewOnly && <LinkCaptacaoCard initialVariant="fiscal" lockVariant />}
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">{filtered.length} fiscal{filtered.length !== 1 ? 'is' : ''}</p>
         {!viewOnly && (
