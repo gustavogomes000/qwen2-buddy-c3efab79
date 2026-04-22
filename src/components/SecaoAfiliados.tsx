@@ -23,6 +23,16 @@ export default function SecaoAfiliados() {
   const [items, setItems] = useState<AfiliadoItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [showManual, setShowManual] = useState(false);
+  const [savingManual, setSavingManual] = useState(false);
+  const [mNome, setMNome] = useState('');
+  const [mTelefone, setMTelefone] = useState('');
+  const [mWhats, setMWhats] = useState('');
+  const [mEmail, setMEmail] = useState('');
+  const [mCpf, setMCpf] = useState('');
+  const [mNasc, setMNasc] = useState('');
+  const [mInsta, setMInsta] = useState('');
+  const [mCidade, setMCidade] = useState('');
 
   const fetchAfiliados = useCallback(async () => {
     setLoading(true);
