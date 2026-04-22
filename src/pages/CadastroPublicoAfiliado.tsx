@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -7,6 +7,18 @@ import { Loader2, CheckCircle2, ClipboardList, Eye, EyeOff, KeyRound, LogIn, Map
 export default function CadastroPublicoAfiliado() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
+  const tipoParam = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    const t = new URLSearchParams(window.location.search).get('tipo');
+    return t === 'lideranca' || t === 'fiscal' || t === 'eleitor' ? t : null;
+  }, []);
+  const tipoLabel = tipoParam === 'lideranca'
+    ? 'Convite para Liderança'
+    : tipoParam === 'fiscal'
+    ? 'Convite para Fiscal'
+    : tipoParam === 'eleitor'
+    ? 'Convite para Eleitor'
+    : null;
 
   // Detecção de modo: 'captacao' (link de afiliado ativo, formulário simples)
   // ou 'criar_acesso' (registro pendente do próprio afiliado, fluxo completo)
@@ -267,6 +279,11 @@ export default function CadastroPublicoAfiliado() {
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold uppercase tracking-wider">
                 <Sparkles size={11} /> Mandato Dra. Fernanda Sarelli
               </div>
+              {tipoLabel && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-primary text-[10px] font-extrabold uppercase tracking-wider shadow-md">
+                  ⭐ {tipoLabel}
+                </div>
+              )}
               <h1 className="text-2xl font-extrabold text-white leading-tight drop-shadow-sm">
                 Faça parte da nossa rede
               </h1>

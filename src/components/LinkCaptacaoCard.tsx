@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Link2, Copy, Share2, Users, Phone, Loader2 } from 'lucide-react';
+import { Link2, Copy, Share2, Users, Phone, Loader2, Sparkles, Crown, Shield, UserPlus } from 'lucide-react';
 
 interface CadastroItem {
   id: string;
@@ -25,6 +25,20 @@ export default function LinkCaptacaoCard() {
   const [recentes, setRecentes] = useState<CadastroItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const isSuplente = usuario?.tipo === 'suplente';
+  const variantes = useMemo(() => (
+    isSuplente
+      ? [
+          { key: 'lideranca', label: 'Lideranças', icon: Crown, hint: 'Para captar lideranças' },
+          { key: 'fiscal',    label: 'Fiscais',    icon: Shield, hint: 'Para captar fiscais' },
+          { key: 'eleitor',   label: 'Eleitores',  icon: UserPlus, hint: 'Para captar eleitores' },
+        ] as const
+      : [
+          { key: 'geral', label: 'Cadastro', icon: UserPlus, hint: 'Link único de cadastro' },
+        ] as const
+  ), [isSuplente]);
+  const [variante, setVariante] = useState<string>(variantes[0].key);
+  useEffect(() => { setVariante(variantes[0].key); }, [variantes]);
 
   // Garantir token (gera se não tiver)
   useEffect(() => {
@@ -92,8 +106,12 @@ export default function LinkCaptacaoCard() {
   }, [usuario?.nome]);
 
   const linkPublico = useMemo(
-    () => linkToken ? `${window.location.origin}/c/${slugNome}/${linkToken}` : null,
-    [linkToken, slugNome]
+    () => {
+      if (!linkToken) return null;
+      const base = `${window.location.origin}/c/${slugNome}/${linkToken}`;
+      return variante && variante !== 'geral' ? `${base}?tipo=${variante}` : base;
+    },
+    [linkToken, slugNome, variante]
   );
 
   const copiar = async () => {
@@ -119,45 +137,94 @@ export default function LinkCaptacaoCard() {
 
   if (!usuario?.id) return null;
 
+  const varianteAtual = variantes.find(v => v.key === variante) || variantes[0];
+
   return (
     <div className="space-y-3">
-      <div className="section-card space-y-2 border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Link2 size={14} className="text-primary" />
-            <p className="text-[11px] font-semibold text-foreground">Seu link personalizado</p>
+      {/* Hero card do link */}
+      <div className="relative overflow-hidden rounded-2xl border border-primary/30 shadow-lg shadow-primary/10 bg-gradient-to-br from-primary/10 via-card to-card">
+        <div className="pointer-events-none absolute -top-12 -right-12 w-40 h-40 rounded-full bg-primary/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-10 w-44 h-44 rounded-full bg-primary/10 blur-3xl" />
+
+        <div className="relative p-4 space-y-3">
+          {/* Cabeçalho */}
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shadow-md shadow-primary/30">
+                <Link2 size={16} className="text-white" />
+              </div>
+              <div className="leading-tight">
+                <p className="text-[10px] uppercase tracking-wider font-bold text-primary flex items-center gap-1">
+                  <Sparkles size={10} /> Seu link de captação
+                </p>
+                <p className="text-xs font-semibold text-foreground truncate max-w-[180px]">{usuario.nome}</p>
+              </div>
+            </div>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full gradient-primary text-white text-[11px] font-bold shadow-sm">
+              <Users size={11} /> {total}
+            </span>
           </div>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">
-            <Users size={10} /> {total}
-          </span>
-        </div>
-        <p className="text-[10px] text-muted-foreground -mt-1">
-          Envie para captar cadastros vinculados a <strong>{usuario.nome}</strong>
-        </p>
-        {linkPublico ? (
-          <p className="text-[10px] text-foreground break-all bg-muted/40 rounded-lg p-2 font-mono">
-            {linkPublico}
+
+          {/* Seletor de variantes (apenas suplente) */}
+          {variantes.length > 1 && (
+            <div className="grid grid-cols-3 gap-1.5">
+              {variantes.map(v => {
+                const Icon = v.icon;
+                const ativo = v.key === variante;
+                return (
+                  <button
+                    key={v.key}
+                    type="button"
+                    onClick={() => setVariante(v.key)}
+                    className={`flex flex-col items-center justify-center gap-1 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95 ${
+                      ativo
+                        ? 'gradient-primary text-white shadow-md shadow-primary/30'
+                        : 'bg-card border border-border text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <Icon size={14} />
+                    {v.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Hint */}
+          <p className="text-[10px] text-muted-foreground text-center">
+            {varianteAtual.hint} — vinculado a você
           </p>
-        ) : (
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground p-2">
-            <Loader2 size={12} className="animate-spin" /> Gerando seu link…
+
+          {/* URL */}
+          {linkPublico ? (
+            <div className="rounded-xl bg-background/80 backdrop-blur border border-border px-3 py-2.5">
+              <p className="text-[11px] text-foreground break-all font-mono leading-relaxed select-all">
+                {linkPublico}
+              </p>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground p-3 rounded-xl bg-background/60 border border-border">
+              <Loader2 size={12} className="animate-spin" /> Gerando seu link…
+            </div>
+          )}
+
+          {/* Ações */}
+          <div className="flex gap-2">
+            <button
+              onClick={copiar}
+              disabled={!linkPublico}
+              className="flex-1 h-10 rounded-xl bg-card border border-border text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 hover:border-primary/40 transition-colors"
+            >
+              <Copy size={13} /> Copiar
+            </button>
+            <button
+              onClick={compartilhar}
+              disabled={!linkPublico}
+              className="flex-1 h-10 rounded-xl gradient-primary text-white text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 shadow-md shadow-primary/30"
+            >
+              <Share2 size={13} /> Compartilhar
+            </button>
           </div>
-        )}
-        <div className="flex gap-2">
-          <button
-            onClick={copiar}
-            disabled={!linkPublico}
-            className="flex-1 h-9 rounded-lg bg-card border border-border text-[11px] font-semibold flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
-          >
-            <Copy size={12} /> Copiar
-          </button>
-          <button
-            onClick={compartilhar}
-            disabled={!linkPublico}
-            className="flex-1 h-9 rounded-lg gradient-primary text-white text-[11px] font-semibold flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
-          >
-            <Share2 size={12} /> Compartilhar
-          </button>
         </div>
       </div>
 
