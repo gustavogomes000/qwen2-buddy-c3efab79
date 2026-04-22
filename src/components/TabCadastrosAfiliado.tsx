@@ -73,13 +73,26 @@ export default function TabCadastrosAfiliado() {
   // Buscar token do afiliado logado
   useEffect(() => {
     if (!usuario?.id) return;
-    (supabase as any).from('hierarquia_usuarios')
-      .select('link_token')
-      .eq('id', usuario.id)
-      .maybeSingle()
-      .then(({ data }: any) => {
-        if (data?.link_token) setLinkToken(data.link_token);
-      });
+    (async () => {
+      const { data } = await (supabase as any)
+        .from('hierarquia_usuarios')
+        .select('link_token')
+        .eq('id', usuario.id)
+        .maybeSingle();
+      if (data?.link_token) {
+        setLinkToken(data.link_token);
+        return;
+      }
+      // Gerar token automaticamente se ainda não existir
+      const novoToken = (crypto as any)?.randomUUID
+        ? (crypto as any).randomUUID().replace(/-/g, '')
+        : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+      const { error: updErr } = await (supabase as any)
+        .from('hierarquia_usuarios')
+        .update({ link_token: novoToken })
+        .eq('id', usuario.id);
+      if (!updErr) setLinkToken(novoToken);
+    })();
   }, [usuario?.id]);
 
   useEffect(() => {
