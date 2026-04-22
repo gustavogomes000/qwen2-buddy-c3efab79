@@ -237,42 +237,6 @@ export default function LinkCaptacaoCard({ initialVariant = 'lideranca', lockVar
           </div>
         </div>
       </div>
-
-      <div className="section-card space-y-2">
-        <div className="flex items-center justify-between">
-          <p className="text-[11px] font-semibold text-foreground uppercase tracking-wider">Últimos cadastros</p>
-          <span className="text-[10px] text-muted-foreground">{total} no total</span>
-        </div>
-        {loading ? (
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground py-2">
-            <Loader2 size={12} className="animate-spin" /> Carregando…
-          </div>
-        ) : recentes.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground py-2">
-            Ainda não há cadastros. Compartilhe seu link para começar.
-          </p>
-        ) : (
-          <ul className="divide-y divide-border">
-            {recentes.map((c) => (
-              <li key={c.id} className="py-2 flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <Users size={14} className="text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">{c.nome}</p>
-                  <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                    <Phone size={10} /> {c.telefone}
-                    <span className="mx-1">·</span>
-                    {c.origem === 'link_publico' ? '🔗 link' : '✍️ manual'}
-                    <span className="mx-1">·</span>
-                    {new Date(c.criado_em).toLocaleDateString('pt-BR')}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
     </div>
   );
 }
