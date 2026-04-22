@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
         .select('id, nome, tipo, auth_user_id, ativo')
         .eq('link_token', token)
         .maybeSingle();
-      if (error || !data || (data as any).tipo !== 'afiliado') {
+      if (error || !data) {
         return new Response(JSON.stringify({ error: 'Link inválido' }), {
           status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
         .select('id, tipo, auth_user_id')
         .eq('link_token', p.token)
         .maybeSingle();
-      if (afErr || !afiliado || (afiliado as any).tipo !== 'afiliado' || !(afiliado as any).auth_user_id) {
+      if (afErr || !afiliado || !(afiliado as any).auth_user_id) {
         return new Response(JSON.stringify({ error: 'Link inválido ou ainda não ativado' }), {
           status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
