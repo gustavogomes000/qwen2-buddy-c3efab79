@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LogOut, ClipboardList } from 'lucide-react';
 import TabCadastrosFernanda from '@/components/TabCadastrosFernanda';
 import FloatingSupportButton from '@/components/FloatingSupportButton';
+import LinkCaptacaoCard from '@/components/LinkCaptacaoCard';
 
 export default function HomeFernanda() {
   const { usuario, signOut } = useAuth();
@@ -38,6 +39,9 @@ export default function HomeFernanda() {
       </header>
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-[672px] mx-auto px-4 py-4">
+          <div className="mb-4">
+            <LinkCaptacaoCard />
+          </div>
           <TabCadastrosFernanda />
         </div>
       </main>

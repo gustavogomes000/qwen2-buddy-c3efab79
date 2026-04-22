@@ -10,6 +10,7 @@ import {
 import { toast } from '@/hooks/use-toast';
 import ModulosUsuario from '@/components/ModulosUsuario';
 import SecaoAfiliados from '@/components/SecaoAfiliados';
+import LinkCaptacaoCard from '@/components/LinkCaptacaoCard';
 
 const tipoLabels: Record<string, string> = {
   super_admin: 'Super Admin',
@@ -855,6 +856,9 @@ export default function TabPerfil() {
           {tipoUsuario ? tipoLabels[tipoUsuario] : '—'}
         </span>
       </div>
+
+      {/* Link público de captação — disponível para todos os usuários */}
+      <LinkCaptacaoCard />
 
       {/* Self password change */}
       <SelfPasswordChange />
