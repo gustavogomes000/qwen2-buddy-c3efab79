@@ -13,6 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 import { addToOfflineQueue } from '@/lib/offlineQueue';
 
 import CampoLigacaoPolitica from '@/components/CampoLigacaoPolitica';
+import LinkCaptacaoCard from '@/components/LinkCaptacaoCard';
 import SkeletonLista from '@/components/SkeletonLista';
 
 const situacoesTitulo = ['Regular', 'Cancelado', 'Suspenso', 'Não informado'];
@@ -454,6 +455,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
 
   return (
     <div className="space-y-3 pb-24">
+      {!viewOnly && <LinkCaptacaoCard initialVariant="fiscal" />}
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">{filtered.length} fiscal{filtered.length !== 1 ? 'is' : ''}</p>
         {!viewOnly && (

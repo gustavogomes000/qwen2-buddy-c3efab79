@@ -12,6 +12,12 @@ interface CadastroItem {
   criado_em: string;
 }
 
+type LinkVariant = 'lideranca' | 'fiscal' | 'eleitor';
+
+interface LinkCaptacaoCardProps {
+  initialVariant?: LinkVariant;
+}
+
 /**
  * Card reutilizável que mostra o link público de captação do usuário logado.
  * Funciona para qualquer tipo (suplente, liderança, coordenador, fernanda etc.).
@@ -19,26 +25,19 @@ interface CadastroItem {
  * ao próprio usuário via `afiliado_id` (a coluna serve apenas como FK para
  * `hierarquia_usuarios.id`, sem restringir o tipo).
  */
-export default function LinkCaptacaoCard() {
+export default function LinkCaptacaoCard({ initialVariant = 'lideranca' }: LinkCaptacaoCardProps) {
   const { usuario } = useAuth();
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [recentes, setRecentes] = useState<CadastroItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const isSuplente = usuario?.tipo === 'suplente';
-  const variantes = useMemo(() => (
-    isSuplente
-      ? [
-          { key: 'lideranca', label: 'Lideranças', icon: Crown, hint: 'Para captar lideranças' },
-          { key: 'fiscal',    label: 'Fiscais',    icon: Shield, hint: 'Para captar fiscais' },
-          { key: 'eleitor',   label: 'Eleitores',  icon: UserPlus, hint: 'Para captar eleitores' },
-        ] as const
-      : [
-          { key: 'geral', label: 'Cadastro', icon: UserPlus, hint: 'Link único de cadastro' },
-        ] as const
-  ), [isSuplente]);
-  const [variante, setVariante] = useState<string>(variantes[0].key);
-  useEffect(() => { setVariante(variantes[0].key); }, [variantes]);
+  const variantes = useMemo(() => ([
+    { key: 'lideranca', label: 'Lideranças', icon: Crown, hint: 'Para captar lideranças' },
+    { key: 'fiscal', label: 'Fiscais', icon: Shield, hint: 'Para captar fiscais' },
+    { key: 'eleitor', label: 'Eleitores', icon: UserPlus, hint: 'Para captar eleitores' },
+  ] as const), []);
+  const [variante, setVariante] = useState<LinkVariant>(initialVariant);
+  useEffect(() => { setVariante(initialVariant); }, [initialVariant]);
 
   // Garantir token (gera se não tiver)
   useEffect(() => {
@@ -116,7 +115,7 @@ export default function LinkCaptacaoCard() {
     () => {
       if (!linkToken) return null;
       const base = `${window.location.origin}/c/${slugNome}/${linkToken}`;
-      return variante && variante !== 'geral' ? `${base}?tipo=${variante}` : base;
+      return `${base}?tipo=${variante}`;
     },
     [linkToken, slugNome, variante]
   );

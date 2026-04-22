@@ -11,6 +11,7 @@ import { resolverLigacaoPolitica } from '@/lib/resolverLigacaoPolitica';
 import { toast } from '@/hooks/use-toast';
 
 import CampoLigacaoPolitica from '@/components/CampoLigacaoPolitica';
+import LinkCaptacaoCard from '@/components/LinkCaptacaoCard';
 import SkeletonLista from '@/components/SkeletonLista';
 import { useOfflineItems, type OfflineListItem } from '@/hooks/useOfflineItems';
 import { addToOfflineQueue } from '@/lib/offlineQueue';
@@ -444,6 +445,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
   // ===== LIST VIEW =====
   return (
     <div className="space-y-3 pb-24">
+      {!viewOnly && <LinkCaptacaoCard initialVariant="lideranca" />}
       {!viewOnly && (
         <button data-testid="btn-cadastrar-lideranca" onClick={() => { setForm({ ...emptyForm }); setMode('form'); }}
           className="w-full h-12 gradient-primary text-white font-semibold rounded-xl active:scale-[0.97] transition-all flex items-center justify-center gap-2">
