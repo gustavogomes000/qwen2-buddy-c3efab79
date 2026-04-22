@@ -138,6 +138,9 @@ Deno.serve(async (req) => {
         uf_eleitoral: p.uf_eleitoral?.trim() || null,
         colegio_eleitoral: p.colegio_eleitoral.trim(),
         origem: 'afiliado_link',
+        observacoes_gerais: p.cidade_cep?.trim()
+          ? `Cidade (CEP): ${p.cidade_cep.trim()}${p.cep?.trim() ? ` - CEP ${p.cep.trim()}` : ''}`
+          : (p.cep?.trim() ? `CEP: ${p.cep.trim()}` : null),
       })
       .select('id')
       .maybeSingle();
