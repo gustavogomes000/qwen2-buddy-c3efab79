@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, CheckCircle2, ClipboardList, Eye, EyeOff, KeyRound, LogIn } from 'lucide-react';
+import { Loader2, CheckCircle2, ClipboardList, Eye, EyeOff, KeyRound, LogIn, MapPin } from 'lucide-react';
 
 export default function CadastroPublicoAfiliado() {
   const { token } = useParams<{ token: string }>();
@@ -11,11 +11,13 @@ export default function CadastroPublicoAfiliado() {
   // Pessoais
   const [nome, setNome] = useState('');
   const [cpf, setCpf] = useState('');
-  const [telefone, setTelefone] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [email, setEmail] = useState('');
   const [dataNascimento, setDataNascimento] = useState('');
   const [cep, setCep] = useState('');
+  const [cidadeCep, setCidadeCep] = useState('');
+  const [ufCep, setUfCep] = useState('');
+  const [buscandoCep, setBuscandoCep] = useState(false);
   const [instagram, setInstagram] = useState('');
   // Eleitorais
   const [tituloEleitor, setTituloEleitor] = useState('');
@@ -34,14 +36,30 @@ export default function CadastroPublicoAfiliado() {
 
   useEffect(() => { document.title = 'Cadastro de Afiliado'; }, []);
 
+  const buscarCidadePorCep = async (raw: string) => {
+    const cepLimpo = raw.replace(/\D/g, '');
+    if (cepLimpo.length !== 8) { setCidadeCep(''); setUfCep(''); return; }
+    setBuscandoCep(true);
+    try {
+      const r = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+      const d = await r.json();
+      if (d?.erro) { setCidadeCep(''); setUfCep(''); }
+      else { setCidadeCep(d.localidade || ''); setUfCep(d.uf || ''); }
+    } catch {
+      setCidadeCep(''); setUfCep('');
+    } finally {
+      setBuscandoCep(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
     if (!nome.trim() || nome.trim().length < 2) {
       toast({ title: 'Informe seu nome completo', variant: 'destructive' }); return;
     }
-    if (!telefone.trim()) {
-      toast({ title: 'Informe um telefone', variant: 'destructive' }); return;
+    if (!whatsapp.trim() || whatsapp.replace(/\D/g,'').length < 6) {
+      toast({ title: 'Informe um WhatsApp válido', variant: 'destructive' }); return;
     }
     if (!usuarioLogin.trim() || usuarioLogin.trim().length < 3) {
       toast({ title: 'Defina um nome de usuário (mín. 3 letras)', variant: 'destructive' }); return;
@@ -60,11 +78,12 @@ export default function CadastroPublicoAfiliado() {
           token,
           nome: nome.trim(),
           cpf: cpf.trim() || null,
-          telefone: telefone.trim(),
-          whatsapp: whatsapp.trim() || null,
+          telefone: whatsapp.trim(),
+          whatsapp: whatsapp.trim(),
           email: email.trim() || null,
           data_nascimento: dataNascimento || null,
           cep: cep.trim() || null,
+          cidade_cep: cidadeCep || null,
           instagram: instagram.trim() || null,
           titulo_eleitor: tituloEleitor.trim(),
           zona_eleitoral: zonaEleitoral.trim(),
