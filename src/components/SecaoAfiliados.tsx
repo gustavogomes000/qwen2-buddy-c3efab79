@@ -22,6 +22,7 @@ export default function SecaoAfiliados() {
   const { usuario, isAdmin } = useAuth();
   const [items, setItems] = useState<AfiliadoItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [logins, setLogins] = useState<Record<string, string>>({});
   const [creating, setCreating] = useState(false);
   const [showManual, setShowManual] = useState(false);
   const [savingManual, setSavingManual] = useState(false);
