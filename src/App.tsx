@@ -22,6 +22,8 @@ const Login = lazy(() => import("./pages/Login"));
 const Home = lazy(() => import("./pages/Home"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const HomeFernanda = lazy(() => import("./pages/HomeFernanda"));
+const HomeAfiliado = lazy(() => import("./pages/HomeAfiliado"));
+const CadastroPublicoAfiliado = lazy(() => import("./pages/CadastroPublicoAfiliado"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,7 +40,7 @@ const idbPersister = createIdbPersister();
 
 const PERSISTED_QUERY_PREFIXES = ['liderancas', 'eleitores', 'fiscais', 'contagens', 'hierarquia_usuarios'];
 
-function PrivateRoute({ children, allowFernanda = false }: { children: React.ReactNode; allowFernanda?: boolean }) {
+function PrivateRoute({ children, allowFernanda = false, allowAfiliado = false }: { children: React.ReactNode; allowFernanda?: boolean; allowAfiliado?: boolean }) {
   const { user, loading, usuario } = useAuth();
   if (loading) return <LoadingScreen message="Verificando acesso" showProgress />;
   if (!user) return <Navigate to="/login" replace />;
@@ -46,6 +48,10 @@ function PrivateRoute({ children, allowFernanda = false }: { children: React.Rea
   // Redirect Fernanda users to their dedicated screen
   if ((usuario.tipo as string) === 'fernanda' && !allowFernanda) {
     return <Navigate to="/fernanda" replace />;
+  }
+  // Redirect Afiliado users to their dedicated screen
+  if ((usuario.tipo as string) === 'afiliado' && !allowAfiliado) {
+    return <Navigate to="/afiliado" replace />;
   }
   return <>{children}</>;
 }
@@ -64,9 +70,11 @@ function AppRoutes() {
     <Suspense fallback={<LoadingScreen message="Carregando..." />}>
       <Routes>
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/cadastro/:token" element={<CadastroPublicoAfiliado />} />
         <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
         <Route path="/admin" element={<PrivateRoute><AdminDashboard /></PrivateRoute>} />
         <Route path="/fernanda" element={<PrivateRoute allowFernanda><HomeFernanda /></PrivateRoute>} />
+        <Route path="/afiliado" element={<PrivateRoute allowAfiliado><HomeAfiliado /></PrivateRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>

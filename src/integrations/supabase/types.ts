@@ -119,6 +119,27 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_users: {
+        Row: {
+          created_at: string
+          id: string
+          password_hash: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          password_hash: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          password_hash?: string
+          username?: string
+        }
+        Relationships: []
+      }
       albuns: {
         Row: {
           atualizado_em: string
@@ -1655,6 +1676,60 @@ export type Database = {
         }
         Relationships: []
       }
+      news: {
+        Row: {
+          auto_generated: boolean | null
+          content: string | null
+          created_at: string
+          display_order: number
+          id: string
+          image_url: string | null
+          is_pinned: boolean
+          is_published: boolean
+          pinned_at: string | null
+          podcast_link: string | null
+          source_name: string | null
+          source_url: string | null
+          summary: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          auto_generated?: boolean | null
+          content?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_pinned?: boolean
+          is_published?: boolean
+          pinned_at?: string | null
+          podcast_link?: string | null
+          source_name?: string | null
+          source_url?: string | null
+          summary?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          auto_generated?: boolean | null
+          content?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_pinned?: boolean
+          is_published?: boolean
+          pinned_at?: string | null
+          podcast_link?: string | null
+          source_name?: string | null
+          source_url?: string | null
+          summary?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pessoas: {
         Row: {
           ativo: boolean
@@ -1730,6 +1805,54 @@ export type Database = {
           uf_eleitoral?: string | null
           whatsapp?: string | null
           zona_eleitoral?: string | null
+        }
+        Relationships: []
+      }
+      podcasts: {
+        Row: {
+          audio_url: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          external_link: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          is_published: boolean
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          youtube_url: string | null
+        }
+        Insert: {
+          audio_url?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          external_link?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_published?: boolean
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          youtube_url?: string | null
+        }
+        Update: {
+          audio_url?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          external_link?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_published?: boolean
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          youtube_url?: string | null
         }
         Relationships: []
       }
@@ -1827,6 +1950,146 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      programacao: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          description: string | null
+          display_order: number
+          end_time: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          presenter: string | null
+          program_name: string
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          description?: string | null
+          display_order?: number
+          end_time?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          presenter?: string | null
+          program_name: string
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          description?: string | null
+          display_order?: number
+          end_time?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          presenter?: string | null
+          program_name?: string
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      promotion_entries: {
+        Row: {
+          city: string | null
+          cpf: string | null
+          created_at: string
+          email: string | null
+          facebook: string | null
+          full_name: string
+          id: string
+          instagram: string | null
+          message: string | null
+          phone: string | null
+          promotion_id: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          city?: string | null
+          cpf?: string | null
+          created_at?: string
+          email?: string | null
+          facebook?: string | null
+          full_name: string
+          id?: string
+          instagram?: string | null
+          message?: string | null
+          phone?: string | null
+          promotion_id?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          city?: string | null
+          cpf?: string | null
+          created_at?: string
+          email?: string | null
+          facebook?: string | null
+          full_name?: string
+          id?: string
+          instagram?: string | null
+          message?: string | null
+          phone?: string | null
+          promotion_id?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_entries_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promotions: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          image_url: string | null
+          is_active: boolean
+          link: string | null
+          popup_duration_seconds: number | null
+          show_as_popup: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          link?: string | null
+          popup_duration_seconds?: number | null
+          show_as_popup?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          link?: string | null
+          popup_duration_seconds?: number | null
+          show_as_popup?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       roles_painel: {
         Row: {
@@ -1998,6 +2261,63 @@ export type Database = {
           id?: string
           nome?: string
           senha_hash?: string
+        }
+        Relationships: []
+      }
+      site_settings: {
+        Row: {
+          key: string
+          setting_key: string | null
+          setting_value: string | null
+          updated_at: string
+          value: Json | null
+        }
+        Insert: {
+          key: string
+          setting_key?: string | null
+          setting_value?: string | null
+          updated_at?: string
+          value?: Json | null
+        }
+        Update: {
+          key?: string
+          setting_key?: string | null
+          setting_value?: string | null
+          updated_at?: string
+          value?: Json | null
+        }
+        Relationships: []
+      }
+      sponsors: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          link: string | null
+          logo_url: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          link?: string | null
+          logo_url?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          link?: string | null
+          logo_url?: string | null
+          name?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -2190,6 +2510,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_check_password: {
+        Args: { p_password: string; p_username: string }
+        Returns: {
+          id: string
+          username: string
+        }[]
+      }
+      admin_create_user: {
+        Args: { p_password: string; p_username: string }
+        Returns: undefined
+      }
       criar_primeiro_admin: { Args: { _email: string }; Returns: undefined }
       eh_admin: { Args: { _user_id: string }; Returns: boolean }
       eh_admin_hierarquia: { Args: never; Returns: boolean }

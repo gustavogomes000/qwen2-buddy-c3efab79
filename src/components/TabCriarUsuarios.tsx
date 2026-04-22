@@ -33,7 +33,7 @@ interface HierarchyUser {
 }
 
 type VinculoTab = 'suplente' | 'lideranca';
-type TipoAcesso = 'suplente' | 'lideranca' | 'coordenador' | 'fernanda';
+type TipoAcesso = 'suplente' | 'lideranca' | 'coordenador' | 'fernanda' | 'afiliado';
 
 export default function TabCriarUsuarios() {
   const { isAdmin } = useAuth();
@@ -184,7 +184,16 @@ export default function TabCriarUsuarios() {
         if (error) throw new Error(error.message || 'Erro ao criar usuário');
         if (data?.error) throw new Error(data.error);
 
-        toast({ title: '✅ Usuário criado!', description: `${nome} pode acessar o sistema` });
+        // Para afiliados: gerar e salvar link_token único
+        if (tipoAcesso === 'afiliado' && data?.hierarquia_id) {
+          const token = (crypto as any).randomUUID().replace(/-/g, '').slice(0, 24);
+          await (supabase as any).from('hierarquia_usuarios').update({ link_token: token }).eq('id', data.hierarquia_id);
+          const url = `${window.location.origin}/cadastro/${token}`;
+          try { await navigator.clipboard.writeText(url); } catch {}
+          toast({ title: '✅ Afiliado criado!', description: `Link copiado: ${url}` });
+        } else {
+          toast({ title: '✅ Usuário criado!', description: `${nome} pode acessar o sistema` });
+        }
         setCriarNovoMode(false);
         setSelecionado(null);
         fetchAll();

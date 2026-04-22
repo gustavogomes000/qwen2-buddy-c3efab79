@@ -4,7 +4,7 @@ import { resolverMunicipioId, buscarNomeMunicipio } from '@/lib/resolverMunicipi
 import { logger } from '@/lib/logger';
 import type { User } from '@supabase/supabase-js';
 
-export type TipoUsuario = 'super_admin' | 'coordenador' | 'suplente' | 'lideranca' | 'fernanda';
+export type TipoUsuario = 'super_admin' | 'coordenador' | 'suplente' | 'lideranca' | 'fernanda' | 'afiliado';
 
 interface HierarquiaUsuario {
   id: string;
@@ -24,6 +24,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isSuplente: boolean;
   isLideranca: boolean;
+  isAfiliado: boolean;
   tipoUsuario: TipoUsuario | null;
   municipioId: string | null;
   municipioNome: string | null;
@@ -317,6 +318,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin: tipo === 'super_admin' || tipo === 'coordenador',
       isSuplente: tipo === 'suplente',
       isLideranca: tipo === 'lideranca',
+      isAfiliado: tipo === 'afiliado',
       tipoUsuario: tipo,
       municipioId,
       municipioNome,

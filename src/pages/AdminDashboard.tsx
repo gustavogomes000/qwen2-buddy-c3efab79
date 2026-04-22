@@ -19,6 +19,7 @@ import { lazy, Suspense } from 'react';
 
 const TabLocalizacoes = lazy(() => import('@/components/TabLocalizacoes'));
 const AdminCadastrosFernanda = lazy(() => import('@/components/AdminCadastrosFernanda'));
+const AdminCadastrosAfiliados = lazy(() => import('@/components/AdminCadastrosAfiliados'));
 
 
 /* ── types ── */
@@ -73,7 +74,7 @@ interface HierarquiaUsuario {
 /* ── constants ── */
 type Periodo = 'hoje' | 'semana' | 'mes' | 'total';
 type TipoFiltro = 'todos' | 'lideranca' | 'eleitor' | 'fiscal';
-type VistaAtiva = 'usuarios' | 'ranking' | 'registros' | 'cidades' | 'localizacao' | 'eventos' | 'fernanda';
+type VistaAtiva = 'usuarios' | 'ranking' | 'registros' | 'cidades' | 'localizacao' | 'eventos' | 'fernanda' | 'afiliados';
 type TipoUsuarioFiltro = 'todos' | 'suplente' | 'lideranca' | 'coordenador' | 'fernanda';
 
 const periodoLabels: Record<Periodo, string> = { hoje: 'Hoje', semana: 'Semana', mes: 'Mês', total: 'Total' };
@@ -307,6 +308,7 @@ export default function AdminDashboard() {
     { id: 'registros', icon: Eye, label: 'Registros' },
     { id: 'eventos', icon: Calendar, label: 'Eventos' },
     { id: 'fernanda', icon: ClipboardList, label: 'Fernanda' },
+    { id: 'afiliados', icon: Users, label: 'Afiliados' },
     ...(municipios.length > 1 ? [{ id: 'cidades' as VistaAtiva, icon: Building2, label: 'Cidades' }] : []),
   ];
 
@@ -964,6 +966,12 @@ export default function AdminDashboard() {
           </Suspense>
         )}
 
+        {/* ══════════ AFILIADOS ══════════ */}
+        {vistaAtiva === 'afiliados' && (
+          <Suspense fallback={<div className="flex items-center justify-center py-16"><Loader2 size={28} className="animate-spin text-primary" /></div>}>
+            <AdminCadastrosAfiliados />
+          </Suspense>
+        )}
 
       </div>
 
