@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Link2, Copy, Share2, Users, Phone, Loader2, Sparkles, Crown, Shield, UserPlus } from 'lucide-react';
+import { Link2, Copy, Share2, Users, Phone, Loader2, Sparkles, Crown, Shield, UserPlus, Heart, Star } from 'lucide-react';
 
 interface CadastroItem {
   id: string;
@@ -12,7 +12,7 @@ interface CadastroItem {
   criado_em: string;
 }
 
-type LinkVariant = 'lideranca' | 'fiscal' | 'eleitor';
+type LinkVariant = 'lideranca' | 'fiscal' | 'eleitor' | 'fernanda' | 'afiliado';
 
 interface LinkCaptacaoCardProps {
   initialVariant?: LinkVariant;
@@ -34,9 +34,11 @@ export default function LinkCaptacaoCard({ initialVariant = 'lideranca', lockVar
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const variantes = useMemo(() => ([
-    { key: 'lideranca', label: 'Lideranças', icon: Crown, hint: 'Para captar lideranças' },
-    { key: 'fiscal', label: 'Fiscais', icon: Shield, hint: 'Para captar fiscais' },
-    { key: 'eleitor', label: 'Eleitores', icon: UserPlus, hint: 'Para captar eleitores' },
+    { key: 'lideranca', label: 'Liderança', icon: Crown, hint: 'Captar nova liderança' },
+    { key: 'fiscal', label: 'Fiscal', icon: Shield, hint: 'Captar novo fiscal' },
+    { key: 'eleitor', label: 'Eleitor', icon: UserPlus, hint: 'Captar novo eleitor' },
+    { key: 'fernanda', label: 'Fernanda', icon: Heart, hint: 'Cadastro simples (Fernanda)' },
+    { key: 'afiliado', label: 'Afiliado', icon: Star, hint: 'Cadastro de afiliado' },
   ] as const), []);
   const [variante, setVariante] = useState<LinkVariant>(initialVariant);
   useEffect(() => { setVariante(initialVariant); }, [initialVariant]);
@@ -177,7 +179,7 @@ export default function LinkCaptacaoCard({ initialVariant = 'lideranca', lockVar
 
           {/* Seletor de variantes — escondido quando travado em uma única tela */}
           {!lockVariant && variantes.length > 1 && (
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-5 gap-1.5">
               {variantes.map(v => {
                 const Icon = v.icon;
                 const ativo = v.key === variante;
@@ -186,13 +188,13 @@ export default function LinkCaptacaoCard({ initialVariant = 'lideranca', lockVar
                     key={v.key}
                     type="button"
                     onClick={() => setVariante(v.key)}
-                    className={`flex flex-col items-center justify-center gap-1 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95 ${
+                    className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl text-[9px] font-bold transition-all active:scale-95 ${
                       ativo
                         ? 'gradient-primary text-white shadow-md shadow-primary/30'
                         : 'bg-card border border-border text-muted-foreground hover:text-foreground'
                     }`}
                   >
-                    <Icon size={14} />
+                    <Icon size={13} />
                     {v.label}
                   </button>
                 );

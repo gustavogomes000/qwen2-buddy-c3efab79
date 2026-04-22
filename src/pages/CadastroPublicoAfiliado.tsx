@@ -24,7 +24,7 @@ export default function CadastroPublicoAfiliado() {
     if (typeof window === 'undefined') return null;
     const qs = new URLSearchParams(window.location.search);
     const t = qs.get('t') || qs.get('tipo');
-    return t === 'lideranca' || t === 'fiscal' || t === 'eleitor' ? t : null;
+    return t === 'lideranca' || t === 'fiscal' || t === 'eleitor' || t === 'fernanda' || t === 'afiliado' ? t : null;
   }, []);
   const tipoLabel = tipoParam === 'lideranca'
     ? 'Convite para Liderança'
@@ -32,6 +32,10 @@ export default function CadastroPublicoAfiliado() {
     ? 'Convite para Fiscal'
     : tipoParam === 'eleitor'
     ? 'Convite para Eleitor'
+    : tipoParam === 'fernanda'
+    ? 'Cadastro Dra. Fernanda'
+    : tipoParam === 'afiliado'
+    ? 'Cadastro de Afiliado'
     : null;
 
   // Detecção de modo: 'captacao' (link de afiliado ativo, formulário simples)
@@ -41,6 +45,8 @@ export default function CadastroPublicoAfiliado() {
 
   // Captação (público)
   const [capNome, setCapNome] = useState('');
+  const [capCpf, setCapCpf] = useState('');
+  const [capEmail, setCapEmail] = useState('');
   const [capTelefone, setCapTelefone] = useState('');
   const [capData, setCapData] = useState('');
   const [capCep, setCapCep] = useState('');
@@ -48,6 +54,20 @@ export default function CadastroPublicoAfiliado() {
   const [capUfCep, setCapUfCep] = useState('');
   const [capBuscandoCep, setCapBuscandoCep] = useState(false);
   const [capRede, setCapRede] = useState('');
+  const [capInstagram, setCapInstagram] = useState('');
+  // Eleitorais (lideranca/fiscal/eleitor)
+  const [capTitulo, setCapTitulo] = useState('');
+  const [capZona, setCapZona] = useState('');
+  const [capSecao, setCapSecao] = useState('');
+  const [capColegio, setCapColegio] = useState('');
+  const [capMunicipioEl, setCapMunicipioEl] = useState('');
+  const [capUfEl, setCapUfEl] = useState('GO');
+  // Específicos
+  const [capNivelComp, setCapNivelComp] = useState('');
+  const [capApoiadores, setCapApoiadores] = useState('');
+  const [capBairros, setCapBairros] = useState('');
+  const [capCompromisso, setCapCompromisso] = useState('');
+  const [capObs, setCapObs] = useState('');
   const [capSaving, setCapSaving] = useState(false);
 
   // Pessoais
@@ -140,6 +160,12 @@ export default function CadastroPublicoAfiliado() {
     if (!capTelefone.trim() || capTelefone.replace(/\D/g, '').length < 6) {
       toast({ title: 'Informe um telefone válido', variant: 'destructive' }); return;
     }
+    const exigeEleitoral = tipoParam === 'lideranca' || tipoParam === 'fiscal' || tipoParam === 'eleitor';
+    if (exigeEleitoral) {
+      if (!capTitulo.trim() || !capZona.trim() || !capSecao.trim() || !capMunicipioEl.trim() || !capColegio.trim()) {
+        toast({ title: 'Preencha todos os dados eleitorais (Título, Zona, Seção, Município e Colégio)', variant: 'destructive' }); return;
+      }
+    }
     setCapSaving(true);
     try {
       const url = `https://yvdfdmyusdhgtzfguxbj.supabase.co/functions/v1/captacao-afiliado`;
@@ -148,11 +174,29 @@ export default function CadastroPublicoAfiliado() {
         headers: { 'Content-Type': 'application/json', apikey: (supabase as any).supabaseKey || '' },
         body: JSON.stringify({
           token,
+          tipo: tipoParam || 'afiliado',
           nome: capNome.trim(),
+          cpf: capCpf.trim() || null,
+          email: capEmail.trim() || null,
           telefone: capTelefone.trim(),
+          whatsapp: capTelefone.trim(),
           data_nascimento: capData || null,
           cep: capCep.trim() || null,
+          cidade: capCidadeCep || null,
+          uf: capUfCep || null,
+          instagram: capInstagram.trim() || null,
           rede_social: capRede.trim() || null,
+          titulo_eleitor: capTitulo.trim() || null,
+          zona_eleitoral: capZona.trim() || null,
+          secao_eleitoral: capSecao.trim() || null,
+          municipio_eleitoral: capMunicipioEl.trim() || null,
+          uf_eleitoral: capUfEl.trim() || null,
+          colegio_eleitoral: capColegio.trim() || null,
+          nivel_comprometimento: capNivelComp.trim() || null,
+          apoiadores_estimados: capApoiadores ? Number(capApoiadores) : null,
+          bairros_influencia: capBairros.trim() || null,
+          compromisso_voto: capCompromisso.trim() || null,
+          observacoes: capObs.trim() || null,
         }),
       });
       const j = await r.json();
@@ -364,7 +408,111 @@ export default function CadastroPublicoAfiliado() {
                 <label className={labelCls}>Rede social</label>
                 <input type="text" value={capRede} onChange={e => setCapRede(e.target.value)} className={inputCls} maxLength={200} placeholder="@usuario / link" />
               </div>
+              {/* Instagram dedicado para Fernanda; demais usam rede_social acima */}
+              {tipoParam === 'fernanda' && (
+                <div>
+                  <label className={labelCls}>Instagram</label>
+                  <input type="text" value={capInstagram} onChange={e => setCapInstagram(e.target.value)} className={inputCls} maxLength={120} placeholder="@usuario" />
+                </div>
+              )}
+              {/* CPF e e-mail (lideranca/fiscal/eleitor) */}
+              {(tipoParam === 'lideranca' || tipoParam === 'fiscal' || tipoParam === 'eleitor') && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className={labelCls}>CPF</label>
+                    <input type="text" value={capCpf} onChange={e => setCapCpf(e.target.value)} className={inputCls} maxLength={14} placeholder="000.000.000-00" />
+                  </div>
+                  <div>
+                    <label className={labelCls}>E-mail</label>
+                    <input type="email" value={capEmail} onChange={e => setCapEmail(e.target.value)} className={inputCls} maxLength={200} placeholder="opcional" />
+                  </div>
+                </div>
+              )}
             </div>
+
+            {/* Bloco eleitoral — somente para liderança / fiscal / eleitor */}
+            {(tipoParam === 'lideranca' || tipoParam === 'fiscal' || tipoParam === 'eleitor') && (
+              <div className="section-card space-y-3 shadow-sm">
+                <h2 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-border">
+                  🗳️ Dados eleitorais
+                </h2>
+                <div>
+                  <label className={labelCls}>Título de eleitor *</label>
+                  <input type="text" value={capTitulo} onChange={e => setCapTitulo(e.target.value)} className={inputCls} maxLength={40} placeholder="Número do título" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className={labelCls}>Zona *</label>
+                    <input type="text" value={capZona} onChange={e => setCapZona(e.target.value)} className={inputCls} maxLength={20} placeholder="045" />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Seção *</label>
+                    <input type="text" value={capSecao} onChange={e => setCapSecao(e.target.value)} className={inputCls} maxLength={20} placeholder="0123" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-2">
+                    <label className={labelCls}>Município *</label>
+                    <input type="text" value={capMunicipioEl} onChange={e => setCapMunicipioEl(e.target.value)} className={inputCls} maxLength={120} placeholder="Cidade" />
+                  </div>
+                  <div>
+                    <label className={labelCls}>UF</label>
+                    <input type="text" value={capUfEl} onChange={e => setCapUfEl(e.target.value.toUpperCase())} className={inputCls} maxLength={2} />
+                  </div>
+                </div>
+                <div>
+                  <label className={labelCls}>Colégio eleitoral *</label>
+                  <input type="text" value={capColegio} onChange={e => setCapColegio(e.target.value)} className={inputCls} maxLength={200} placeholder="Nome da escola / local" />
+                </div>
+              </div>
+            )}
+
+            {/* Específicos por tipo */}
+            {tipoParam === 'lideranca' && (
+              <div className="section-card space-y-3 shadow-sm">
+                <h2 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-border">
+                  👑 Liderança
+                </h2>
+                <div>
+                  <label className={labelCls}>Nível de comprometimento</label>
+                  <select value={capNivelComp} onChange={e => setCapNivelComp(e.target.value)} className={inputCls}>
+                    <option value="">Selecione</option>
+                    <option value="Alto">Alto</option>
+                    <option value="Médio">Médio</option>
+                    <option value="Baixo">Baixo</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Apoiadores estimados</label>
+                  <input type="number" min={0} value={capApoiadores} onChange={e => setCapApoiadores(e.target.value)} className={inputCls} placeholder="Ex: 50" />
+                </div>
+                <div>
+                  <label className={labelCls}>Bairros / regiões de influência</label>
+                  <input type="text" value={capBairros} onChange={e => setCapBairros(e.target.value)} className={inputCls} maxLength={300} placeholder="Bairros onde atua" />
+                </div>
+              </div>
+            )}
+
+            {tipoParam === 'eleitor' && (
+              <div className="section-card space-y-3 shadow-sm">
+                <h2 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-border">
+                  🗳️ Compromisso
+                </h2>
+                <div>
+                  <label className={labelCls}>Compromisso de voto</label>
+                  <select value={capCompromisso} onChange={e => setCapCompromisso(e.target.value)} className={inputCls}>
+                    <option value="">Selecione</option>
+                    <option value="Confirmado">Confirmado</option>
+                    <option value="Provável">Provável</option>
+                    <option value="Indeciso">Indeciso</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Observações</label>
+                  <textarea value={capObs} onChange={e => setCapObs(e.target.value)} className={inputCls + ' h-20 py-2'} maxLength={500} placeholder="Opcional" />
+                </div>
+              </div>
+            )}
 
             <button
               type="submit"
